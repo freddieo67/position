@@ -1,6 +1,6 @@
-// Adress till backend (api/). Telefonen måste vara på samma wifi som datorn.
+// Adress till backend (api/). 
 // Kan överskridas med miljövariabeln EXPO_PUBLIC_API_URL (t.ex. i app/.env).
-export const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://192.168.8.3:3000';
+export const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'https://position-614814853862.europe-north1.run.app';
 
 // Normaliserar svenska nummer till E.164, t.ex. "070-999 80 90" -> "+46709998090"
 export function normalizePhone(raw: string): string {
