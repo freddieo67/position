@@ -15,6 +15,7 @@ import { SIGNALS } from './src/signals';
 import { registerForPushToken, getNotifications } from './src/push';
 import type * as NotificationsType from 'expo-notifications';
 import i18n from './src/i18n';
+import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
 const POLL_INTERVAL_MS = 30_000;
 const EMPTY_INBOX: Inbox = { positions: [], requests: [], outgoing: [] };
 
@@ -443,9 +444,15 @@ export default function App() {
         </View>
       </View>
       
-      {/* Reklamyta: Tar upp ca 35% av skärmen */}
+      {/* Reklamyta: Anpassar sig efter annonsens storlek */}
       <View style={styles.adContainer}>
-        <Text style={styles.adText}>{i18n.t('ad_space')}</Text>
+        <BannerAd
+          unitId={TestIds.BANNER}
+          size={BannerAdSize.MEDIUM_RECTANGLE}
+          requestOptions={{
+            requestNonPersonalizedAdsOnly: true,
+          }}
+        />
       </View>
 
       <ContactsModal 
@@ -467,7 +474,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   mapContainer: {
-    flex: 65, 
+    flex: 1, 
     position: 'relative', // För att vi ska kunna lägga knapparna ovanpå
   },
   map: {
@@ -583,7 +590,9 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   adContainer: {
-    flex: 35, 
+    minHeight: 60,
+    maxHeight: 250,
+    width: '100%',
     backgroundColor: '#f0f0f0',
     alignItems: 'center',
     justifyContent: 'center',
