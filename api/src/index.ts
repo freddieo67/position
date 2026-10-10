@@ -144,7 +144,9 @@ const SIGNALS: Record<string, { title: string; body: string }> = {
 app.post('/signals', async (req, res) => {
   const senderId = parseId(req.body.sender_id);
   const receiverId = parseId(req.body.receiver_id);
-  const signal = SIGNALS[String(req.body.type)];
+  const type = String(req.body.type);
+  const customMessage = req.body.message;
+  const signal = SIGNALS[type];
 
   if (!senderId || !receiverId) {
     return res.status(400).json({ error: 'sender_id and receiver_id are required' });
@@ -152,13 +154,27 @@ app.post('/signals', async (req, res) => {
   if (senderId === receiverId) {
     return res.status(400).json({ error: 'Cannot send a signal to yourself' });
   }
-  if (!signal) return res.status(400).json({ error: 'Unknown signal type' });
+  if (!signal && type !== 'custom') {
+    return res.status(400).json({ error: 'Unknown signal type' });
+  }
 
   try {
     const name = await getDisplayName(senderId);
-    await sendPush(receiverId, signal.title.replace('{name}', name), signal.body, {
+    
+    let pushTitle = '';
+    let pushBody = '';
+
+    if (type === 'custom') {
+      pushTitle = `⚡ ${name} pingade dig!`;
+      pushBody = customMessage || 'Ingen text angavs...';
+    } else {
+      pushTitle = signal.title.replace('{name}', name);
+      pushBody = signal.body;
+    }
+
+    await sendPush(receiverId, pushTitle, pushBody, {
       type: 'signal',
-      signal: req.body.type,
+      signal: type,
     });
     res.json({ ok: true });
   } catch (error) {
