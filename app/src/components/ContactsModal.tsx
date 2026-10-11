@@ -16,7 +16,7 @@ export interface AppContact {
 
 interface ContactsModalProps {
   visible: boolean;
-  mode: 'send' | 'request' | 'signal' | null;
+  mode: 'send' | 'request' | 'signal' | 'ping' | null;
   currentUserId: number;
   onClose: () => void;
   onSelect: (contacts: AppContact | AppContact[], signalType?: string, message?: string) => void;
@@ -90,7 +90,7 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
     const result: AppContact[] = [];
     for (const entry of entries) {
       const user = userByPhone.get(entry.phone);
-      if (!user || user.id === currentUserId || seen.has(user.id)) continue;
+      if (!user || Number(user.id) === Number(currentUserId) || seen.has(user.id)) continue;
       seen.add(user.id);
       result.push({ id: `${entry.id}-${user.id}`, name: entry.name, phoneNumber: entry.phone, userId: user.id });
     }
@@ -175,13 +175,15 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
           ) : (
             <>
               <Text style={styles.title}>
-                {mode === 'send' ? 'Skicka position till...' : mode === 'signal' ? 'Skicka signal till...' : 'Begär position från...'}
+                {mode === 'send' ? 'Skicka position till...' : mode === 'signal' ? 'Skicka signal till...' : mode === 'ping' ? 'Pinga...' : 'Begär position från...'}
               </Text>
               <Text style={styles.subtitle}>
                 {mode === 'send'
                   ? i18n.t('receiver_sees_position_10m')
                   : mode === 'signal'
                   ? 'Bjud på en öl, skicka en kram eller en kyss.'
+                  : mode === 'ping'
+                  ? 'Skicka en snabb notis till...'
                   : i18n.t('when_accept_see_position_10m')}
               </Text>
 
@@ -239,7 +241,7 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
                 <TouchableOpacity
                   style={[styles.closeButton, { backgroundColor: '#34C759', marginBottom: 10 }]}
                   onPress={() => {
-                    if (mode === 'request') {
+                    if (mode === 'request' || mode === 'ping') {
                       onSelect(checkedContacts);
                     } else {
                       setChosenContacts(checkedContacts);

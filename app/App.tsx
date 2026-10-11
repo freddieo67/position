@@ -7,6 +7,7 @@ import LeafletMap, { MapMarkerData, LeafletMapRef } from './src/components/Leafl
 
 import ContactsModal, { AppContact } from './src/components/ContactsModal';
 import RegisterScreen from './src/components/RegisterScreen';
+import PingModal from './src/components/PingModal';
 import { api, Inbox, IncomingPosition, IncomingRequest, User } from './src/api';
 import { ApiError } from './src/config';
 import { clearUser, loadUser } from './src/session';
@@ -17,7 +18,7 @@ import type * as NotificationsType from 'expo-notifications';
 import i18n from './src/i18n';
 import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
 const POLL_INTERVAL_MS = 30_000;
-const EMPTY_INBOX: Inbox = { positions: [], requests: [], outgoing: [] };
+const EMPTY_INBOX: Inbox = { positions: [], requests: [], outgoing: [], sharing: [] };
 
 function minutesLeft(expiresAt: string): number {
   return Math.max(0, Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 60_000));
@@ -33,7 +34,9 @@ export default function App() {
   const [location, setLocation] = useState<Location.LocationObject | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
-  const [modalMode, setModalMode] = useState<'send' | 'request' | 'signal' | null>(null);
+  const [modalMode, setModalMode] = useState<'send' | 'request' | 'signal' | 'ping' | null>(null);
+  const [pingModalVisible, setPingModalVisible] = useState(false);
+  const [pingTarget, setPingTarget] = useState<AppContact[] | null>(null);
   const [inbox, setInbox] = useState<Inbox>(EMPTY_INBOX);
 
   const mapRef = useRef<LeafletMapRef>(null);
@@ -268,7 +271,7 @@ export default function App() {
     setTimeout(() => mapRef.current?.focusOn(pos.latitude, pos.longitude), 0);
   }, [inbox, location]);
 
-  const openModal = (mode: 'send' | 'request' | 'signal') => {
+  const openModal = (mode: 'send' | 'request' | 'signal' | 'ping') => {
     setModalMode(mode);
     setModalVisible(true);
   };
@@ -279,6 +282,12 @@ export default function App() {
 
     const contacts = Array.isArray(contactOrContacts) ? contactOrContacts : [contactOrContacts];
     const names = contacts.map(c => c.name).join(', ');
+
+    if (modalMode === 'ping') {
+      setPingTarget(contacts);
+      setPingModalVisible(true);
+      return;
+    }
 
     try {
       if (modalMode === 'signal' && signalType) {
@@ -432,14 +441,21 @@ export default function App() {
             style={[styles.actionButton, styles.requestButton]} 
             onPress={() => openModal('request')}
           >
-            <Text style={styles.buttonText}>Begär position</Text>
+            <Text style={styles.buttonText}>Begär</Text>
           </TouchableOpacity>
           
+          <TouchableOpacity 
+            style={[styles.actionButton, styles.pingButton]} 
+            onPress={() => openModal('ping')}
+          >
+            <Text style={styles.buttonText}>Pinga</Text>
+          </TouchableOpacity>
+
           <TouchableOpacity 
             style={[styles.actionButton, styles.sendButton]} 
             onPress={() => openModal('send')}
           >
-            <Text style={styles.buttonText}>Skicka position</Text>
+            <Text style={styles.buttonText}>Skicka</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -461,6 +477,18 @@ export default function App() {
         currentUserId={user.id}
         onClose={() => setModalVisible(false)} 
         onSelect={handleContactSelected}
+      />
+
+      <PingModal
+        visible={pingModalVisible}
+        currentUserId={user.id}
+        targets={pingTarget}
+        onClose={() => setPingModalVisible(false)}
+        onSuccess={() => {
+          setPingModalVisible(false);
+          const names = pingTarget?.map(t => t.name).join(', ') ?? '';
+          Alert.alert('Skickat!', `Du pingade ${names}.`);
+        }}
       />
 
       <StatusBar style="auto" />
@@ -568,18 +596,22 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     paddingVertical: 14,
-    paddingHorizontal: 20,
+    paddingHorizontal: 12,
     borderRadius: 8, // Lätt rundade hörn (mer fyrkantig känsla)
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 3,
     elevation: 4,
-    minWidth: 150,
+    minWidth: 100,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   requestButton: {
     backgroundColor: '#7e895d', // Din färg 1
+  },
+  pingButton: {
+    backgroundColor: '#805072',
   },
   sendButton: {
     backgroundColor: '#5d7e80', // Din färg 2
@@ -588,6 +620,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: '#fff',
+    textAlign: 'center',
   },
   adContainer: {
     minHeight: 60,

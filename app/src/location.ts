@@ -12,7 +12,7 @@ export function toCoords(pos: Location.LocationObject): Coords {
 // Hämtar en färsk position; faller tillbaka på senast kända om GPS:en strular
 export async function getCurrentCoords(fallback?: Location.LocationObject | null): Promise<Coords> {
   try {
-    const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+    const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Highest });
     return toCoords(pos);
   } catch (error) {
     if (fallback) return toCoords(fallback);

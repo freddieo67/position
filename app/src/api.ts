@@ -72,8 +72,8 @@ export const api = {
 
   inbox: (userId: number) => apiGet<Inbox>(`/users/${userId}/inbox`),
 
-  sendSignal: (sender_id: number, receiver_id: number, type: string) =>
-    apiPost<{ ok: boolean }>('/signals', { sender_id, receiver_id, type }),
+  sendSignal: (sender_id: number, receiver_id: number, type: string, message?: string) =>
+    apiPost<{ ok: boolean }>('/signals', { sender_id, receiver_id, type, message }),
 
   savePushToken: (userId: number, token: string | null) =>
     apiPut<{ ok: boolean }>(`/users/${userId}/push-token`, { token }),
