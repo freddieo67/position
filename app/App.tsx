@@ -75,6 +75,9 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    let subscription: Location.LocationSubscription | null = null;
+    let active = true;
+
     (async () => {
       let { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
@@ -82,10 +85,41 @@ export default function App() {
         return;
       }
 
-      let currentLocation = await Location.getCurrentPositionAsync({});
-      locationRef.current = currentLocation;
-      setLocation(currentLocation);
+      try {
+        let currentLocation = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+        if (active) {
+          locationRef.current = currentLocation;
+          setLocation(currentLocation);
+        }
+      } catch (e) {
+        console.warn('Kunde inte hämta initial position:', e);
+      }
+
+      try {
+        subscription = await Location.watchPositionAsync(
+          {
+            accuracy: Location.Accuracy.Balanced,
+            timeInterval: 180000, // Var 3:e minut
+            distanceInterval: 50, // Minst 50 meter förflyttning
+          },
+          (newLocation) => {
+            if (active) {
+              locationRef.current = newLocation;
+              setLocation(newLocation);
+            }
+          }
+        );
+      } catch (e) {
+        console.warn('Kunde inte starta watchPositionAsync:', e);
+      }
     })();
+
+    return () => {
+      active = false;
+      subscription?.remove();
+    };
   }, []);
 
   // Registrera enhetens push-token hos backend när användaren är inloggad
@@ -492,6 +526,25 @@ export default function App() {
           ))}
         </View>
 
+        {/* Centrera på min position (GPS-knapp) */}
+        {location && (
+          <TouchableOpacity
+            style={styles.myLocationButton}
+            onPress={async () => {
+              mapRef.current?.focusOn(location.coords.latitude, location.coords.longitude);
+              try {
+                const fresh = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+                locationRef.current = fresh;
+                setLocation(fresh);
+                mapRef.current?.focusOn(fresh.coords.latitude, fresh.coords.longitude);
+              } catch (_) {}
+            }}
+            activeOpacity={0.8}
+          >
+            <FontAwesome6 name="location-crosshairs" size={20} color="#007AFF" />
+          </TouchableOpacity>
+        )}
+
         {/* Knappar som ligger ovanpå kartan i botten */}
         <View style={styles.buttonRow}>
           <TouchableOpacity 
@@ -664,6 +717,23 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 13,
     fontWeight: '600',
+  },
+  myLocationButton: {
+    position: 'absolute',
+    bottom: 85,
+    right: 18,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#fff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 8,
+    zIndex: 10,
   },
   buttonRow: {
     position: 'absolute',
