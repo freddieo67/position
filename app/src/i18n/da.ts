@@ -34,4 +34,9 @@ export const da = {
   you_and_name_see_each_other_10m: 'Du og %{name} ser nu hinandens placering i 10 minutter.',
   error: 'Noget gik galt',
   ad_space: 'Reklamer vises her',
+  bg_notification_title: 'Position deler din placering',
+  bg_notification_body: 'Din placering opdateres live for dine kontakter (10 min).',
+  long_press_hint: 'Hold nede på navnet for at vælge flere',
+  ping_back: 'Ping tilbage',
+  close: 'Luk',
 };

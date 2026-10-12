@@ -13,6 +13,7 @@
     "expo-location": "~57.0.17",
     "expo-notifications": "~57.0.22",
     "expo-status-bar": "~57.0.1",
+    "expo-task-manager": "~57.0.21",
     "i18n-js": "^4.5.4",
     "lodash": "^4.18.1",
     "react": "19.2.3",

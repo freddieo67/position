@@ -38,4 +38,9 @@ export const pt = {
   error: 'Algo deu errado',
   
   ad_space: 'Anúncio aqui',
+  bg_notification_title: 'Position está a partilhar a sua localização',
+  bg_notification_body: 'A sua localização é atualizada em tempo real para os seus contactos (10 min).',
+  long_press_hint: 'Pressione longamente o nome para selecionar vários',
+  ping_back: 'Enviar ping de volta',
+  close: 'Fechar',
 };

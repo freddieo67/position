@@ -137,6 +137,8 @@ app.put('/users/:id/push-token', async (req, res) => {
 // Signaler som bara visas som push-avisering (sparas inte). {name} byts mot avsändarens namn.
 const SIGNALS: Record<string, { title: string; body: string }> = {
   beer: { title: '🍺 {name} bjuder dig på en öl', body: 'Hur säger du nej till det?' },
+  coffee: { title: '☕ {name} bjuder på kaffe', body: 'Sugen på en kaffe?' },
+  wave: { title: '👋 {name} vinkar', body: 'Var håller du hus?' },
   hug: { title: '🤗 {name} skickar en kram', body: 'Det behövs ibland.' },
   kiss: { title: '😘 {name} skickar en kyss', body: 'Mwah!' },
 };
@@ -159,6 +161,26 @@ app.post('/signals', async (req, res) => {
   }
 
   try {
+    // Kontrollera 5 minuters cooldown för ping mot samma mottagare
+    const cooldown = await pool.query(
+      `SELECT EXTRACT(EPOCH FROM (NOW() - last_sent)) AS seconds_ago
+         FROM public.signal_cooldowns
+        WHERE sender_id = $1 AND receiver_id = $2`,
+      [senderId, receiverId]
+    );
+    if (cooldown.rows[0]) {
+      const secondsAgo = Number(cooldown.rows[0].seconds_ago);
+      const PING_COOLDOWN_SECONDS = 300; // 5 minuter
+      if (secondsAgo < PING_COOLDOWN_SECONDS) {
+        const minutesLeft = Math.max(1, Math.ceil((PING_COOLDOWN_SECONDS - secondsAgo) / 60));
+        return res.status(429).json({
+          error: `Du har redan pingat denna kontakt. Vänta ${minutesLeft} min innan du pingar igen.`,
+          code: 'COOLDOWN',
+          minutes_left: minutesLeft,
+        });
+      }
+    }
+
     const name = await getDisplayName(senderId);
     
     let pushTitle = '';
@@ -169,13 +191,38 @@ app.post('/signals', async (req, res) => {
       pushBody = customMessage || 'Ingen text angavs...';
     } else {
       pushTitle = signal.title.replace('{name}', name);
-      pushBody = signal.body;
+      pushBody = customMessage || signal.body;
     }
 
-    await sendPush(receiverId, pushTitle, pushBody, {
-      type: 'signal',
-      signal: type,
-    });
+    await sendPush(
+      receiverId,
+      pushTitle,
+      pushBody,
+      {
+        type: 'signal',
+        signal: type,
+        sender_id: senderId,
+        sender_name: name,
+        title: pushTitle,
+        message: pushBody,
+      },
+      'ping_category'
+    );
+
+    // Registrera cooldown för avsändaren
+    await pool.query(
+      `INSERT INTO public.signal_cooldowns (sender_id, receiver_id, last_sent)
+       VALUES ($1, $2, NOW())
+       ON CONFLICT (sender_id, receiver_id) DO UPDATE SET last_sent = NOW()`,
+      [senderId, receiverId]
+    );
+
+    // Återställ mottagarens cooldown mot avsändaren så att mottagaren kan svara direkt
+    await pool.query(
+      `DELETE FROM public.signal_cooldowns WHERE sender_id = $1 AND receiver_id = $2`,
+      [receiverId, senderId]
+    );
+
     res.json({ ok: true });
   } catch (error) {
     console.error(error);
@@ -202,7 +249,7 @@ app.post('/contacts/match', async (req, res) => {
   }
 });
 
-// Dela position med en annan användare (löper ut efter 5 minuter).
+// Dela position med en annan användare (löper ut efter 10 minuter).
 // Om request_id anges är det frågarens automatiska motdelning efter att mottagaren tackat ja.
 app.post('/position/share', async (req, res) => {
   const senderId = parseId(req.body.sender_id);
@@ -239,12 +286,52 @@ app.post('/position/share', async (req, res) => {
       }
     }
 
-    const share = await insertShare(client, senderId, receiverId, coords, requestId);
+    // Kontrollera om det redan finns en aktiv delning från avsändaren till mottagaren
+    const activeShare = await client.query(
+      `SELECT id, GREATEST(1, CEIL(EXTRACT(EPOCH FROM (expires_at - NOW())) / 60))::int AS minutes_left
+         FROM public.position_requests
+        WHERE sender_id = $1 AND receiver_id = $2 AND expires_at > NOW() AND location IS NOT NULL
+        ORDER BY expires_at DESC LIMIT 1`,
+      [senderId, receiverId]
+    );
+
+    const hasActiveShare = Boolean(activeShare.rows[0]);
+    // Automatisk live-uppdatering i bakgrunden: skickar inget nytt meddelande och inget requestId.
+    // Den uppdaterar koordinaterna tyst utan att skicka en ny notis varje minut.
+    const isBackgroundLiveUpdate = hasActiveShare && !req.body.message && requestId === null;
+
+    if (hasActiveShare && !isBackgroundLiveUpdate && requestId === null) {
+      await client.query('ROLLBACK');
+      const name = await getDisplayName(receiverId);
+      return res.status(409).json({
+        error: `Du delar redan din position med ${name} (${activeShare.rows[0].minutes_left} min kvar).`,
+        code: 'ALREADY_SHARING',
+        minutes_left: activeShare.rows[0].minutes_left,
+      });
+    }
+
+    let share;
+    if (isBackgroundLiveUpdate && activeShare.rows[0]?.id) {
+      // UPPDATERA befintlig rad istället för att skapa en ny rad var 30-60 sekund!
+      const updated = await client.query(
+        `UPDATE public.position_requests
+            SET location = ST_SetSRID(ST_MakePoint($1, $2), 4326),
+                accuracy_meters = $3,
+                shared_at = NOW()
+          WHERE id = $4
+          RETURNING id, expires_at`,
+        [coords.longitude, coords.latitude, coords.accuracy_meters, activeShare.rows[0].id]
+      );
+      share = updated.rows[0];
+    } else {
+      share = await insertShare(client, senderId, receiverId, coords, requestId);
+    }
+
     await client.query('COMMIT');
     res.json(share);
     
-    // Motdelning efter ett ja är redan känd för frågaren, så bara notis vid vanlig delning
-    if (requestId === null) {
+    // Skicka bara notis vid NY manuell delning (inte tysta bakgrundsuppdateringar eller motdelning efter svar)
+    if (requestId === null && !isBackgroundLiveUpdate) {
       const customMsg = typeof req.body.message === 'string' && req.body.message.trim().length > 0 
         ? req.body.message.trim().slice(0, 100) 
         : null;
@@ -277,7 +364,7 @@ app.post('/requests', async (req, res) => {
   }
 
   try {
-    // Redan delad position: ingen idé att fråga igen innan den gått ut
+    // 1. Target delar redan sin position med mig: ingen idé att fråga igen
     const active = await pool.query(
       `SELECT GREATEST(1, CEIL(EXTRACT(EPOCH FROM (expires_at - NOW())) / 60))::int AS minutes_left
          FROM public.position_requests
@@ -288,20 +375,45 @@ app.post('/requests', async (req, res) => {
     if (active.rows[0]) {
       const name = await getDisplayName(targetId);
       return res.status(409).json({
-        error: `${name} delar redan sin position med dig, ${active.rows[0].minutes_left} min kvar.`,
+        error: `${name} delar redan sin position med dig (${active.rows[0].minutes_left} min kvar).`,
         code: 'ALREADY_SHARING',
         minutes_left: active.rows[0].minutes_left,
       });
     }
 
-    // Återanvänd en redan väntande förfrågan i stället för att skapa dubbletter
+    // 2. Jag delar redan min position med target:
+    const myShare = await pool.query(
+      `SELECT GREATEST(1, CEIL(EXTRACT(EPOCH FROM (expires_at - NOW())) / 60))::int AS minutes_left
+         FROM public.position_requests
+        WHERE sender_id = $1 AND receiver_id = $2 AND location IS NOT NULL AND expires_at > NOW()
+        ORDER BY expires_at DESC LIMIT 1`,
+      [requesterId, targetId]
+    );
+    if (myShare.rows[0]) {
+      const name = await getDisplayName(targetId);
+      return res.status(409).json({
+        error: `Du delar redan din position med ${name} (${myShare.rows[0].minutes_left} min kvar).`,
+        code: 'ALREADY_SHARING',
+        minutes_left: myShare.rows[0].minutes_left,
+      });
+    }
+
+    // 3. Redan en väntande förfrågan till target:
     const existing = await pool.query(
-      `SELECT id, status, expires_at FROM public.location_requests
+      `SELECT id, status, GREATEST(1, CEIL(EXTRACT(EPOCH FROM (expires_at - NOW())) / 60))::int AS minutes_left
+         FROM public.location_requests
         WHERE requester_id = $1 AND target_id = $2 AND status = 'pending' AND expires_at > NOW()
         ORDER BY created_at DESC LIMIT 1`,
       [requesterId, targetId]
     );
-    if (existing.rows[0]) return res.json(existing.rows[0]);
+    if (existing.rows[0]) {
+      const name = await getDisplayName(targetId);
+      return res.status(409).json({
+        error: `Du har redan frågat ${name} (${existing.rows[0].minutes_left} min kvar att svara).`,
+        code: 'ALREADY_REQUESTED',
+        minutes_left: existing.rows[0].minutes_left,
+      });
+    }
 
     const result = await pool.query(
       `INSERT INTO public.location_requests (requester_id, target_id, expires_at)
@@ -429,11 +541,38 @@ app.get('/users/:id/inbox', async (req, res) => {
   }
 });
 
+// Automatisk städning av utgångna positioner och gamla förfrågningar
+async function cleanupExpiredData() {
+  try {
+    // 1. Rensa utgångna positionsdelningar (äldre än 15 minuter efter att de löpt ut)
+    const posRes = await pool.query(
+      `DELETE FROM public.position_requests WHERE expires_at < NOW() - INTERVAL '15 minutes'`
+    );
+    if (posRes.rowCount && posRes.rowCount > 0) {
+      console.log(`[Cleanup] Rensade ${posRes.rowCount} utgångna positionsdelningar.`);
+    }
+
+    // 2. Rensa gamla förfrågningar (äldre än 1 dygn)
+    await pool.query(
+      `DELETE FROM public.location_requests WHERE expires_at < NOW() - INTERVAL '1 day'`
+    );
+
+    // 3. Rensa gamla ping-cooldowns (äldre än 1 timme)
+    await pool.query(
+      `DELETE FROM public.signal_cooldowns WHERE last_sent < NOW() - INTERVAL '1 hour'`
+    );
+  } catch (error) {
+    console.warn('[Cleanup] Fel vid rensning av utgången data:', error);
+  }
+}
+
 ensurePushSchema()
   .catch(error => console.error('Kunde inte uppdatera schema:', error))
   .finally(() => {
     app.listen(port, () => {
       console.log(`API running on http://localhost:${port}`);
+      cleanupExpiredData();
+      setInterval(cleanupExpiredData, 1000 * 60 * 15); // Kör automatisk städning var 15:e minut
     });
   });
 

@@ -186,6 +186,7 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
                   ? 'Skicka en snabb notis till...'
                   : i18n.t('when_accept_see_position_10m')}
               </Text>
+              <Text style={styles.hint}>({i18n.t('long_press_hint')})</Text>
 
               <TextInput
                 style={styles.searchInput}
@@ -284,6 +285,11 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 14,
     color: '#666',
+    marginBottom: 4,
+  },
+  hint: {
+    fontSize: 13,
+    color: '#888',
     marginBottom: 15,
   },
   searchInput: {

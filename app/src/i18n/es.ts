@@ -38,4 +38,9 @@ export const es = {
   error: 'Algo salió mal',
   
   ad_space: 'Publicidad aquí',
+  bg_notification_title: 'Position está compartiendo tu ubicación',
+  bg_notification_body: 'Tu ubicación se actualiza en directo para tus contactos (10 min).',
+  long_press_hint: 'Mantén presionado el nombre para seleccionar varios',
+  ping_back: 'Devolver ping',
+  close: 'Cerrar',
 };

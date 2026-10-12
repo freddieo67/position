@@ -34,4 +34,9 @@ export const it = {
   you_and_name_see_each_other_10m: 'Tu e %{name} ora vedete le rispettive posizioni per 10 min.',
   error: 'Qualcosa è andato storto',
   ad_space: 'Pubblicità qui',
+  bg_notification_title: 'Position sta condividendo la tua posizione',
+  bg_notification_body: 'La tua posizione viene aggiornata in tempo reale per i tuoi contatti (10 min).',
+  long_press_hint: 'Tieni premuto sul nome per selezionarne più di uno',
+  ping_back: 'Rispondi al ping',
+  close: 'Chiudi',
 };

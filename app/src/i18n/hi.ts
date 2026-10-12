@@ -38,4 +38,9 @@ export const hi = {
   error: 'कुछ गलत हो गया',
   
   ad_space: 'यहाँ विज्ञापन',
+  bg_notification_title: 'Position आपकी लोकेशन साझा कर रहा है',
+  bg_notification_body: 'आपकी लोकेशन आपके संपर्कों के लिए लाइव अपडेट हो रही है (10 मिनट)।',
+  long_press_hint: 'एक से अधिक चुनने के लिए नाम को देर तक दबाएं',
+  ping_back: 'वापस पिंग करें',
+  close: 'बंद करें',
 };

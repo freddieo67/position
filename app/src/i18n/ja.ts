@@ -38,4 +38,9 @@ export const ja = {
   error: 'エラーが発生しました',
   
   ad_space: 'ここに広告',
+  bg_notification_title: 'Positionが位置情報を共有中',
+  bg_notification_body: '連絡先に位置情報がリアルタイムで更新されています（10分間）。',
+  long_press_hint: '名前を長押しして複数選択',
+  ping_back: 'Pingを返す',
+  close: '閉じる',
 };

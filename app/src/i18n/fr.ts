@@ -38,4 +38,9 @@ export const fr = {
   error: 'Un problème est survenu',
   
   ad_space: 'Publicité ici',
+  bg_notification_title: 'Position partage votre position',
+  bg_notification_body: 'Votre position est mise à jour en direct pour vos contacts (10 min).',
+  long_press_hint: 'Appui long sur le nom pour en sélectionner plusieurs',
+  ping_back: 'Renvoyer un ping',
+  close: 'Fermer',
 };

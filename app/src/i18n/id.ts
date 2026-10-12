@@ -38,4 +38,9 @@ export const id = {
   error: 'Terjadi kesalahan',
   
   ad_space: 'Ruang Iklan',
+  bg_notification_title: 'Position membagikan lokasi Anda',
+  bg_notification_body: 'Lokasi Anda diperbarui secara langsung untuk kontak Anda (10 mnt).',
+  long_press_hint: 'Tekan lama pada nama untuk memilih beberapa',
+  ping_back: 'Ping balik',
+  close: 'Tutup',
 };

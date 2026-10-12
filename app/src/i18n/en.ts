@@ -38,4 +38,9 @@ export const en = {
   error: 'Something went wrong',
   
   ad_space: 'Advertisement here',
+  bg_notification_title: 'Position is sharing your location',
+  bg_notification_body: 'Your location is updating live for your contacts (10 min).',
+  long_press_hint: 'Long press name to select multiple',
+  ping_back: 'Ping back',
+  close: 'Close',
 };

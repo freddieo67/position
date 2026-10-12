@@ -38,4 +38,9 @@ export const de = {
   error: 'Etwas ist schiefgelaufen',
   
   ad_space: 'Werbung hier',
+  bg_notification_title: 'Position teilt deinen Standort',
+  bg_notification_body: 'Dein Standort wird live für deine Kontakte aktualisiert (10 Min.).',
+  long_press_hint: 'Namen gedrückt halten, um mehrere auszuwählen',
+  ping_back: 'Zurückpingen',
+  close: 'Schließen',
 };

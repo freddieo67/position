@@ -38,4 +38,9 @@ export const ko = {
   error: '문제가 발생했습니다',
   
   ad_space: '여기에 광고',
+  bg_notification_title: 'Position에서 위치를 공유 중입니다',
+  bg_notification_body: '연락처에 실시간으로 위치가 업데이트됩니다 (10분).',
+  long_press_hint: '이름을 길게 눌러 여러 명 선택',
+  ping_back: '답장 핑 보내기',
+  close: '닫기',
 };

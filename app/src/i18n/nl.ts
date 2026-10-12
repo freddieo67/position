@@ -38,4 +38,9 @@ export const nl = {
   error: 'Er is iets misgegaan',
   
   ad_space: 'Advertentie hier',
+  bg_notification_title: 'Position deelt je locatie',
+  bg_notification_body: 'Je locatie wordt live bijgewerkt voor je contacten (10 min).',
+  long_press_hint: 'Druk lang op de naam om meerdere te selecteren',
+  ping_back: 'Terugpingen',
+  close: 'Sluiten',
 };

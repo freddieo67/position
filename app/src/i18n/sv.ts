@@ -43,4 +43,9 @@ export const sv = {
   
   // Map / General
   ad_space: 'Reklam visas här',
+  bg_notification_title: 'Position delar din plats',
+  bg_notification_body: 'Din plats uppdateras live för dina kontakter (10 min).',
+  long_press_hint: 'Långt tryck på namnet för att välja flera',
+  ping_back: 'Pinga tillbaka',
+  close: 'Stäng',
 };

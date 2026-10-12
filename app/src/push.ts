@@ -26,6 +26,18 @@ export function getNotifications(): typeof NotificationsType | null {
         shouldSetBadge: false,
       }),
     });
+
+    // Registrera åtgärdsknapp "Pinga tillbaka" på notiser
+    Notifications.setNotificationCategoryAsync('ping_category', [
+      {
+        identifier: 'reply_ping',
+        buttonTitle: 'Pinga tillbaka',
+        options: {
+          opensAppToForeground: true,
+        },
+      },
+    ]).catch(err => console.warn('Kunde inte sätta notification category:', err));
+
     cached = Notifications;
   } catch (error) {
     console.warn('Kunde inte ladda expo-notifications:', error);

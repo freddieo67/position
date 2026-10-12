@@ -8,10 +8,12 @@ import LeafletMap, { MapMarkerData, LeafletMapRef } from './src/components/Leafl
 import ContactsModal, { AppContact } from './src/components/ContactsModal';
 import RegisterScreen from './src/components/RegisterScreen';
 import PingModal from './src/components/PingModal';
+import ReceivedPingModal, { ReceivedPingData } from './src/components/ReceivedPingModal';
 import { api, Inbox, IncomingPosition, IncomingRequest, User } from './src/api';
 import { ApiError } from './src/config';
 import { clearUser, loadUser } from './src/session';
 import { getCurrentCoords } from './src/location';
+import { syncBackgroundLocation } from './src/backgroundLocation';
 import { SIGNALS } from './src/signals';
 import { registerForPushToken, getNotifications } from './src/push';
 import type * as NotificationsType from 'expo-notifications';
@@ -37,6 +39,7 @@ export default function App() {
   const [modalMode, setModalMode] = useState<'send' | 'request' | 'signal' | 'ping' | null>(null);
   const [pingModalVisible, setPingModalVisible] = useState(false);
   const [pingTarget, setPingTarget] = useState<AppContact[] | null>(null);
+  const [receivedPing, setReceivedPing] = useState<ReceivedPingData | null>(null);
   const [inbox, setInbox] = useState<Inbox>(EMPTY_INBOX);
 
   const mapRef = useRef<LeafletMapRef>(null);
@@ -97,6 +100,8 @@ export default function App() {
     if (!user) return;
     const coords = await getCurrentCoords(locationRef.current);
     await api.sharePosition({ sender_id: user.id, receiver_id: receiverId, request_id: requestId, message, ...coords });
+    const next = Array.from(new Set([...(sharingRef.current || []), receiverId]));
+    syncBackgroundLocation(next);
   }, [user]);
 
   const respondToRequest = useCallback(async (req: IncomingRequest, accept: boolean) => {
@@ -105,6 +110,8 @@ export default function App() {
       if (accept) {
         const coords = await getCurrentCoords(locationRef.current);
         await api.respondToRequest(req.id, { user_id: user.id, accept: true, ...coords });
+        const next = Array.from(new Set([...(sharingRef.current || []), req.requester_id]));
+        syncBackgroundLocation(next);
         Alert.alert(i18n.t('shared'), i18n.t('you_and_name_see_each_other_10m', { name: req.requester_name }));
       } else {
         await api.respondToRequest(req.id, { user_id: user.id, accept: false });
@@ -188,10 +195,21 @@ export default function App() {
   }, [user, handleInbox]);
 
   // Live-uppdatering av position var 60:e sekund för aktiva delningar (när appen är öppen)
+  // Samt synkronisering till bakgrundstjänsten
   const sharingRef = useRef<number[]>([]);
   useEffect(() => {
-    sharingRef.current = inbox.sharing || [];
-  }, [inbox.sharing]);
+    const sharing = inbox.sharing || [];
+    sharingRef.current = sharing;
+    if (user) {
+      syncBackgroundLocation(sharing);
+    }
+  }, [inbox.sharing, user]);
+
+  useEffect(() => {
+    if (!user) {
+      syncBackgroundLocation([]);
+    }
+  }, [user]);
 
   useEffect(() => {
     if (!user) return;
@@ -236,9 +254,38 @@ export default function App() {
 
     const handleResponse = async (response: NotificationsType.NotificationResponse) => {
       try {
-        const payload = response.notification.request.content.data as { type?: string; sender_id?: number };
+        const payload = response.notification.request.content.data as {
+          type?: string;
+          sender_id?: number;
+          sender_name?: string;
+          title?: string;
+          message?: string;
+        };
+
         if (payload?.type === 'share' && payload.sender_id) {
           pendingFocusSender.current = payload.sender_id;
+        } else if (payload?.type === 'signal' && payload.sender_id) {
+          const senderContact: AppContact = {
+            id: String(payload.sender_id),
+            userId: payload.sender_id,
+            name: payload.sender_name || 'En vän',
+            phoneNumber: '',
+          };
+
+          if (response.actionIdentifier === 'reply_ping') {
+            // Användaren tryckte på "Pinga tillbaka" direkt i notisen
+            setPingTarget([senderContact]);
+            setPingModalVisible(true);
+          } else {
+            // Användaren tryckte på själva notisen: visa vad personen skickade så det inte missas
+            const title = payload.title || response.notification.request.content.title || `${senderContact.name} pingade dig!`;
+            const message = payload.message || response.notification.request.content.body || '';
+            setReceivedPing({
+              title,
+              message,
+              sender: senderContact,
+            });
+          }
         }
         const data = await api.inbox(user.id);
         setInbox(data);
@@ -488,6 +535,17 @@ export default function App() {
           setPingModalVisible(false);
           const names = pingTarget?.map(t => t.name).join(', ') ?? '';
           Alert.alert('Skickat!', `Du pingade ${names}.`);
+        }}
+      />
+
+      <ReceivedPingModal
+        visible={receivedPing !== null}
+        data={receivedPing}
+        onClose={() => setReceivedPing(null)}
+        onReply={(sender) => {
+          setReceivedPing(null);
+          setPingTarget([sender]);
+          setPingModalVisible(true);
         }}
       />
 

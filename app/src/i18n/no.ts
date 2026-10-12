@@ -38,4 +38,9 @@ export const no = {
   error: 'Noe gikk galt',
   
   ad_space: 'Annonseplass',
+  bg_notification_title: 'Position deler posisjonen din',
+  bg_notification_body: 'Posisjonen din oppdateres live for kontaktene dine (10 min).',
+  long_press_hint: 'Trykk og hold på navnet for å velge flere',
+  ping_back: 'Ping tilbake',
+  close: 'Lukk',
 };

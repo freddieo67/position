@@ -34,4 +34,9 @@ export const pl = {
   you_and_name_see_each_other_10m: 'Ty i %{name} widzicie teraz swoje lokalizacje przez 10 minut.',
   error: 'Coś poszło nie tak',
   ad_space: 'Reklama tutaj',
+  bg_notification_title: 'Position udostępnia Twoją lokalizację',
+  bg_notification_body: 'Twoja lokalizacja jest aktualizowana na żywo dla Twoich kontaktów (10 min).',
+  long_press_hint: 'Przytrzymaj nazwisko, aby wybrać kilka osób',
+  ping_back: 'Odpowiedz pingiem',
+  close: 'Zamknij',
 };

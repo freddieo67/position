@@ -34,4 +34,9 @@ export const fi = {
   you_and_name_see_each_other_10m: 'Sinä ja %{name} näette nyt toistenne sijainnit 10 min ajan.',
   error: 'Jotain meni pieleen',
   ad_space: 'Mainokset täällä',
+  bg_notification_title: 'Position jakaa sijaintisi',
+  bg_notification_body: 'Sijaintisi päivittyy livenä yhteystiedoillesi (10 min).',
+  long_press_hint: 'Paina nimeä pitkään valitaksesi useita',
+  ping_back: 'Pingaa takaisin',
+  close: 'Sulje',
 };

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, Modal, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
+import { StyleSheet, Text, View, Modal, TouchableOpacity, TextInput, ActivityIndicator, Alert } from 'react-native';
 import { api } from '../api';
+import { ApiError } from '../config';
 
 import { AppContact } from './ContactsModal';
 
@@ -25,8 +26,11 @@ export default function PingModal({ visible, currentUserId, targets, onClose, on
       );
       setCustomText('');
       onSuccess();
-    } catch (error) {
-      alert('Kunde inte skicka ping.');
+    } catch (error: any) {
+      const msg = error instanceof ApiError && error.serverMessage 
+        ? error.serverMessage 
+        : (error?.serverMessage || error?.message || 'Kunde inte skicka ping.');
+      Alert.alert('Pinga', msg);
     } finally {
       setLoading(false);
     }
@@ -147,7 +151,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   sendBtn: {
-    backgroundColor: '#FFD700',
+    backgroundColor: '#805d7e',
     padding: 14,
     borderRadius: 12,
     alignItems: 'center',
@@ -159,7 +163,7 @@ const styles = StyleSheet.create({
   sendBtnText: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#000',
+    color: '#fff',
   },
   closeBtn: {
     padding: 14,
