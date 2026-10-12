@@ -53,15 +53,16 @@ async function insertShare(
   senderId: number,
   receiverId: number,
   coords: Coords,
-  requestId: number | null
+  requestId: number | null,
+  message: string | null = null
 ) {
   const result = await client.query(
     `INSERT INTO public.position_requests
-       (sender_id, receiver_id, location, accuracy_meters, expires_at, shared_at, status, request_id)
+       (sender_id, receiver_id, location, accuracy_meters, expires_at, shared_at, status, request_id, message)
      VALUES
-       ($1, $2, ST_SetSRID(ST_MakePoint($3, $4), 4326), $5, NOW() + make_interval(mins => $6::int), NOW(), 'shared', $7)
-     RETURNING id, expires_at`,
-    [senderId, receiverId, coords.longitude, coords.latitude, coords.accuracy_meters, SHARE_MINUTES, requestId]
+       ($1, $2, ST_SetSRID(ST_MakePoint($3, $4), 4326), $5, NOW() + make_interval(mins => $6::int), NOW(), 'shared', $7, $8)
+     RETURNING id, expires_at, message`,
+    [senderId, receiverId, coords.longitude, coords.latitude, coords.accuracy_meters, SHARE_MINUTES, requestId, message]
   );
   return result.rows[0];
 }
@@ -310,6 +311,10 @@ app.post('/position/share', async (req, res) => {
       });
     }
 
+    const customMsg = typeof req.body.message === 'string' && req.body.message.trim().length > 0 
+      ? req.body.message.trim().slice(0, 100) 
+      : null;
+
     let share;
     if (isBackgroundLiveUpdate && activeShare.rows[0]?.id) {
       // UPPDATERA befintlig rad istället för att skapa en ny rad var 30-60 sekund!
@@ -319,12 +324,12 @@ app.post('/position/share', async (req, res) => {
                 accuracy_meters = $3,
                 shared_at = NOW()
           WHERE id = $4
-          RETURNING id, expires_at`,
+          RETURNING id, expires_at, message`,
         [coords.longitude, coords.latitude, coords.accuracy_meters, activeShare.rows[0].id]
       );
       share = updated.rows[0];
     } else {
-      share = await insertShare(client, senderId, receiverId, coords, requestId);
+      share = await insertShare(client, senderId, receiverId, coords, requestId, customMsg);
     }
 
     await client.query('COMMIT');
@@ -332,10 +337,6 @@ app.post('/position/share', async (req, res) => {
     
     // Skicka bara notis vid NY manuell delning (inte tysta bakgrundsuppdateringar eller motdelning efter svar)
     if (requestId === null && !isBackgroundLiveUpdate) {
-      const customMsg = typeof req.body.message === 'string' && req.body.message.trim().length > 0 
-        ? req.body.message.trim().slice(0, 100) 
-        : null;
-        
       getDisplayName(senderId).then(name => {
         const bodyText = customMsg ? `Meddelande: ${customMsg}` : 'Öppna appen för att se var hen är.';
         sendPush(receiverId, `${name} delade sin position`, bodyText, { type: 'share', sender_id: senderId });
@@ -462,16 +463,25 @@ app.post('/requests/:id/respond', async (req, res) => {
       return res.status(409).json({ error: 'Request not found, already answered or expired' });
     }
 
+    const customMsg = typeof req.body.message === 'string' && req.body.message.trim().length > 0 
+      ? req.body.message.trim().slice(0, 100) 
+      : null;
+
     let share = null;
     if (accept) {
-      share = await insertShare(client, userId, updated.rows[0].requester_id, coords!, requestId);
+      share = await insertShare(client, userId, updated.rows[0].requester_id, coords!, requestId, customMsg);
     }
     await client.query('COMMIT');
     res.json({ status: accept ? 'accepted' : 'declined', share });
     const requesterId: number = updated.rows[0].requester_id;
     getDisplayName(userId).then(name =>
       accept
-        ? sendPush(requesterId, `${name} delade sin position`, 'Öppna appen för att se var hen är.', { type: 'share', sender_id: userId })
+        ? sendPush(
+            requesterId,
+            `${name} delade sin position`,
+            customMsg ? `Meddelande: ${customMsg}` : 'Öppna appen för att se var hen är.',
+            { type: 'share', sender_id: userId }
+          )
         : sendPush(requesterId, 'Nekad', `${name} valde att inte dela sin position.`, { type: 'declined' })
     );
   } catch (error) {
@@ -497,7 +507,7 @@ app.get('/users/:id/inbox', async (req, res) => {
         `SELECT DISTINCT ON (p.sender_id)
                 p.id, p.sender_id, u.display_name AS sender_name,
                 ST_Y(p.location) AS latitude, ST_X(p.location) AS longitude,
-                p.accuracy_meters, p.shared_at, p.expires_at
+                p.accuracy_meters, p.shared_at, p.expires_at, p.message
            FROM public.position_requests p
            JOIN public.users u ON u.id = p.sender_id
           WHERE p.receiver_id = $1 AND p.expires_at > NOW() AND p.location IS NOT NULL

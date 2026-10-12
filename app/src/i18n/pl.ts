@@ -39,4 +39,6 @@ export const pl = {
   long_press_hint: 'Przytrzymaj nazwisko, aby wybrać kilka osób',
   ping_back: 'Odpowiedz pingiem',
   close: 'Zamknij',
+  optional_message_placeholder: "Opcjonalna wiadomość (np. Siedzę w kawiarni...)",
+  share_with_message: "Udostępnij z wiadomością",
 };

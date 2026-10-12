@@ -39,4 +39,6 @@ export const fi = {
   long_press_hint: 'Paina nimeä pitkään valitaksesi useita',
   ping_back: 'Pingaa takaisin',
   close: 'Sulje',
+  optional_message_placeholder: "Valinnainen viesti (esim. Istun kahvilassa...)",
+  share_with_message: "Jaa viestin kanssa",
 };

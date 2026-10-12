@@ -43,4 +43,6 @@ export const pt = {
   long_press_hint: 'Pressione longamente o nome para selecionar vários',
   ping_back: 'Enviar ping de volta',
   close: 'Fechar',
+  optional_message_placeholder: "Mensagem opcional (ex. Sentado no café...)",
+  share_with_message: "Compartilhar com mensagem",
 };

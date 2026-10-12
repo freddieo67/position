@@ -22,6 +22,7 @@ export interface IncomingPosition {
   accuracy_meters: number | null;
   shared_at: string;
   expires_at: string;
+  message?: string | null;
 }
 
 // Någon vill se min position
@@ -67,7 +68,7 @@ export const api = {
   requestPosition: (requester_id: number, target_id: number) =>
     apiPost<{ id: number; status: string; expires_at: string }>('/requests', { requester_id, target_id }),
 
-  respondToRequest: (requestId: number, body: { user_id: number; accept: boolean } & Partial<Coords>) =>
+  respondToRequest: (requestId: number, body: { user_id: number; accept: boolean; message?: string } & Partial<Coords>) =>
     apiPost<{ status: string }>(`/requests/${requestId}/respond`, body),
 
   inbox: (userId: number) => apiGet<Inbox>(`/users/${userId}/inbox`),

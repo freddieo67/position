@@ -2,9 +2,10 @@ import { pool } from './db';
 
 const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';
 
-// Skapar token-kolumnen och cooldown-tabeller om de saknas (körs vid uppstart)
+// Skapar token-kolumnen, cooldown-tabeller och ev. saknade kolumner (körs vid uppstart)
 export async function ensurePushSchema() {
   await pool.query('ALTER TABLE public.users ADD COLUMN IF NOT EXISTS expo_push_token TEXT');
+  await pool.query('ALTER TABLE public.position_requests ADD COLUMN IF NOT EXISTS message TEXT');
   await pool.query(`
     CREATE TABLE IF NOT EXISTS public.signal_cooldowns (
       sender_id   INTEGER NOT NULL,

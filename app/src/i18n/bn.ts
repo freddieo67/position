@@ -43,4 +43,6 @@ export const bn = {
   long_press_hint: 'একাধিক নির্বাচন করতে নামের উপর দীর্ঘক্ষণ চেপে ধরুন',
   ping_back: 'ফিরতি পিং পাঠান',
   close: 'বন্ধ করুন',
+  optional_message_placeholder: "ঐচ্ছিক বার্তা (যেমন ক্যাফেতে বসে আছি...)",
+  share_with_message: "বার্তা সহ শেয়ার করুন",
 };

@@ -43,4 +43,6 @@ export const es = {
   long_press_hint: 'Mantén presionado el nombre para seleccionar varios',
   ping_back: 'Devolver ping',
   close: 'Cerrar',
+  optional_message_placeholder: "Mensaje opcional (ej. Estoy en la cafetería...)",
+  share_with_message: "Compartir con mensaje",
 };

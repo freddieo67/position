@@ -39,4 +39,6 @@ export const it = {
   long_press_hint: 'Tieni premuto sul nome per selezionarne più di uno',
   ping_back: 'Rispondi al ping',
   close: 'Chiudi',
+  optional_message_placeholder: "Messaggio opzionale (es. Sono al bar...)",
+  share_with_message: "Condividi con messaggio",
 };

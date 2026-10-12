@@ -43,4 +43,6 @@ export const de = {
   long_press_hint: 'Namen gedrückt halten, um mehrere auszuwählen',
   ping_back: 'Zurückpingen',
   close: 'Schließen',
+  optional_message_placeholder: "Optionale Nachricht (z. B. Sitze im Café...)",
+  share_with_message: "Mit Nachricht teilen",
 };

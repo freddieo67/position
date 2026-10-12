@@ -43,4 +43,6 @@ export const hi = {
   long_press_hint: 'एक से अधिक चुनने के लिए नाम को देर तक दबाएं',
   ping_back: 'वापस पिंग करें',
   close: 'बंद करें',
+  optional_message_placeholder: "वैकल्पिक संदेश (उदा. कैफे में बैठा हूँ...)",
+  share_with_message: "संदेश के साथ साझा करें",
 };

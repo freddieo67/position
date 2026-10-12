@@ -43,4 +43,6 @@ export const ko = {
   long_press_hint: '이름을 길게 눌러 여러 명 선택',
   ping_back: '답장 핑 보내기',
   close: '닫기',
+  optional_message_placeholder: "선택 메시지 (예: 카페에 있어요...)",
+  share_with_message: "메시지와 함께 공유",
 };

@@ -8,7 +8,13 @@
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.xspecio.position"
+      "bundleIdentifier": "com.xspecio.position",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Position behöver din plats för att dela den med dina vänner.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Position behöver din plats i bakgrunden för att kunna uppdatera positionen i 10 minuter.",
+        "NSContactsUsageDescription": "Position behöver tillgång till dina kontakter så att du kan hitta vänner och dela position.",
+        "UIBackgroundModes": ["location"]
+      }
     },
     "android": {
 

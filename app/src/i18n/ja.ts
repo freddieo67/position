@@ -43,4 +43,6 @@ export const ja = {
   long_press_hint: '名前を長押しして複数選択',
   ping_back: 'Pingを返す',
   close: '閉じる',
+  optional_message_placeholder: "任意のメッセージ（例：カフェにいます...）",
+  share_with_message: "メッセージを付けて共有",
 };

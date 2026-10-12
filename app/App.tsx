@@ -9,6 +9,7 @@ import ContactsModal, { AppContact } from './src/components/ContactsModal';
 import RegisterScreen from './src/components/RegisterScreen';
 import PingModal from './src/components/PingModal';
 import ReceivedPingModal, { ReceivedPingData } from './src/components/ReceivedPingModal';
+import IncomingRequestModal from './src/components/IncomingRequestModal';
 import { api, Inbox, IncomingPosition, IncomingRequest, User } from './src/api';
 import { ApiError } from './src/config';
 import { clearUser, loadUser } from './src/session';
@@ -41,10 +42,13 @@ export default function App() {
   const [pingTarget, setPingTarget] = useState<AppContact[] | null>(null);
   const [receivedPing, setReceivedPing] = useState<ReceivedPingData | null>(null);
   const [inbox, setInbox] = useState<Inbox>(EMPTY_INBOX);
+  const [pendingRequest, setPendingRequest] = useState<IncomingRequest | null>(null);
+  const [isRespondingRequest, setIsRespondingRequest] = useState(false);
 
   const mapRef = useRef<LeafletMapRef>(null);
   const locationRef = useRef<Location.LocationObject | null>(null);
   const refreshRef = useRef<() => void>(() => {});
+  const pendingRequestRef = useRef<IncomingRequest | null>(null);
   // Håller koll på vad vi redan hanterat så att inget visas eller skickas dubbelt
   const promptedRequests = useRef(new Set<number>());
   const reciprocatedRequests = useRef(new Set<number>());
@@ -104,38 +108,39 @@ export default function App() {
     syncBackgroundLocation(next);
   }, [user]);
 
-  const respondToRequest = useCallback(async (req: IncomingRequest, accept: boolean) => {
+  const respondToRequest = useCallback(async (req: IncomingRequest, accept: boolean, message?: string) => {
     if (!user) return;
+    setIsRespondingRequest(true);
     try {
       if (accept) {
         const coords = await getCurrentCoords(locationRef.current);
-        await api.respondToRequest(req.id, { user_id: user.id, accept: true, ...coords });
+        await api.respondToRequest(req.id, { user_id: user.id, accept: true, message, ...coords });
         const next = Array.from(new Set([...(sharingRef.current || []), req.requester_id]));
         syncBackgroundLocation(next);
         Alert.alert(i18n.t('shared'), i18n.t('you_and_name_see_each_other_10m', { name: req.requester_name }));
       } else {
         await api.respondToRequest(req.id, { user_id: user.id, accept: false });
       }
+      pendingRequestRef.current = null;
+      setPendingRequest(null);
       refreshRef.current();
     } catch (error) {
       Alert.alert('Kunde inte svara', errorText(error));
+    } finally {
+      setIsRespondingRequest(false);
     }
   }, [user]);
 
   const handleInbox = useCallback((data: Inbox) => {
-    // Inkommande förfrågningar: fråga en gång per förfrågan
-    for (const req of data.requests) {
-      if (promptedRequests.current.has(req.id)) continue;
-      promptedRequests.current.add(req.id);
-      Alert.alert(
-        i18n.t('wants_to_see_position', { name: req.requester_name }),
-        i18n.t('if_share_see_each_other_10m'),
-        [
-          { text: i18n.t('deny'), style: 'cancel', onPress: () => respondToRequest(req, false) },
-          { text: i18n.t('share'), onPress: () => respondToRequest(req, true) },
-        ],
-        { cancelable: false }
-      );
+    // Inkommande förfrågningar: visa dialog en i taget
+    if (!pendingRequestRef.current) {
+      for (const req of data.requests) {
+        if (promptedRequests.current.has(req.id)) continue;
+        promptedRequests.current.add(req.id);
+        pendingRequestRef.current = req;
+        setPendingRequest(req);
+        break;
+      }
     }
 
     // Mina förfrågningar
@@ -443,7 +448,7 @@ export default function App() {
                   id: String(pos.sender_id),
                   lat: pos.latitude,
                   lng: pos.longitude,
-                  title: pos.sender_name,
+                  title: pos.message ? `${pos.sender_name}: "${pos.message}"` : pos.sender_name,
                   color: '#FF3B30',
                   emoji: '🐷'
                 }))
@@ -464,6 +469,11 @@ export default function App() {
             <View key={`card-${pos.sender_id}`} style={styles.shareCard}>
               <TouchableOpacity style={{ flex: 1 }} onPress={() => focusOn(pos)}>
                 <Text style={styles.shareName}>{pos.sender_name}</Text>
+                {Boolean(pos.message) && (
+                  <Text style={styles.shareMessage} numberOfLines={2}>
+                    💬 "{pos.message}"
+                  </Text>
+                )}
                 <Text style={styles.shareMeta}>Delar sin position · {minutesLeft(pos.expires_at)} min kvar</Text>
               </TouchableOpacity>
               {!inbox.sharing?.includes(pos.sender_id) && (
@@ -549,6 +559,13 @@ export default function App() {
         }}
       />
 
+      <IncomingRequestModal
+        request={pendingRequest}
+        loading={isRespondingRequest}
+        onAccept={(req, msg) => respondToRequest(req, true, msg)}
+        onDecline={(req) => respondToRequest(req, false)}
+      />
+
       <StatusBar style="auto" />
     </View>
   );
@@ -603,6 +620,13 @@ const styles = StyleSheet.create({
   shareName: {
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  shareMessage: {
+    fontSize: 13,
+    color: '#444',
+    fontStyle: 'italic',
+    marginTop: 2,
+    marginBottom: 2,
   },
   shareMeta: {
     fontSize: 13,

@@ -43,4 +43,6 @@ export const no = {
   long_press_hint: 'Trykk og hold på navnet for å velge flere',
   ping_back: 'Ping tilbake',
   close: 'Lukk',
+  optional_message_placeholder: "Valgfri melding (f.eks. Sitter på kaféen...)",
+  share_with_message: "Del med melding",
 };

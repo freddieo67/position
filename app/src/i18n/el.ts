@@ -43,4 +43,6 @@ export const el = {
   long_press_hint: 'Πατήστε παρατεταμένα στο όνομα για να επιλέξετε πολλά',
   ping_back: 'Απάντηση με ping',
   close: 'Κλείσιμο',
+  optional_message_placeholder: "Προαιρετικό μήνυμα (π.χ. Κάθομαι στην καφετέρια...)",
+  share_with_message: "Κοινοποίηση με μήνυμα",
 };

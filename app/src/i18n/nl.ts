@@ -43,4 +43,6 @@ export const nl = {
   long_press_hint: 'Druk lang op de naam om meerdere te selecteren',
   ping_back: 'Terugpingen',
   close: 'Sluiten',
+  optional_message_placeholder: "Optioneel bericht (bijv. Zit in het café...)",
+  share_with_message: "Delen met bericht",
 };

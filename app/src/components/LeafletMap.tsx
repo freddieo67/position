@@ -68,40 +68,49 @@ const LeafletMap = React.forwardRef<LeafletMapRef, Props>(({ centerLat, centerLn
         var markers = {};
 
         function updateMarkers(newMarkers) {
-          // Rensa gamla
-          for (var id in markers) {
-            map.removeLayer(markers[id]);
-          }
-          markers = {};
-          
-          // Lägg till nya
-          newMarkers.forEach(m => {
+          var newIds = {};
+          newMarkers.forEach(function(m) {
+            newIds[m.id] = true;
             var isUser = m.id === 'me';
-            var marker;
-            if (m.emoji) {
-              var nameHtml = !isUser && m.title ? '<div style="margin-top:-4px;font-size:11px;font-weight:600;color:#fff;background:rgba(0,0,0,0.6);padding:2px 6px;border-radius:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:70px;text-align:center;">' + m.title.split(' ')[0] + '</div>' : '';
-
-              marker = L.marker([m.lat, m.lng], {
-                icon: L.divIcon({
-                  className: '',
-                  html: '<div style="display:flex;flex-direction:column;align-items:center;width:80px;justify-content:center;"><div style="font-size:44px;line-height:44px;text-align:center;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.45));">' + m.emoji + '</div>' + nameHtml + '</div>',
-                  iconSize: [80, 80],
-                  iconAnchor: [40, 44],
-                  popupAnchor: [0, -30],
-                }),
-              });
+            if (markers[m.id]) {
+              markers[m.id].setLatLng([m.lat, m.lng]);
+              if (markers[m.id].getPopup()) {
+                markers[m.id].getPopup().setContent(m.title);
+              }
             } else {
-              marker = L.circleMarker([m.lat, m.lng], {
-                color: m.color,
-                fillColor: m.color,
-                fillOpacity: 1,
-                radius: isUser ? 6 : 8,
-                weight: isUser ? 2 : 0,
-              });
+              var marker;
+              if (m.emoji) {
+                var nameHtml = !isUser && m.title ? '<div style="margin-top:-4px;font-size:11px;font-weight:600;color:#fff;background:rgba(0,0,0,0.6);padding:2px 6px;border-radius:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:70px;text-align:center;">' + m.title.split(' ')[0] + '</div>' : '';
+
+                marker = L.marker([m.lat, m.lng], {
+                  icon: L.divIcon({
+                    className: '',
+                    html: '<div style="display:flex;flex-direction:column;align-items:center;width:80px;justify-content:center;"><div style="font-size:44px;line-height:44px;text-align:center;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.45));">' + m.emoji + '</div>' + nameHtml + '</div>',
+                    iconSize: [80, 80],
+                    iconAnchor: [40, 44],
+                    popupAnchor: [0, -30],
+                  }),
+                });
+              } else {
+                marker = L.circleMarker([m.lat, m.lng], {
+                  color: m.color,
+                  fillColor: m.color,
+                  fillOpacity: 1,
+                  radius: isUser ? 6 : 8,
+                  weight: isUser ? 2 : 0,
+                });
+              }
+              marker.addTo(map).bindPopup(m.title);
+              markers[m.id] = marker;
             }
-            marker.addTo(map).bindPopup(m.title);
-            markers[m.id] = marker;
           });
+
+          for (var id in markers) {
+            if (!newIds[id]) {
+              map.removeLayer(markers[id]);
+              delete markers[id];
+            }
+          }
         }
       </script>
     </body>

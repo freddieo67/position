@@ -48,4 +48,6 @@ export const sv = {
   long_press_hint: 'Långt tryck på namnet för att välja flera',
   ping_back: 'Pinga tillbaka',
   close: 'Stäng',
+  optional_message_placeholder: "Valfritt meddelande (t.ex. Sitter på caféet...)",
+  share_with_message: "Dela med meddelande",
 };

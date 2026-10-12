@@ -39,4 +39,6 @@ export const da = {
   long_press_hint: 'Hold nede på navnet for at vælge flere',
   ping_back: 'Ping tilbage',
   close: 'Luk',
+  optional_message_placeholder: "Valgfri besked (f.eks. Sidder på caféen...)",
+  share_with_message: "Del med besked",
 };

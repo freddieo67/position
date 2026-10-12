@@ -43,4 +43,6 @@ export const id = {
   long_press_hint: 'Tekan lama pada nama untuk memilih beberapa',
   ping_back: 'Ping balik',
   close: 'Tutup',
+  optional_message_placeholder: "Pesan opsional (mis. Duduk di kafe...)",
+  share_with_message: "Bagikan dengan pesan",
 };

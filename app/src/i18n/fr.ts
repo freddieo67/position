@@ -43,4 +43,6 @@ export const fr = {
   long_press_hint: 'Appui long sur le nom pour en sélectionner plusieurs',
   ping_back: 'Renvoyer un ping',
   close: 'Fermer',
+  optional_message_placeholder: "Message facultatif (ex. Assis au café...)",
+  share_with_message: "Partager avec un message",
 };
