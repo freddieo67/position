@@ -17,7 +17,7 @@ export const es = {
   write_custom_message: 'Escribe un mensaje...',
   write_short_message: 'Escribe un mensaje corto para la notificación.',
   eg_see_you_bar: 'Ej. ¡Nos vemos en el bar!',
-  send_position_and_message: 'Enviar ubicación y mensaje',
+  send_position_and_message: "Compartir ubicación y mensaje",
   back: 'Atrás',
   signal_beer: '¿Tomamos una cerveza?',
   signal_hug: 'Dar un abrazo',

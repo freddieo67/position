@@ -17,7 +17,7 @@ export const nl = {
   write_custom_message: 'Schrijf een aangepast bericht...',
   write_short_message: 'Schrijf een kort bericht om in de melding te sturen.',
   eg_see_you_bar: 'Bijv. Zie je in de bar!',
-  send_position_and_message: 'Stuur locatie en bericht',
+  send_position_and_message: "Deel locatie en bericht",
   back: 'Terug',
   signal_beer: 'Biertje drinken?',
   signal_hug: 'Geef een knuffel',

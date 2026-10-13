@@ -17,7 +17,7 @@ export const en = {
   write_custom_message: 'Write a custom message...',
   write_short_message: 'Write a short message to send in the notification.',
   eg_see_you_bar: 'E.g. See you at the bar!',
-  send_position_and_message: 'Send location and message',
+  send_position_and_message: "Share location and message",
   back: 'Back',
   signal_beer: 'Grab a beer?',
   signal_hug: 'Give a hug',

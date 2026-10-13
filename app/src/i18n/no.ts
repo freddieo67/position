@@ -17,7 +17,7 @@ export const no = {
   write_custom_message: 'Skriv en egendefinert melding...',
   write_short_message: 'Skriv en kort melding for å sende i varselet.',
   eg_see_you_bar: 'F.eks. Sees på baren!',
-  send_position_and_message: 'Send posisjon og melding',
+  send_position_and_message: "Del posisjon og melding",
   back: 'Tilbake',
   signal_beer: 'Ta en øl?',
   signal_hug: 'Gi en klem',

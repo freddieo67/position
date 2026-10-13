@@ -17,7 +17,7 @@ export const el = {
   write_custom_message: 'Γράψτε ένα προσαρμοσμένο μήνυμα...',
   write_short_message: 'Γράψτε ένα σύντομο μήνυμα για να σταλεί στην ειδοποίηση.',
   eg_see_you_bar: 'Π.χ. Τα λέμε στο μπαρ!',
-  send_position_and_message: 'Αποστολή τοποθεσίας και μηνύματος',
+  send_position_and_message: "Κοινοποίηση τοποθεσίας και μηνύματος",
   back: 'Πίσω',
   signal_beer: 'Πάμε για μπύρα;',
   signal_hug: 'Δώσε μια αγκαλιά',

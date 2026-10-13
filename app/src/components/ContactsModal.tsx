@@ -108,7 +108,7 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
         <View style={styles.modalContent}>
           {chosenContacts.length > 0 ? (
             <View>
-              <Text style={styles.title}>{i18n.t('send_to')} {chosenContacts.map(c => c.name).join(', ')}</Text>
+              <Text style={styles.title}>{mode === 'send' ? 'Dela med' : i18n.t('send_to')} {chosenContacts.map(c => c.name).join(', ')}</Text>
               
               {showCustomMessageInput ? (
                 <View>
@@ -121,7 +121,7 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
                     autoFocus
                   />
                   <TouchableOpacity
-                    style={[styles.closeButton, { backgroundColor: '#007AFF', marginTop: 10 }]}
+                    style={[styles.closeButton, { backgroundColor: '#805d73', marginTop: 10 }]}
                     onPress={() => onSelect(chosenContacts, 'custom', customMessageText)}
                   >
                     <Text style={styles.closeButtonText}>{i18n.t('send_position_and_message')}</Text>
@@ -175,7 +175,7 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
           ) : (
             <>
               <Text style={styles.title}>
-                {mode === 'send' ? 'Skicka position till...' : mode === 'signal' ? 'Skicka signal till...' : mode === 'ping' ? 'Pinga...' : 'Begär position från...'}
+                {mode === 'send' ? 'Dela position med...' : mode === 'signal' ? 'Skicka signal till...' : mode === 'ping' ? 'Pinga...' : 'Begär position från...'}
               </Text>
               <Text style={styles.subtitle}>
                 {mode === 'send'

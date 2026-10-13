@@ -15,7 +15,7 @@ export const pl = {
   write_custom_message: 'Napisz wiadomość...',
   write_short_message: 'Napisz krótką wiadomość do powiadomienia.',
   eg_see_you_bar: 'Np. Do zobaczenia w barze!',
-  send_position_and_message: 'Wyślij lokalizację i wiadomość',
+  send_position_and_message: "Udostępnij lokalizację i wiadomość",
   back: 'Wstecz',
   signal_beer: 'Idziemy na piwo?',
   signal_hug: 'Daj przytulasa',

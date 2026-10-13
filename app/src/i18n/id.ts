@@ -17,7 +17,7 @@ export const id = {
   write_custom_message: 'Tulis pesan khusus...',
   write_short_message: 'Tulis pesan singkat untuk dikirim dalam pemberitahuan.',
   eg_see_you_bar: 'Contoh: Sampai jumpa di bar!',
-  send_position_and_message: 'Kirim lokasi dan pesan',
+  send_position_and_message: "Bagikan lokasi dan pesan",
   back: 'Kembali',
   signal_beer: 'Minum bir?',
   signal_hug: 'Beri pelukan',

@@ -15,7 +15,7 @@ export const da = {
   write_custom_message: 'Skriv en besked...',
   write_short_message: 'Skriv en kort besked til notifikationen.',
   eg_see_you_bar: 'F.eks. Vi ses i baren!',
-  send_position_and_message: 'Send placering og besked',
+  send_position_and_message: "Del placering og besked",
   back: 'Tilbage',
   signal_beer: 'Tage en øl?',
   signal_hug: 'Giv et kram',

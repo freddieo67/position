@@ -17,7 +17,7 @@ export const ja = {
   write_custom_message: 'カスタムメッセージを書く...',
   write_short_message: '通知で送信する短いメッセージを書いてください。',
   eg_see_you_bar: '例：バーで会いましょう！',
-  send_position_and_message: '位置情報とメッセージを送信',
+  send_position_and_message: "位置情報とメッセージを共有",
   back: '戻る',
   signal_beer: 'ビールを飲む？',
   signal_hug: 'ハグをする',

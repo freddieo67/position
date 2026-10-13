@@ -15,7 +15,7 @@ export const fi = {
   write_custom_message: 'Kirjoita viesti...',
   write_short_message: 'Kirjoita lyhyt viesti ilmoitukseen.',
   eg_see_you_bar: 'Esim. Nähdään baarissa!',
-  send_position_and_message: 'Lähetä sijainti ja viesti',
+  send_position_and_message: "Jaa sijainti ja viesti",
   back: 'Takaisin',
   signal_beer: 'Otetaanko olut?',
   signal_hug: 'Anna halaus',

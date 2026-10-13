@@ -17,7 +17,7 @@ export const bn = {
   write_custom_message: 'একটি কাস্টম বার্তা লিখুন...',
   write_short_message: 'বিজ্ঞপ্তিতে পাঠানোর জন্য একটি ছোট বার্তা লিখুন।',
   eg_see_you_bar: 'যেমন: বারে দেখা হবে!',
-  send_position_and_message: 'অবস্থান এবং বার্তা পাঠান',
+  send_position_and_message: "অবস্থান এবং বার্তা শেয়ার করুন",
   back: 'ফিরে যান',
   signal_beer: 'বিয়ার খাবেন?',
   signal_hug: 'একটি আলিঙ্গন দিন',

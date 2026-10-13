@@ -17,7 +17,7 @@ export const de = {
   write_custom_message: 'Eigene Nachricht schreiben...',
   write_short_message: 'Schreibe eine kurze Nachricht für die Benachrichtigung.',
   eg_see_you_bar: 'Z.B. Wir sehen uns an der Bar!',
-  send_position_and_message: 'Standort und Nachricht senden',
+  send_position_and_message: "Standort und Nachricht teilen",
   back: 'Zurück',
   signal_beer: 'Ein Bier trinken?',
   signal_hug: 'Umarmung geben',

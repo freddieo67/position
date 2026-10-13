@@ -17,7 +17,7 @@ export const hi = {
   write_custom_message: 'एक कस्टम संदेश लिखें...',
   write_short_message: 'सूचना में भेजने के लिए एक छोटा संदेश लिखें।',
   eg_see_you_bar: 'उदा. बार में मिलते हैं!',
-  send_position_and_message: 'स्थान और संदेश भेजें',
+  send_position_and_message: "स्थान और संदेश साझा करें",
   back: 'पीछे',
   signal_beer: 'एक बीयर पियें?',
   signal_hug: 'गले लगाओ',

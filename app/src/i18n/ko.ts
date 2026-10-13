@@ -17,7 +17,7 @@ export const ko = {
   write_custom_message: '맞춤 메시지 작성...',
   write_short_message: '알림에 보낼 짧은 메시지를 작성하세요.',
   eg_see_you_bar: '예: 바에서 보자!',
-  send_position_and_message: '위치 및 메시지 보내기',
+  send_position_and_message: "위치 및 메시지 공유",
   back: '뒤로',
   signal_beer: '맥주 한잔?',
   signal_hug: '포옹하기',

@@ -20,7 +20,7 @@ export const sv = {
   write_custom_message: 'Skriv eget meddelande...',
   write_short_message: 'Skriv ett kort meddelande som skickas i notisen.',
   eg_see_you_bar: 'T.ex. Vi ses vid baren!',
-  send_position_and_message: 'Skicka position och meddelande',
+  send_position_and_message: "Dela position och meddelande",
   back: 'Tillbaka',
   signal_beer: 'Ta en öl?',
   signal_hug: 'Ge en kram',

@@ -385,15 +385,15 @@ export default function App() {
       if (modalMode === 'send') {
         if (signalType === 'custom' && message) {
           for (const contact of contacts) await shareTo(contact.userId, null, message);
-          Alert.alert(i18n.t('sent'), `${i18n.t('position_shared_with_message')} "${message}"`);
+          Alert.alert(i18n.t('shared'), `${i18n.t('position_shared_with_message')} "${message}"`);
         } else {
           for (const contact of contacts) await shareTo(contact.userId);
           if (signalType && signalType !== 'none') {
             for (const contact of contacts) await api.sendSignal(user.id, contact.userId, signalType);
             const sent = SIGNALS.find(s => s.type === signalType);
-            Alert.alert(i18n.t('sent'), i18n.t('position_shared_signal', { emoji: sent?.emoji ?? '', name: names }));
+            Alert.alert(i18n.t('shared'), i18n.t('position_shared_signal', { emoji: sent?.emoji ?? '', name: names }));
           } else {
-            Alert.alert(i18n.t('sent'), i18n.t('sees_your_position_10m', { name: names }));
+            Alert.alert(i18n.t('shared'), i18n.t('sees_your_position_10m', { name: names }));
           }
         }
       } else {
@@ -512,7 +512,7 @@ export default function App() {
               </TouchableOpacity>
               {!inbox.sharing?.includes(pos.sender_id) && (
                 <TouchableOpacity style={styles.smallButton} onPress={() => sendBack(pos)}>
-                  <Text style={styles.smallButtonText}>Skicka tillbaka</Text>
+                  <Text style={styles.smallButtonText}>Dela tillbaka</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -565,7 +565,7 @@ export default function App() {
             style={[styles.actionButton, styles.sendButton]} 
             onPress={() => openModal('send')}
           >
-            <Text style={styles.buttonText}>Skicka</Text>
+            <Text style={styles.buttonText}>{i18n.t('share')}</Text>
           </TouchableOpacity>
         </View>
       </View>
