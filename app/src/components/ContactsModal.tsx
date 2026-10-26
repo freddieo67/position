@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Modal, View, Text, StyleSheet, TouchableOpacity, FlatList, TextInput, ActivityIndicator } from 'react-native';
+import { Modal, View, Text, StyleSheet, TouchableOpacity, FlatList, TextInput, ActivityIndicator, ScrollView } from 'react-native';
 import * as Contacts from 'expo-contacts/legacy';
 import { normalizePhone } from '../config';
 import { api } from '../api';
@@ -107,71 +107,62 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
       <View style={styles.overlay}>
         <View style={styles.modalContent}>
           {chosenContacts.length > 0 ? (
-            <View>
-              <Text style={styles.title}>{mode === 'send' ? 'Dela med' : i18n.t('send_to')} {chosenContacts.map(c => c.name).join(', ')}</Text>
-              
-              {showCustomMessageInput ? (
-                <View>
-                  <Text style={styles.subtitle}>{i18n.t('write_short_message')}</Text>
-                  <TextInput
-                    style={styles.searchInput}
-                    placeholder={i18n.t('eg_see_you_bar')}
-                    value={customMessageText}
-                    onChangeText={setCustomMessageText}
-                    autoFocus
-                  />
-                  <TouchableOpacity
-                    style={[styles.closeButton, { backgroundColor: '#805d73', marginTop: 10 }]}
-                    onPress={() => onSelect(chosenContacts, 'custom', customMessageText)}
-                  >
-                    <Text style={styles.closeButtonText}>{i18n.t('send_position_and_message')}</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.backButton} onPress={() => setShowCustomMessageInput(false)}>
-                    <Text style={styles.backButtonText}>{i18n.t('back')}</Text>
-                  </TouchableOpacity>
-                </View>
-              ) : (
-                <View>
-                  <Text style={styles.subtitle}>
-                    {mode === 'send' ? i18n.t('want_to_send_signal') : i18n.t('receiver_gets_notice')}
-                  </Text>
-                  
-                  {mode === 'send' && (
-                    <>
-                      <TouchableOpacity
-                        style={styles.contactRow}
-                        onPress={() => onSelect(chosenContacts, 'none')}
-                      >
-                        <Text style={styles.signalEmoji}>📍</Text>
-                        <Text style={styles.contactName}>{i18n.t('just_position')}</Text>
-                      </TouchableOpacity>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <Text style={styles.title}>
+                {mode === 'send' ? `Dela med ${chosenContacts.map(c => c.name).join(', ')}` : `${i18n.t('send_to')} ${chosenContacts.map(c => c.name).join(', ')}`}
+              </Text>
 
-                      <TouchableOpacity
-                        style={styles.contactRow}
-                        onPress={() => setShowCustomMessageInput(true)}
-                      >
-                        <Text style={styles.signalEmoji}>💬</Text>
-                        <Text style={styles.contactName}>{i18n.t('write_custom_message')}</Text>
-                      </TouchableOpacity>
-                    </>
-                  )}
-
-                  {SIGNALS.map(s => (
-                    <TouchableOpacity
-                      key={s.type}
-                      style={styles.contactRow}
-                      onPress={() => onSelect(chosenContacts, s.type)}
-                    >
-                      <Text style={styles.signalEmoji}>{s.emoji}</Text>
-                      <Text style={styles.contactName}>{i18n.t(`signal_${s.type}`, { defaultValue: s.label })}</Text>
-                    </TouchableOpacity>
-                  ))}
-                  <TouchableOpacity style={styles.backButton} onPress={() => setChosenContacts([])}>
-                    <Text style={styles.backButtonText}>{i18n.t('back')}</Text>
-                  </TouchableOpacity>
-                </View>
+              {mode === 'send' && (
+                <TouchableOpacity
+                  style={styles.justPositionBtn}
+                  onPress={() => onSelect(chosenContacts, 'none')}
+                >
+                  <Text style={styles.justPositionEmoji}>📍</Text>
+                  <Text style={styles.justPositionText}>{i18n.t('just_position')}</Text>
+                </TouchableOpacity>
               )}
-            </View>
+
+              <Text style={styles.subtitle}>
+                {mode === 'send' ? i18n.t('want_to_send_signal') : 'Snabbmeddelande:'}
+              </Text>
+
+              <View style={styles.quickButtons}>
+                {SIGNALS.map(s => (
+                  <TouchableOpacity
+                    key={s.type}
+                    style={styles.quickBtn}
+                    onPress={() => onSelect(chosenContacts, s.type)}
+                  >
+                    <Text style={styles.emoji}>{s.emoji}</Text>
+                    <Text style={styles.quickText}>{i18n.t(`signal_${s.type}`, { defaultValue: s.label })}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <View style={styles.divider} />
+
+              <Text style={styles.subtitle}>{i18n.t('write_custom_message')}:</Text>
+              <TextInput
+                style={styles.input}
+                placeholder={i18n.t('eg_see_you_bar')}
+                value={customMessageText}
+                onChangeText={setCustomMessageText}
+                maxLength={100}
+              />
+              <TouchableOpacity
+                style={[styles.sendBtn, !customMessageText.trim() && styles.disabledBtn]}
+                disabled={!customMessageText.trim()}
+                onPress={() => onSelect(chosenContacts, 'custom', customMessageText.trim())}
+              >
+                <Text style={styles.sendBtnText}>
+                  {mode === 'send' ? i18n.t('send_position_and_message') : 'Skicka meddelande 💬'}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.backButton} onPress={() => setChosenContacts([])}>
+                <Text style={styles.backButtonText}>{i18n.t('back')}</Text>
+              </TouchableOpacity>
+            </ScrollView>
           ) : (
             <>
               <Text style={styles.title}>
@@ -255,9 +246,11 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
             </>
           )}
 
-          <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-            <Text style={styles.closeButtonText}>Avbryt</Text>
-          </TouchableOpacity>
+          {chosenContacts.length === 0 && (
+            <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+              <Text style={styles.closeButtonText}>Avbryt</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     </Modal>
@@ -358,5 +351,79 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
     fontSize: 16,
-  }
+  },
+  justPositionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f4f5f7',
+    borderWidth: 1,
+    borderColor: '#e1e4e8',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 14,
+    marginBottom: 16,
+    marginTop: 6,
+  },
+  justPositionEmoji: {
+    fontSize: 20,
+    marginRight: 8,
+  },
+  justPositionText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#333',
+  },
+  quickButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  quickBtn: {
+    alignItems: 'center',
+    backgroundColor: '#f0f0f0',
+    paddingVertical: 12,
+    paddingHorizontal: 6,
+    borderRadius: 16,
+    flex: 1,
+    marginHorizontal: 4,
+  },
+  emoji: {
+    fontSize: 28,
+    marginBottom: 4,
+  },
+  quickText: {
+    fontSize: 12,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#e1e1e1',
+    marginVertical: 14,
+  },
+  input: {
+    backgroundColor: '#f8f9fa',
+    borderWidth: 1,
+    borderColor: '#e1e1e1',
+    borderRadius: 12,
+    padding: 12,
+    fontSize: 16,
+    marginBottom: 12,
+  },
+  sendBtn: {
+    backgroundColor: '#805d73',
+    padding: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  disabledBtn: {
+    opacity: 0.5,
+  },
+  sendBtnText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#fff',
+  },
 });

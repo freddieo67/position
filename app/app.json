@@ -13,14 +13,23 @@
         "NSLocationWhenInUseUsageDescription": "Position behöver din plats för att dela den med dina vänner.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "Position behöver din plats i bakgrunden för att kunna uppdatera positionen i 10 minuter.",
         "NSContactsUsageDescription": "Position behöver tillgång till dina kontakter så att du kan hitta vänner och dela position.",
-        "UIBackgroundModes": ["location"]
+        "UIBackgroundModes": [
+          "location",
+          "location"
+        ],
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
-
       "predictiveBackGestureEnabled": false,
       "package": "com.xspecio.position",
-      "googleServicesFile": "./google-services.json"
+      "googleServicesFile": "./google-services.json",
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_LOCATION"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"

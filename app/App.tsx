@@ -551,21 +551,21 @@ export default function App() {
             style={[styles.actionButton, styles.requestButton]} 
             onPress={() => openModal('request')}
           >
-            <Text style={styles.buttonText}>Begär</Text>
+            <Text style={[styles.buttonText, styles.requestButtonText]}>Begär</Text>
           </TouchableOpacity>
           
           <TouchableOpacity 
             style={[styles.actionButton, styles.pingButton]} 
             onPress={() => openModal('ping')}
           >
-            <Text style={styles.buttonText}>Pinga</Text>
+            <Text style={[styles.buttonText, styles.pingButtonText]}>Pinga</Text>
           </TouchableOpacity>
 
           <TouchableOpacity 
             style={[styles.actionButton, styles.sendButton]} 
             onPress={() => openModal('send')}
           >
-            <Text style={styles.buttonText}>{i18n.t('share')}</Text>
+            <Text style={[styles.buttonText, styles.sendButtonText]}>{i18n.t('share')}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -720,7 +720,7 @@ const styles = StyleSheet.create({
   },
   myLocationButton: {
     position: 'absolute',
-    bottom: 85,
+    bottom: 105,
     right: 18,
     width: 44,
     height: 44,
@@ -737,7 +737,7 @@ const styles = StyleSheet.create({
   },
   buttonRow: {
     position: 'absolute',
-    bottom: 20, 
+    bottom: 10, 
     left: 0,
     right: 0,
     flexDirection: 'row',
@@ -747,32 +747,43 @@ const styles = StyleSheet.create({
     elevation: 10, // Extra viktigt för Android
   },
   actionButton: {
-    paddingVertical: 14,
-    paddingHorizontal: 12,
-    borderRadius: 8, // Lätt rundade hörn (mer fyrkantig känsla)
+    width: 83,
+    height: 83,
+    borderRadius: 41.5,
+    backgroundColor: 'rgba(255, 255, 255, 0.72)',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    elevation: 4,
-    minWidth: 100,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.18,
+    shadowRadius: 4,
+    elevation: 5,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1.5,
   },
   requestButton: {
-    backgroundColor: '#7e895d', // Din färg 1
+    borderColor: 'rgba(126, 137, 93, 0.35)',
   },
   pingButton: {
-    backgroundColor: '#805072',
+    borderColor: 'rgba(128, 80, 114, 0.35)',
   },
   sendButton: {
-    backgroundColor: '#5d7e80', // Din färg 2
+    borderColor: 'rgba(93, 126, 128, 0.35)',
   },
   buttonText: {
-    fontSize: 16,
+    fontSize: 14.5,
     fontWeight: 'bold',
-    color: '#fff',
     textAlign: 'center',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  requestButtonText: {
+    color: '#7e895d',
+  },
+  pingButtonText: {
+    color: '#805072',
+  },
+  sendButtonText: {
+    color: '#5d7e80',
   },
   adContainer: {
     minHeight: 60,
