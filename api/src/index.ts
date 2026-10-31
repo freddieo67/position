@@ -47,22 +47,24 @@ function parseId(value: unknown): number | null {
   return Number.isInteger(n) && n > 0 ? n : null;
 }
 
-// Sparar en delad position (sender -> receiver) som syns i SHARE_MINUTES
+// Sparar en delad position (sender -> receiver) som syns i durationMinutes
 async function insertShare(
   client: PoolClient,
   senderId: number,
   receiverId: number,
   coords: Coords,
   requestId: number | null,
-  message: string | null = null
+  message: string | null = null,
+  durationMinutes: number = 15
 ) {
+  const mins = [5, 15, 30].includes(durationMinutes) ? durationMinutes : 15;
   const result = await client.query(
     `INSERT INTO public.position_requests
        (sender_id, receiver_id, location, accuracy_meters, expires_at, shared_at, status, request_id, message)
      VALUES
        ($1, $2, ST_SetSRID(ST_MakePoint($3, $4), 4326), $5, NOW() + make_interval(mins => $6::int), NOW(), 'shared', $7, $8)
      RETURNING id, expires_at, message`,
-    [senderId, receiverId, coords.longitude, coords.latitude, coords.accuracy_meters, SHARE_MINUTES, requestId, message]
+    [senderId, receiverId, coords.longitude, coords.latitude, coords.accuracy_meters, mins, requestId, message]
   );
   return result.rows[0];
 }
@@ -311,6 +313,7 @@ app.post('/position/share', async (req, res) => {
       });
     }
 
+    const durationMinutes = Number(req.body.duration_minutes) || 15;
     const customMsg = typeof req.body.message === 'string' && req.body.message.trim().length > 0 
       ? req.body.message.trim().slice(0, 100) 
       : null;
@@ -329,7 +332,7 @@ app.post('/position/share', async (req, res) => {
       );
       share = updated.rows[0];
     } else {
-      share = await insertShare(client, senderId, receiverId, coords, requestId, customMsg);
+      share = await insertShare(client, senderId, receiverId, coords, requestId, customMsg, durationMinutes);
     }
 
     await client.query('COMMIT');
@@ -338,7 +341,7 @@ app.post('/position/share', async (req, res) => {
     // Skicka bara notis vid NY manuell delning (inte tysta bakgrundsuppdateringar eller motdelning efter svar)
     if (requestId === null && !isBackgroundLiveUpdate) {
       getDisplayName(senderId).then(name => {
-        const bodyText = customMsg ? `Meddelande: ${customMsg}` : 'Öppna appen för att se var hen är.';
+        const bodyText = customMsg ? `Meddelande: ${customMsg}` : `Delar sin position i ${durationMinutes} minuter.`;
         sendPush(receiverId, `${name} delade sin position`, bodyText, { type: 'share', sender_id: senderId });
       });
     }
@@ -382,24 +385,7 @@ app.post('/requests', async (req, res) => {
       });
     }
 
-    // 2. Jag delar redan min position med target:
-    const myShare = await pool.query(
-      `SELECT GREATEST(1, CEIL(EXTRACT(EPOCH FROM (expires_at - NOW())) / 60))::int AS minutes_left
-         FROM public.position_requests
-        WHERE sender_id = $1 AND receiver_id = $2 AND location IS NOT NULL AND expires_at > NOW()
-        ORDER BY expires_at DESC LIMIT 1`,
-      [requesterId, targetId]
-    );
-    if (myShare.rows[0]) {
-      const name = await getDisplayName(targetId);
-      return res.status(409).json({
-        error: `Du delar redan din position med ${name} (${myShare.rows[0].minutes_left} min kvar).`,
-        code: 'ALREADY_SHARING',
-        minutes_left: myShare.rows[0].minutes_left,
-      });
-    }
-
-    // 3. Redan en väntande förfrågan till target:
+    // 2. Redan en väntande förfrågan till target:
     const existing = await pool.query(
       `SELECT id, status, GREATEST(1, CEIL(EXTRACT(EPOCH FROM (expires_at - NOW())) / 60))::int AS minutes_left
          FROM public.location_requests
@@ -463,13 +449,14 @@ app.post('/requests/:id/respond', async (req, res) => {
       return res.status(409).json({ error: 'Request not found, already answered or expired' });
     }
 
+    const durationMinutes = Number(req.body.duration_minutes) || 15;
     const customMsg = typeof req.body.message === 'string' && req.body.message.trim().length > 0 
       ? req.body.message.trim().slice(0, 100) 
       : null;
 
     let share = null;
     if (accept) {
-      share = await insertShare(client, userId, updated.rows[0].requester_id, coords!, requestId, customMsg);
+      share = await insertShare(client, userId, updated.rows[0].requester_id, coords!, requestId, customMsg, durationMinutes);
     }
     await client.query('COMMIT');
     res.json({ status: accept ? 'accepted' : 'declined', share });
@@ -479,7 +466,7 @@ app.post('/requests/:id/respond', async (req, res) => {
         ? sendPush(
             requesterId,
             `${name} delade sin position`,
-            customMsg ? `Meddelande: ${customMsg}` : 'Öppna appen för att se var hen är.',
+            customMsg ? `Meddelande: ${customMsg}` : `Delar sin position i ${durationMinutes} minuter.`,
             { type: 'share', sender_id: userId }
           )
         : sendPush(requesterId, 'Nekad', `${name} valde att inte dela sin position.`, { type: 'declined' })

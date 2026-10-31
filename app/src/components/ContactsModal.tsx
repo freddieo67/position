@@ -19,7 +19,7 @@ interface ContactsModalProps {
   mode: 'send' | 'request' | 'signal' | 'ping' | null;
   currentUserId: number;
   onClose: () => void;
-  onSelect: (contacts: AppContact | AppContact[], signalType?: string, message?: string) => void;
+  onSelect: (contacts: AppContact | AppContact[], signalType?: string, message?: string, durationMinutes?: number) => void;
 }
 
 export default function ContactsModal({ visible, mode, currentUserId, onClose, onSelect }: ContactsModalProps) {
@@ -33,6 +33,7 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
   const [checkedContacts, setCheckedContacts] = useState<AppContact[]>([]);
   const [showCustomMessageInput, setShowCustomMessageInput] = useState(false);
   const [customMessageText, setCustomMessageText] = useState('');
+  const [selectedDuration, setSelectedDuration] = useState<5 | 15 | 30>(15);
 
   useEffect(() => {
     if (visible) {
@@ -42,6 +43,7 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
       setCheckedContacts([]);
       setShowCustomMessageInput(false);
       setCustomMessageText('');
+      setSelectedDuration(15);
       loadContacts();
     }
   }, [visible]);
@@ -113,13 +115,40 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
               </Text>
 
               {mode === 'send' && (
-                <TouchableOpacity
-                  style={styles.justPositionBtn}
-                  onPress={() => onSelect(chosenContacts, 'none')}
-                >
-                  <Text style={styles.justPositionEmoji}>📍</Text>
-                  <Text style={styles.justPositionText}>{i18n.t('just_position')}</Text>
-                </TouchableOpacity>
+                <>
+                  <Text style={styles.subtitle}>Hur länge vill du dela?</Text>
+                  <View style={styles.durationRow}>
+                    {([5, 15, 30] as const).map(mins => (
+                      <TouchableOpacity
+                        key={mins}
+                        style={[
+                          styles.durationBtn,
+                          selectedDuration === mins && styles.durationBtnActive,
+                        ]}
+                        onPress={() => setSelectedDuration(mins)}
+                      >
+                        <Text
+                          style={[
+                            styles.durationText,
+                            selectedDuration === mins && styles.durationTextActive,
+                          ]}
+                        >
+                          {mins} min
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+
+                  <TouchableOpacity
+                    style={styles.justPositionBtn}
+                    onPress={() => onSelect(chosenContacts, 'none', undefined, selectedDuration)}
+                  >
+                    <Text style={styles.justPositionEmoji}>📍</Text>
+                    <Text style={styles.justPositionText}>
+                      {i18n.t('just_position')} ({selectedDuration} min)
+                    </Text>
+                  </TouchableOpacity>
+                </>
               )}
 
               <Text style={styles.subtitle}>
@@ -131,7 +160,7 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
                   <TouchableOpacity
                     key={s.type}
                     style={styles.quickBtn}
-                    onPress={() => onSelect(chosenContacts, s.type)}
+                    onPress={() => onSelect(chosenContacts, s.type, undefined, selectedDuration)}
                   >
                     <Text style={styles.emoji}>{s.emoji}</Text>
                     <Text style={styles.quickText}>{i18n.t(`signal_${s.type}`, { defaultValue: s.label })}</Text>
@@ -152,10 +181,10 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
               <TouchableOpacity
                 style={[styles.sendBtn, !customMessageText.trim() && styles.disabledBtn]}
                 disabled={!customMessageText.trim()}
-                onPress={() => onSelect(chosenContacts, 'custom', customMessageText.trim())}
+                onPress={() => onSelect(chosenContacts, 'custom', customMessageText.trim(), selectedDuration)}
               >
                 <Text style={styles.sendBtnText}>
-                  {mode === 'send' ? i18n.t('send_position_and_message') : 'Skicka meddelande 💬'}
+                  {mode === 'send' ? `${i18n.t('send_position_and_message')} (${selectedDuration} min)` : 'Skicka meddelande 💬'}
                 </Text>
               </TouchableOpacity>
 
@@ -168,15 +197,15 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
               <Text style={styles.title}>
                 {mode === 'send' ? 'Dela position med...' : mode === 'signal' ? 'Skicka signal till...' : mode === 'ping' ? 'Pinga...' : 'Begär position från...'}
               </Text>
-              <Text style={styles.subtitle}>
-                {mode === 'send'
-                  ? i18n.t('receiver_sees_position_10m')
-                  : mode === 'signal'
-                  ? 'Bjud på en öl, skicka en kram eller en kyss.'
-                  : mode === 'ping'
-                  ? 'Skicka en snabb notis till...'
-                  : i18n.t('when_accept_see_position_10m')}
-              </Text>
+              {mode !== 'send' && (
+                <Text style={styles.subtitle}>
+                  {mode === 'signal'
+                    ? 'Bjud på en öl, skicka en kram eller en kyss.'
+                    : mode === 'ping'
+                    ? 'Skicka en snabb notis till...'
+                    : 'När de tackar ja ser ni varandras position.'}
+                </Text>
+              )}
               <Text style={styles.hint}>({i18n.t('long_press_hint')})</Text>
 
               <TextInput
@@ -351,6 +380,34 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
     fontSize: 16,
+  },
+  durationRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+    marginTop: 4,
+  },
+  durationBtn: {
+    flex: 1,
+    paddingVertical: 10,
+    marginHorizontal: 4,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 12,
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: '#e0e0e0',
+  },
+  durationBtnActive: {
+    backgroundColor: '#5d7e80',
+    borderColor: '#5d7e80',
+  },
+  durationText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#555',
+  },
+  durationTextActive: {
+    color: '#fff',
   },
   justPositionBtn: {
     flexDirection: 'row',

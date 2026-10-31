@@ -1,6 +1,6 @@
 import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { StyleSheet, Text, View, ActivityIndicator, TouchableOpacity, Platform, Alert, AppState } from 'react-native';
+import { StyleSheet, Text, View, ActivityIndicator, TouchableOpacity, Platform, Alert, AppState, ScrollView } from 'react-native';
 import * as Location from 'expo-location';
 import { FontAwesome6 } from '@expo/vector-icons';
 import LeafletMap, { MapMarkerData, LeafletMapRef } from './src/components/LeafletMap';
@@ -19,7 +19,7 @@ import { SIGNALS } from './src/signals';
 import { registerForPushToken, getNotifications } from './src/push';
 import type * as NotificationsType from 'expo-notifications';
 import i18n from './src/i18n';
-import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
+import mobileAds, { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
 const POLL_INTERVAL_MS = 30_000;
 const EMPTY_INBOX: Inbox = { positions: [], requests: [], outgoing: [], sharing: [] };
 
@@ -54,8 +54,12 @@ export default function App() {
   const reciprocatedRequests = useRef(new Set<number>());
   const notifiedDeclines = useRef(new Set<number>());
 
-  // Ladda sparad användare och kontrollera att den fortfarande finns i databasen
+  // Initiera Google Mobile Ads och ladda sparad användare
   useEffect(() => {
+    mobileAds()
+      .initialize()
+      .catch(err => console.warn('MobileAds init error:', err));
+
     (async () => {
       const saved = await loadUser();
       if (saved) {
@@ -134,24 +138,24 @@ export default function App() {
   }, [user]);
 
   // Dela min (färska) position med en annan användare
-  const shareTo = useCallback(async (receiverId: number, requestId: number | null = null, message?: string) => {
+  const shareTo = useCallback(async (receiverId: number, requestId: number | null = null, message?: string, durationMinutes: number = 15) => {
     if (!user) return;
     const coords = await getCurrentCoords(locationRef.current);
-    await api.sharePosition({ sender_id: user.id, receiver_id: receiverId, request_id: requestId, message, ...coords });
+    await api.sharePosition({ sender_id: user.id, receiver_id: receiverId, request_id: requestId, message, duration_minutes: durationMinutes, ...coords });
     const next = Array.from(new Set([...(sharingRef.current || []), receiverId]));
     syncBackgroundLocation(next);
   }, [user]);
 
-  const respondToRequest = useCallback(async (req: IncomingRequest, accept: boolean, message?: string) => {
+  const respondToRequest = useCallback(async (req: IncomingRequest, accept: boolean, message?: string, durationMinutes: number = 15) => {
     if (!user) return;
     setIsRespondingRequest(true);
     try {
       if (accept) {
         const coords = await getCurrentCoords(locationRef.current);
-        await api.respondToRequest(req.id, { user_id: user.id, accept: true, message, ...coords });
+        await api.respondToRequest(req.id, { user_id: user.id, accept: true, message, duration_minutes: durationMinutes, ...coords });
         const next = Array.from(new Set([...(sharingRef.current || []), req.requester_id]));
         syncBackgroundLocation(next);
-        Alert.alert(i18n.t('shared'), i18n.t('you_and_name_see_each_other_10m', { name: req.requester_name }));
+        Alert.alert(i18n.t('shared'), `${req.requester_name} och du ser nu varandras position i ${durationMinutes} minuter.`);
       } else {
         await api.respondToRequest(req.id, { user_id: user.id, accept: false });
       }
@@ -362,7 +366,12 @@ export default function App() {
     setModalVisible(true);
   };
 
-  const handleContactSelected = async (contactOrContacts: AppContact | AppContact[], signalType?: string, message?: string) => {
+  const handleContactSelected = async (
+    contactOrContacts: AppContact | AppContact[],
+    signalType?: string,
+    message?: string,
+    durationMinutes: number = 15
+  ) => {
     setModalVisible(false);
     if (!user) return;
 
@@ -384,16 +393,16 @@ export default function App() {
       }
       if (modalMode === 'send') {
         if (signalType === 'custom' && message) {
-          for (const contact of contacts) await shareTo(contact.userId, null, message);
-          Alert.alert(i18n.t('shared'), `${i18n.t('position_shared_with_message')} "${message}"`);
+          for (const contact of contacts) await shareTo(contact.userId, null, message, durationMinutes);
+          Alert.alert(i18n.t('shared'), `${i18n.t('position_shared_with_message')} "${message}" (${durationMinutes} min)`);
         } else {
-          for (const contact of contacts) await shareTo(contact.userId);
+          for (const contact of contacts) await shareTo(contact.userId, null, undefined, durationMinutes);
           if (signalType && signalType !== 'none') {
             for (const contact of contacts) await api.sendSignal(user.id, contact.userId, signalType);
             const sent = SIGNALS.find(s => s.type === signalType);
-            Alert.alert(i18n.t('shared'), i18n.t('position_shared_signal', { emoji: sent?.emoji ?? '', name: names }));
+            Alert.alert(i18n.t('shared'), `${names} ser din position i ${durationMinutes} min ${sent?.emoji ?? ''}`);
           } else {
-            Alert.alert(i18n.t('shared'), i18n.t('sees_your_position_10m', { name: names }));
+            Alert.alert(i18n.t('shared'), `${names} ser din position i ${durationMinutes} minuter.`);
           }
         }
       } else {
@@ -496,34 +505,43 @@ export default function App() {
           </View>
         )}
 
-        {/* Överst: vem jag är, vilka som delar med mig och väntande förfrågningar */}
+        {/* Överst: vilka som delar med mig och väntande förfrågningar i en horisontell swajpbar rad */}
         <View style={styles.topOverlay} pointerEvents="box-none">
-
-          {inbox.positions.map(pos => (
-            <View key={`card-${pos.sender_id}`} style={styles.shareCard}>
-              <TouchableOpacity style={{ flex: 1 }} onPress={() => focusOn(pos)}>
-                <Text style={styles.shareName}>{pos.sender_name}</Text>
-                {Boolean(pos.message) && (
-                  <Text style={styles.shareMessage} numberOfLines={2}>
-                    💬 "{pos.message}"
-                  </Text>
-                )}
-                <Text style={styles.shareMeta}>Delar sin position · {minutesLeft(pos.expires_at)} min kvar</Text>
-              </TouchableOpacity>
-              {!inbox.sharing?.includes(pos.sender_id) && (
-                <TouchableOpacity style={styles.smallButton} onPress={() => sendBack(pos)}>
-                  <Text style={styles.smallButtonText}>Dela tillbaka</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.topScrollContent}
+            pointerEvents="box-none"
+          >
+            {inbox.positions.map(pos => (
+              <View key={`card-${pos.sender_id}`} style={styles.shareCard}>
+                <TouchableOpacity style={{ flex: 1 }} onPress={() => focusOn(pos)}>
+                  <View style={styles.shareHeader}>
+                    <Text style={styles.shareName}>{pos.sender_name}</Text>
+                    <Text style={styles.shareBadge}>{minutesLeft(pos.expires_at)}m</Text>
+                  </View>
+                  {Boolean(pos.message) && (
+                    <Text style={styles.shareMessage} numberOfLines={1}>
+                      💬 "{pos.message}"
+                    </Text>
+                  )}
+                  <Text style={styles.shareMeta}>Delar sin position</Text>
                 </TouchableOpacity>
-              )}
-            </View>
-          ))}
+                {!inbox.sharing?.includes(pos.sender_id) && (
+                  <TouchableOpacity style={styles.smallButton} onPress={() => sendBack(pos)}>
+                    <Text style={styles.smallButtonText}>Dela tillbaka</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            ))}
 
-          {pendingOutgoing.map(out => (
-            <View key={`out-${out.id}`} style={styles.pendingChip}>
-              <ActivityIndicator size="small" color="#fff" />
-              <Text style={styles.pendingText}>Väntar på svar från {out.target_name}…</Text>
-            </View>
-          ))}
+            {pendingOutgoing.map(out => (
+              <View key={`out-${out.id}`} style={styles.pendingChip}>
+                <ActivityIndicator size="small" color="#fff" />
+                <Text style={styles.pendingText}>Väntar på {out.target_name}…</Text>
+              </View>
+            ))}
+          </ScrollView>
         </View>
 
         {/* Centrera på min position (GPS-knapp) */}
@@ -578,6 +596,9 @@ export default function App() {
           requestOptions={{
             requestNonPersonalizedAdsOnly: true,
           }}
+          onAdFailedToLoad={(error) => {
+            console.warn('Ad failed to load:', error);
+          }}
         />
       </View>
 
@@ -615,7 +636,7 @@ export default function App() {
       <IncomingRequestModal
         request={pendingRequest}
         loading={isRespondingRequest}
-        onAccept={(req, msg) => respondToRequest(req, true, msg)}
+        onAccept={(req, msg, dur) => respondToRequest(req, true, msg, dur)}
         onDecline={(req) => respondToRequest(req, false)}
       />
 
@@ -639,12 +660,16 @@ const styles = StyleSheet.create({
   },
   topOverlay: {
     position: 'absolute',
-    top: 40,
-    left: 12,
-    right: 12,
+    top: Platform.OS === 'ios' ? 52 : 40,
+    left: 0,
+    right: 0,
     zIndex: 100,
     elevation: 10,
-    gap: 8,
+  },
+  topScrollContent: {
+    paddingHorizontal: 12,
+    gap: 10,
+    alignItems: 'center',
   },
   userBadge: {
     alignSelf: 'flex-start',
@@ -661,51 +686,70 @@ const styles = StyleSheet.create({
   shareCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
-    padding: 12,
-    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.94)',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 14,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
+    shadowOpacity: 0.18,
+    shadowRadius: 4,
     elevation: 4,
+    minWidth: 220,
+    maxWidth: 280,
+    borderWidth: 1,
+    borderColor: '#e8ecef',
   },
-  shareName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  shareMessage: {
-    fontSize: 13,
-    color: '#444',
-    fontStyle: 'italic',
-    marginTop: 2,
+  shareHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: 2,
   },
+  shareName: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: '#222',
+  },
+  shareBadge: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#2a8a41',
+    backgroundColor: '#eaf5eb',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  shareMessage: {
+    fontSize: 12,
+    color: '#555',
+    fontStyle: 'italic',
+    marginTop: 1,
+    marginBottom: 1,
+  },
   shareMeta: {
-    fontSize: 13,
-    color: '#2a8a41', // Mycket mörkare och mer läslig grön
-    marginTop: 2,
+    fontSize: 11,
+    color: '#888',
   },
   smallButton: {
     backgroundColor: '#805d73', // Din snygga lila färg
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8, // Samma lätt fyrkantiga stil
+    paddingVertical: 7,
+    paddingHorizontal: 10,
+    borderRadius: 8,
     marginLeft: 8,
   },
   smallButtonText: {
     color: '#fff',
     fontWeight: 'bold',
-    fontSize: 13,
+    fontSize: 12,
   },
   pendingChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    alignSelf: 'flex-start',
-    backgroundColor: '#805d73', // Ny murrig lila/rosa färg
+    backgroundColor: '#805d73',
     paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8, // Lätt rundade hörn (fyrkantig)
+    paddingHorizontal: 14,
+    borderRadius: 14,
     gap: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },

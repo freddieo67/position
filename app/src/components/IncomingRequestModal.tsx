@@ -16,7 +16,7 @@ import i18n from '../i18n';
 interface IncomingRequestModalProps {
   request: IncomingRequest | null;
   loading?: boolean;
-  onAccept: (req: IncomingRequest, message?: string) => void;
+  onAccept: (req: IncomingRequest, message?: string, durationMinutes?: number) => void;
   onDecline: (req: IncomingRequest) => void;
 }
 
@@ -27,10 +27,12 @@ export default function IncomingRequestModal({
   onDecline,
 }: IncomingRequestModalProps) {
   const [customText, setCustomText] = useState('');
+  const [selectedDuration, setSelectedDuration] = useState<5 | 15 | 30>(15);
 
   useEffect(() => {
     if (request) {
       setCustomText('');
+      setSelectedDuration(15);
     }
   }, [request]);
 
@@ -38,7 +40,7 @@ export default function IncomingRequestModal({
 
   const handleShare = () => {
     const trimmed = customText.trim();
-    onAccept(request, trimmed.length > 0 ? trimmed : undefined);
+    onAccept(request, trimmed.length > 0 ? trimmed : undefined, selectedDuration);
   };
 
   const handleDecline = () => {
@@ -67,6 +69,29 @@ export default function IncomingRequestModal({
             {i18n.t('if_share_see_each_other_10m')}
           </Text>
 
+          <Text style={styles.durationLabel}>Hur länge vill du dela?</Text>
+          <View style={styles.durationRow}>
+            {([5, 15, 30] as const).map(mins => (
+              <TouchableOpacity
+                key={mins}
+                style={[
+                  styles.durationBtn,
+                  selectedDuration === mins && styles.durationBtnActive,
+                ]}
+                onPress={() => setSelectedDuration(mins)}
+              >
+                <Text
+                  style={[
+                    styles.durationText,
+                    selectedDuration === mins && styles.durationTextActive,
+                  ]}
+                >
+                  {mins} min
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
           <TextInput
             style={styles.input}
             placeholder={i18n.t('optional_message_placeholder')}
@@ -88,8 +113,8 @@ export default function IncomingRequestModal({
             ) : (
               <Text style={styles.shareBtnText}>
                 {hasMessage
-                  ? `${i18n.t('share_with_message')} 💬`
-                  : `${i18n.t('share')} 📍`}
+                  ? `Dela med meddelande (${selectedDuration} min) 💬`
+                  : `Dela position (${selectedDuration} min) 📍`}
               </Text>
             )}
           </TouchableOpacity>
@@ -137,8 +162,42 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     textAlign: 'center',
-    marginBottom: 18,
+    marginBottom: 14,
     lineHeight: 20,
+  },
+  durationLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#555',
+    marginBottom: 6,
+    textAlign: 'center',
+  },
+  durationRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 14,
+    gap: 8,
+  },
+  durationBtn: {
+    flex: 1,
+    paddingVertical: 9,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 12,
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: '#e0e0e0',
+  },
+  durationBtnActive: {
+    backgroundColor: '#2a8a41',
+    borderColor: '#2a8a41',
+  },
+  durationText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#555',
+  },
+  durationTextActive: {
+    color: '#fff',
   },
   input: {
     backgroundColor: '#f8f9fa',

@@ -62,13 +62,13 @@ export const api = {
   matchContacts: (phone_numbers: string[]) =>
     apiPost<{ matches: User[] }>('/contacts/match', { phone_numbers }),
 
-  sharePosition: (body: Coords & { sender_id: number; receiver_id: number; request_id?: number | null; message?: string }) =>
+  sharePosition: (body: Coords & { sender_id: number; receiver_id: number; request_id?: number | null; message?: string; duration_minutes?: number }) =>
     apiPost<{ id: number; expires_at: string }>('/position/share', body),
 
   requestPosition: (requester_id: number, target_id: number) =>
     apiPost<{ id: number; status: string; expires_at: string }>('/requests', { requester_id, target_id }),
 
-  respondToRequest: (requestId: number, body: { user_id: number; accept: boolean; message?: string } & Partial<Coords>) =>
+  respondToRequest: (requestId: number, body: { user_id: number; accept: boolean; message?: string; duration_minutes?: number } & Partial<Coords>) =>
     apiPost<{ status: string }>(`/requests/${requestId}/respond`, body),
 
   inbox: (userId: number) => apiGet<Inbox>(`/users/${userId}/inbox`),
