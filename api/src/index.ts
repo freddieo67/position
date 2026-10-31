@@ -519,9 +519,13 @@ app.get('/users/:id/inbox', async (req, res) => {
         [userId]
       ),
       pool.query(
-        `SELECT DISTINCT receiver_id 
-           FROM public.position_requests 
-          WHERE sender_id = $1 AND expires_at > NOW()`,
+        `SELECT DISTINCT ON (p.receiver_id)
+                p.id, p.receiver_id, u.display_name AS receiver_name,
+                p.expires_at, p.message
+           FROM public.position_requests p
+           JOIN public.users u ON u.id = p.receiver_id
+          WHERE p.sender_id = $1 AND p.expires_at > NOW() AND p.location IS NOT NULL
+          ORDER BY p.receiver_id, p.expires_at DESC`,
         [userId]
       ),
     ]);
@@ -531,7 +535,30 @@ app.get('/users/:id/inbox', async (req, res) => {
       requests: requests.rows,
       outgoing: outgoing.rows,
       sharing: sharing.rows.map(r => r.receiver_id),
+      active_shares: sharing.rows,
     });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Avsluta delning i förtid
+app.post('/position/stop', async (req, res) => {
+  const senderId = parseId(req.body.sender_id);
+  const receiverId = parseId(req.body.receiver_id);
+  if (!senderId || !receiverId) {
+    return res.status(400).json({ error: 'sender_id and receiver_id are required' });
+  }
+
+  try {
+    await pool.query(
+      `UPDATE public.position_requests
+          SET expires_at = NOW()
+        WHERE sender_id = $1 AND receiver_id = $2 AND expires_at > NOW()`,
+      [senderId, receiverId]
+    );
+    res.json({ ok: true });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Internal server error' });

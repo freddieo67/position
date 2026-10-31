@@ -10,7 +10,7 @@ import RegisterScreen from './src/components/RegisterScreen';
 import PingModal from './src/components/PingModal';
 import ReceivedPingModal, { ReceivedPingData } from './src/components/ReceivedPingModal';
 import IncomingRequestModal from './src/components/IncomingRequestModal';
-import { api, Inbox, IncomingPosition, IncomingRequest, User } from './src/api';
+import { api, Inbox, IncomingPosition, IncomingRequest, User, ActiveShare } from './src/api';
 import { ApiError } from './src/config';
 import { clearUser, loadUser } from './src/session';
 import { getCurrentCoords } from './src/location';
@@ -21,7 +21,7 @@ import type * as NotificationsType from 'expo-notifications';
 import i18n from './src/i18n';
 import mobileAds, { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
 const POLL_INTERVAL_MS = 30_000;
-const EMPTY_INBOX: Inbox = { positions: [], requests: [], outgoing: [], sharing: [] };
+const EMPTY_INBOX: Inbox = { positions: [], requests: [], outgoing: [], sharing: [], active_shares: [] };
 
 function minutesLeft(expiresAt: string): number {
   return Math.max(0, Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 60_000));
@@ -435,6 +435,29 @@ export default function App() {
     mapRef.current?.focusOn(pos.latitude, pos.longitude);
   };
 
+  const handleStopSharing = (share: ActiveShare) => {
+    Alert.alert(
+      'Sluta dela',
+      `Vill du sluta dela din position med ${share.receiver_name}?`,
+      [
+        { text: 'Avbryt', style: 'cancel' },
+        {
+          text: 'Sluta dela',
+          style: 'destructive',
+          onPress: async () => {
+            if (!user) return;
+            try {
+              await api.stopSharing(user.id, share.receiver_id);
+              refreshRef.current();
+            } catch (e) {
+              Alert.alert('Kunde inte avsluta', errorText(e));
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const logout = () => {
     Alert.alert('Byt användare', 'Vill du logga ut från den här telefonen?', [
       { text: 'Avbryt', style: 'cancel' },
@@ -505,7 +528,7 @@ export default function App() {
           </View>
         )}
 
-        {/* Överst: vilka som delar med mig och väntande förfrågningar i en horisontell swajpbar rad */}
+        {/* Överst: vilka som delar med mig, vad jag delar och väntande förfrågningar */}
         <View style={styles.topOverlay} pointerEvents="box-none">
           <ScrollView
             horizontal
@@ -513,11 +536,35 @@ export default function App() {
             contentContainerStyle={styles.topScrollContent}
             pointerEvents="box-none"
           >
+            {/* Mina aktiva utgående delningar */}
+            {inbox.active_shares?.map(share => (
+              <View key={`my-share-${share.receiver_id}`} style={[styles.shareCard, styles.myShareCard]}>
+                <View style={{ flex: 1 }}>
+                  <View style={styles.shareHeader}>
+                    <Text style={styles.shareTitle} numberOfLines={1}>
+                      <Text style={styles.mySharePrefix}>📤 Du delar med </Text>
+                      <Text style={styles.shareName}>{share.receiver_name}</Text>
+                    </Text>
+                    <Text style={styles.myShareBadge}>{minutesLeft(share.expires_at)}m</Text>
+                  </View>
+                </View>
+                <TouchableOpacity
+                  style={styles.stopButton}
+                  onPress={() => handleStopSharing(share)}
+                >
+                  <Text style={styles.stopButtonText}>Avsluta</Text>
+                </TouchableOpacity>
+              </View>
+            ))}
+
             {inbox.positions.map(pos => (
               <View key={`card-${pos.sender_id}`} style={styles.shareCard}>
                 <TouchableOpacity style={{ flex: 1 }} onPress={() => focusOn(pos)}>
                   <View style={styles.shareHeader}>
-                    <Text style={styles.shareName}>{pos.sender_name}</Text>
+                    <Text style={styles.shareTitle} numberOfLines={1}>
+                      <Text style={styles.shareName}>{pos.sender_name}</Text>
+                      <Text style={styles.shareMeta}> delar sin position</Text>
+                    </Text>
                     <Text style={styles.shareBadge}>{minutesLeft(pos.expires_at)}m</Text>
                   </View>
                   {Boolean(pos.message) && (
@@ -525,7 +572,6 @@ export default function App() {
                       💬 "{pos.message}"
                     </Text>
                   )}
-                  <Text style={styles.shareMeta}>Delar sin position</Text>
                 </TouchableOpacity>
                 {!inbox.sharing?.includes(pos.sender_id) && (
                   <TouchableOpacity style={styles.smallButton} onPress={() => sendBack(pos)}>
@@ -687,7 +733,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.94)',
-    paddingVertical: 10,
+    paddingVertical: 9,
     paddingHorizontal: 14,
     borderRadius: 14,
     shadowColor: '#000',
@@ -695,8 +741,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.18,
     shadowRadius: 4,
     elevation: 4,
-    minWidth: 220,
-    maxWidth: 280,
+    minWidth: 240,
+    maxWidth: 320,
     borderWidth: 1,
     borderColor: '#e8ecef',
   },
@@ -704,12 +750,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 2,
+    gap: 8,
+  },
+  shareTitle: {
+    flex: 1,
   },
   shareName: {
-    fontSize: 15,
+    fontSize: 14.5,
     fontWeight: 'bold',
     color: '#222',
+  },
+  shareMeta: {
+    fontSize: 13,
+    color: '#666',
+    fontWeight: 'normal',
   },
   shareBadge: {
     fontSize: 11,
@@ -724,12 +778,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#555',
     fontStyle: 'italic',
-    marginTop: 1,
-    marginBottom: 1,
-  },
-  shareMeta: {
-    fontSize: 11,
-    color: '#888',
+    marginTop: 2,
   },
   smallButton: {
     backgroundColor: '#805d73', // Din snygga lila färg
@@ -742,6 +791,38 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
     fontSize: 12,
+  },
+  myShareCard: {
+    borderColor: '#bcd6ea',
+    backgroundColor: 'rgba(255, 255, 255, 0.96)',
+  },
+  mySharePrefix: {
+    fontSize: 13,
+    color: '#007AFF',
+    fontWeight: '600',
+  },
+  myShareBadge: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#007AFF',
+    backgroundColor: '#eaf2ff',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  stopButton: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#e8c2c2',
+    paddingVertical: 6,
+    paddingHorizontal: 9,
+    borderRadius: 8,
+    marginLeft: 8,
+  },
+  stopButtonText: {
+    color: '#d9383a',
+    fontWeight: '600',
+    fontSize: 11.5,
   },
   pendingChip: {
     flexDirection: 'row',

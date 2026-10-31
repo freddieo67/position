@@ -46,11 +46,21 @@ export interface OutgoingRequest {
   reciprocated_at: string | null;
 }
 
+// Min aktiva delning till någon annan
+export interface ActiveShare {
+  id: number;
+  receiver_id: number;
+  receiver_name: string;
+  expires_at: string;
+  message?: string | null;
+}
+
 export interface Inbox {
   positions: IncomingPosition[];
   requests: IncomingRequest[];
   outgoing: OutgoingRequest[];
   sharing: number[];
+  active_shares?: ActiveShare[];
 }
 
 export const api = {
@@ -64,6 +74,9 @@ export const api = {
 
   sharePosition: (body: Coords & { sender_id: number; receiver_id: number; request_id?: number | null; message?: string; duration_minutes?: number }) =>
     apiPost<{ id: number; expires_at: string }>('/position/share', body),
+
+  stopSharing: (sender_id: number, receiver_id: number) =>
+    apiPost<{ ok: boolean }>('/position/stop', { sender_id, receiver_id }),
 
   requestPosition: (requester_id: number, target_id: number) =>
     apiPost<{ id: number; status: string; expires_at: string }>('/requests', { requester_id, target_id }),
