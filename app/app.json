@@ -9,14 +9,22 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.xspecio.position",
-      "buildNumber": "4",
+      "buildNumber": "5",
       "infoPlist": {
+        "GADApplicationIdentifier": "ca-app-pub-3940256099942544~1458002511",
+        "SKAdNetworkItems": [
+          {
+            "SKAdNetworkIdentifier": "cstr6suwn9.skadnetwork"
+          }
+        ],
         "NSLocationWhenInUseUsageDescription": "Position behöver din plats för att dela den med dina vänner.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "Position behöver din plats i bakgrunden för att kunna uppdatera positionen i 10 minuter.",
         "NSLocationAlwaysUsageDescription": "Position behöver din plats i bakgrunden för att kunna uppdatera positionen i 10 minuter.",
         "NSContactsUsageDescription": "Position behöver tillgång till dina kontakter så att du kan hitta vänner och dela position.",
         "UIBackgroundModes": [
-          "location"
+          "location",
+          "fetch",
+          "remote-notification"
         ],
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -73,9 +81,5 @@
       }
     },
     "owner": "position1s-team"
-  },
-  "react-native-google-mobile-ads": {
-    "android_app_id": "ca-app-pub-3940256099942544~3347511713",
-    "ios_app_id": "ca-app-pub-3940256099942544~1458002511"
   }
 }

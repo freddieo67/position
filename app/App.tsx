@@ -54,10 +54,13 @@ export default function App() {
   const reciprocatedRequests = useRef(new Set<number>());
   const notifiedDeclines = useRef(new Set<number>());
 
+  const [adsInitialized, setAdsInitialized] = useState(false);
+
   // Initiera Google Mobile Ads och ladda sparad användare
   useEffect(() => {
     mobileAds()
       .initialize()
+      .then(() => setAdsInitialized(true))
       .catch(err => console.warn('MobileAds init error:', err));
 
     (async () => {
@@ -609,19 +612,21 @@ export default function App() {
         </View>
       </View>
       
-      {/* Reklamyta: Anpassar sig efter annonsens storlek */}
-      <View style={styles.adContainer}>
-        <BannerAd
-          unitId={TestIds.BANNER}
-          size={BannerAdSize.MEDIUM_RECTANGLE}
-          requestOptions={{
-            requestNonPersonalizedAdsOnly: true,
-          }}
-          onAdFailedToLoad={(error) => {
-            console.warn('Ad failed to load:', error);
-          }}
-        />
-      </View>
+      {/* Reklamyta: Visas först när annonsmotorn är helt initierad */}
+      {adsInitialized && (
+        <View style={styles.adContainer}>
+          <BannerAd
+            unitId={TestIds.BANNER}
+            size={BannerAdSize.MEDIUM_RECTANGLE}
+            requestOptions={{
+              requestNonPersonalizedAdsOnly: true,
+            }}
+            onAdFailedToLoad={(error) => {
+              console.warn('Ad failed to load:', error);
+            }}
+          />
+        </View>
+      )}
 
       <ContactsModal 
         visible={modalVisible} 
