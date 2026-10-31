@@ -563,6 +563,7 @@ export default function App() {
             ))}
           </ScrollView>
         </View>
+      )}
 
         {/* Centrera på min position (GPS-knapp) */}
         {location && (
