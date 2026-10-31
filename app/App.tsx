@@ -435,29 +435,6 @@ export default function App() {
     mapRef.current?.focusOn(pos.latitude, pos.longitude);
   };
 
-  const handleStopSharing = (share: ActiveShare) => {
-    Alert.alert(
-      'Sluta dela',
-      `Vill du sluta dela din position med ${share.receiver_name}?`,
-      [
-        { text: 'Avbryt', style: 'cancel' },
-        {
-          text: 'Sluta dela',
-          style: 'destructive',
-          onPress: async () => {
-            if (!user) return;
-            try {
-              await api.stopSharing(user.id, share.receiver_id);
-              refreshRef.current();
-            } catch (e) {
-              Alert.alert('Kunde inte avsluta', errorText(e));
-            }
-          },
-        },
-      ]
-    );
-  };
-
   const logout = () => {
     Alert.alert('Byt användare', 'Vill du logga ut från den här telefonen?', [
       { text: 'Avbryt', style: 'cancel' },
@@ -494,6 +471,8 @@ export default function App() {
   }
 
   const pendingOutgoing = inbox.outgoing.filter(o => o.status === 'pending' && minutesLeft(o.expires_at) > 0);
+  const activeShares = inbox.active_shares ?? [];
+  const hasTopItems = activeShares.length > 0 || inbox.positions.length > 0 || pendingOutgoing.length > 0;
 
   return (
     <View style={styles.container}>
@@ -529,33 +508,28 @@ export default function App() {
         )}
 
         {/* Överst: vilka som delar med mig, vad jag delar och väntande förfrågningar */}
-        <View style={styles.topOverlay} pointerEvents="box-none">
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.topScrollContent}
-            pointerEvents="box-none"
-          >
-            {/* Mina aktiva utgående delningar */}
-            {inbox.active_shares?.map(share => (
-              <View key={`my-share-${share.receiver_id}`} style={[styles.shareCard, styles.myShareCard]}>
-                <View style={{ flex: 1 }}>
+        {hasTopItems && (
+          <View style={styles.topOverlay} pointerEvents="box-none">
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.topScrollContent}
+              keyboardShouldPersistTaps="handled"
+              nestedScrollEnabled
+              directionalLockEnabled
+            >
+              {/* Mina aktiva utgående delningar */}
+              {activeShares.map(share => (
+                <View key={`my-share-${share.receiver_id}`} style={styles.shareCard}>
                   <View style={styles.shareHeader}>
                     <Text style={styles.shareTitle} numberOfLines={1}>
-                      <Text style={styles.mySharePrefix}>📤 Du delar med </Text>
+                      <Text style={styles.shareMeta}>Du delar med </Text>
                       <Text style={styles.shareName}>{share.receiver_name}</Text>
                     </Text>
-                    <Text style={styles.myShareBadge}>{minutesLeft(share.expires_at)}m</Text>
+                    <Text style={styles.shareBadge}>{minutesLeft(share.expires_at)}m</Text>
                   </View>
                 </View>
-                <TouchableOpacity
-                  style={styles.stopButton}
-                  onPress={() => handleStopSharing(share)}
-                >
-                  <Text style={styles.stopButtonText}>Avsluta</Text>
-                </TouchableOpacity>
-              </View>
-            ))}
+              ))}
 
             {inbox.positions.map(pos => (
               <View key={`card-${pos.sender_id}`} style={styles.shareCard}>
@@ -791,38 +765,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
     fontSize: 12,
-  },
-  myShareCard: {
-    borderColor: '#bcd6ea',
-    backgroundColor: 'rgba(255, 255, 255, 0.96)',
-  },
-  mySharePrefix: {
-    fontSize: 13,
-    color: '#007AFF',
-    fontWeight: '600',
-  },
-  myShareBadge: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#007AFF',
-    backgroundColor: '#eaf2ff',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 8,
-  },
-  stopButton: {
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#e8c2c2',
-    paddingVertical: 6,
-    paddingHorizontal: 9,
-    borderRadius: 8,
-    marginLeft: 8,
-  },
-  stopButtonText: {
-    color: '#d9383a',
-    fontWeight: '600',
-    fontSize: 11.5,
   },
   pendingChip: {
     flexDirection: 'row',
