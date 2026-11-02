@@ -3,3 +3,5 @@ node_modules/
 .expo/
 android/
 ios/
+*.ips
+
