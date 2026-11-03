@@ -1,6 +1,6 @@
 import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { StyleSheet, Text, View, ActivityIndicator, TouchableOpacity, Platform, Alert, AppState, ScrollView } from 'react-native';
+import { StyleSheet, Text, View, ActivityIndicator, TouchableOpacity, Platform, Alert, AppState, ScrollView, Image } from 'react-native';
 import * as Location from 'expo-location';
 import { FontAwesome6 } from '@expo/vector-icons';
 import LeafletMap, { MapMarkerData, LeafletMapRef } from './src/components/LeafletMap';
@@ -642,6 +642,15 @@ export default function App() {
           </View>
         )}
 
+        {/* Logotyp högst upp på kartan */}
+        <View style={styles.logoHeader} pointerEvents="none">
+          <Image
+            source={require('./assets/logo-header.png')}
+            style={styles.logoImage}
+            resizeMode="contain"
+          />
+        </View>
+
         {/* Överst: vilka som delar med mig, vad jag delar och väntande förfrågningar */}
         {hasTopItems && (
           <View style={styles.topOverlay} pointerEvents="box-none">
@@ -831,6 +840,19 @@ const styles = StyleSheet.create({
   map: {
     width: '100%',
     height: '100%',
+  },
+  logoHeader: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 50 : 38,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    zIndex: 90,
+  },
+  logoImage: {
+    width: 130,
+    height: 36,
+    opacity: 0.7,
   },
   topOverlay: {
     position: 'absolute',
