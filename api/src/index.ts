@@ -308,7 +308,8 @@ app.post('/position/share', async (req, res) => {
     );
 
     const hasActiveShare = Boolean(activeShare.rows[0]);
-    const isBackground = Boolean(req.body.is_background);
+    // Behandla även anrop utan duration_minutes (från äldre app-versioners bakgrundstjänst) som bakgrundsuppdatering
+    const isBackground = Boolean(req.body.is_background) || (req.body.duration_minutes == null && requestId === null);
 
     // Automatisk bakgrundsuppdatering (från background-task eller live-timer):
     if (isBackground) {
