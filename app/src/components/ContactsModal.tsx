@@ -384,14 +384,14 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
           ) : (
             <>
               <Text style={styles.title}>
-                {mode === 'send' ? 'Dela position med...' : mode === 'signal' ? 'Skicka signal till...' : mode === 'ping' ? 'Pinga...' : 'Begär position från...'}
+                {mode === 'send' ? 'Dela position med...' : mode === 'signal' ? 'Skicka signal till...' : mode === 'ping' ? 'Foto-Pinga... 📷' : 'Begär position från...'}
               </Text>
               {mode !== 'send' && (
                 <Text style={styles.subtitle}>
                   {mode === 'signal'
                     ? 'Bjud på en öl, skicka en kram eller en kyss.'
                     : mode === 'ping'
-                    ? 'Skicka en snabb notis till...'
+                    ? 'Skicka en bild & position (max 60 min) eller snabb-ping till...'
                     : 'När de tackar ja ser ni varandras position.'}
                 </Text>
               )}
