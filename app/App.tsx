@@ -642,14 +642,16 @@ export default function App() {
           </View>
         )}
 
-        {/* Logotyp högst upp på kartan */}
-        <View style={styles.logoHeader} pointerEvents="none">
-          <Image
-            source={require('./assets/logo-header.png')}
-            style={styles.logoImage}
-            resizeMode="contain"
-          />
-        </View>
+        {/* Logotyp högst upp på kartan (döljs när första kortet i karusellen dyker upp) */}
+        {!hasTopItems && (
+          <View style={styles.logoHeader} pointerEvents="none">
+            <Image
+              source={require('./assets/logo-header.png')}
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
+          </View>
+        )}
 
         {/* Överst: vilka som delar med mig, vad jag delar och väntande förfrågningar */}
         {hasTopItems && (
@@ -850,8 +852,8 @@ const styles = StyleSheet.create({
     zIndex: 90,
   },
   logoImage: {
-    width: 130,
-    height: 36,
+    width: 260,
+    height: 72,
     opacity: 0.7,
   },
   topOverlay: {
