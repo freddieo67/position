@@ -72,7 +72,7 @@ export const api = {
   matchContacts: (phone_numbers: string[]) =>
     apiPost<{ matches: User[] }>('/contacts/match', { phone_numbers }),
 
-  sharePosition: (body: Coords & { sender_id: number; receiver_id: number; request_id?: number | null; message?: string; duration_minutes?: number }) =>
+  sharePosition: (body: Coords & { sender_id: number; receiver_id: number; request_id?: number | null; message?: string; duration_minutes?: number; is_background?: boolean }) =>
     apiPost<{ id: number; expires_at: string }>('/position/share', body),
 
   stopSharing: (sender_id: number, receiver_id: number) =>

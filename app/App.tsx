@@ -14,7 +14,7 @@ import { api, Inbox, IncomingPosition, IncomingRequest, User, ActiveShare } from
 import { ApiError } from './src/config';
 import { clearUser, loadUser } from './src/session';
 import { getCurrentCoords } from './src/location';
-import { syncBackgroundLocation } from './src/backgroundLocation';
+import { syncBackgroundLocation, addActiveShare } from './src/backgroundLocation';
 import { SIGNALS } from './src/signals';
 import { registerForPushToken, getNotifications } from './src/push';
 import type * as NotificationsType from 'expo-notifications';
@@ -43,6 +43,7 @@ export default function App() {
   const [receivedPing, setReceivedPing] = useState<ReceivedPingData | null>(null);
   const [inbox, setInbox] = useState<Inbox>(EMPTY_INBOX);
   const [pendingRequest, setPendingRequest] = useState<IncomingRequest | null>(null);
+  const [sendingBackIds, setSendingBackIds] = useState<Set<number>>(new Set());
   const [isRespondingRequest, setIsRespondingRequest] = useState(false);
 
   const mapRef = useRef<LeafletMapRef>(null);
@@ -145,8 +146,7 @@ export default function App() {
     if (!user) return;
     const coords = await getCurrentCoords(locationRef.current);
     await api.sharePosition({ sender_id: user.id, receiver_id: receiverId, request_id: requestId, message, duration_minutes: durationMinutes, ...coords });
-    const next = Array.from(new Set([...(sharingRef.current || []), receiverId]));
-    syncBackgroundLocation(next);
+    await addActiveShare(receiverId, durationMinutes);
   }, [user]);
 
   const respondToRequest = useCallback(async (req: IncomingRequest, accept: boolean, message?: string, durationMinutes: number = 15) => {
@@ -156,8 +156,7 @@ export default function App() {
       if (accept) {
         const coords = await getCurrentCoords(locationRef.current);
         await api.respondToRequest(req.id, { user_id: user.id, accept: true, message, duration_minutes: durationMinutes, ...coords });
-        const next = Array.from(new Set([...(sharingRef.current || []), req.requester_id]));
-        syncBackgroundLocation(next);
+        await addActiveShare(req.requester_id, durationMinutes);
         Alert.alert(i18n.t('shared'), `${req.requester_name} och du ser nu varandras position i ${durationMinutes} minuter.`);
       } else {
         await api.respondToRequest(req.id, { user_id: user.id, accept: false });
@@ -247,9 +246,9 @@ export default function App() {
     const sharing = inbox.sharing || [];
     sharingRef.current = sharing;
     if (user) {
-      syncBackgroundLocation(sharing);
+      syncBackgroundLocation(inbox.active_shares && inbox.active_shares.length > 0 ? inbox.active_shares : sharing);
     }
-  }, [inbox.sharing, user]);
+  }, [inbox.sharing, inbox.active_shares, user]);
 
   useEffect(() => {
     if (!user) {
@@ -269,10 +268,10 @@ export default function App() {
         const coords = await getCurrentCoords(locationRef.current);
         if (!active) return;
         
-        // Uppdatera backend för alla vi delar med
+        // Uppdatera backend för alla vi delar med tyst i bakgrunden
         await Promise.all(
           sharing.map(receiverId => 
-            api.sharePosition({ sender_id: user.id, receiver_id: receiverId, ...coords })
+            api.sharePosition({ sender_id: user.id, receiver_id: receiverId, is_background: true, ...coords })
           )
         );
         console.log(`Live-uppdaterade positionen till ${sharing.length} användare`);
@@ -395,6 +394,24 @@ export default function App() {
         return;
       }
       if (modalMode === 'send') {
+        // Kontrollera om vi redan delar med någon av kontakterna
+        const activeSharesList = inbox.active_shares || [];
+        const alreadySharingContacts = contacts.filter(c =>
+          activeSharesList.some(s => s.receiver_id === c.userId && new Date(s.expires_at).getTime() > Date.now()) ||
+          inbox.sharing?.includes(c.userId)
+        );
+
+        if (alreadySharingContacts.length > 0) {
+          const contact = alreadySharingContacts[0];
+          const share = activeSharesList.find(s => s.receiver_id === contact.userId);
+          const mins = share ? minutesLeft(share.expires_at) : 15;
+          const msg = alreadySharingContacts.length === 1
+            ? `Du delar redan din position med ${contact.name} (${mins} minuter kvar).`
+            : `Du delar redan din position med ${alreadySharingContacts.map(c => c.name).join(', ')}.`;
+          Alert.alert('Delar redan', msg);
+          return;
+        }
+
         if (signalType === 'custom' && message) {
           for (const contact of contacts) await shareTo(contact.userId, null, message, durationMinutes);
           Alert.alert(i18n.t('shared'), `${i18n.t('position_shared_with_message')} "${message}" (${durationMinutes} min)`);
@@ -417,7 +434,7 @@ export default function App() {
       }
       refreshRef.current();
     } catch (error) {
-      if (modalMode === 'request' && error instanceof ApiError && error.status === 409 && error.serverMessage) {
+      if (error instanceof ApiError && error.status === 409 && error.serverMessage) {
         Alert.alert('Delar redan', error.serverMessage);
         return;
       }
@@ -426,11 +443,24 @@ export default function App() {
   };
 
   const sendBack = async (pos: IncomingPosition) => {
+    if (sendingBackIds.has(pos.sender_id)) return;
+    setSendingBackIds(prev => new Set(prev).add(pos.sender_id));
     try {
       await shareTo(pos.sender_id);
       Alert.alert(i18n.t('sent'), i18n.t('sees_your_position_10m', { name: pos.sender_name }));
+      refreshRef.current();
     } catch (error) {
-      Alert.alert(i18n.t('error'), errorText(error));
+      if (error instanceof ApiError && error.status === 409 && error.serverMessage) {
+        Alert.alert('Delar redan', error.serverMessage);
+      } else {
+        Alert.alert(i18n.t('error'), errorText(error));
+      }
+    } finally {
+      setSendingBackIds(prev => {
+        const next = new Set(prev);
+        next.delete(pos.sender_id);
+        return next;
+      });
     }
   };
 
@@ -551,8 +581,17 @@ export default function App() {
                   )}
                 </TouchableOpacity>
                 {!inbox.sharing?.includes(pos.sender_id) && (
-                  <TouchableOpacity style={styles.smallButton} onPress={() => sendBack(pos)}>
-                    <Text style={styles.smallButtonText}>Dela tillbaka</Text>
+                  <TouchableOpacity
+                    style={[styles.smallButton, sendingBackIds.has(pos.sender_id) && { opacity: 0.7 }]}
+                    onPress={() => sendBack(pos)}
+                    disabled={sendingBackIds.has(pos.sender_id)}
+                    hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                  >
+                    {sendingBackIds.has(pos.sender_id) ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                      <Text style={styles.smallButtonText}>Dela tillbaka</Text>
+                    )}
                   </TouchableOpacity>
                 )}
               </View>

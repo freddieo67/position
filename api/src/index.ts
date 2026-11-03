@@ -299,11 +299,32 @@ app.post('/position/share', async (req, res) => {
     );
 
     const hasActiveShare = Boolean(activeShare.rows[0]);
-    // Automatisk live-uppdatering i bakgrunden: skickar inget nytt meddelande och inget requestId.
-    // Den uppdaterar koordinaterna tyst utan att skicka en ny notis varje minut.
-    const isBackgroundLiveUpdate = hasActiveShare && !req.body.message && requestId === null;
+    const isBackground = Boolean(req.body.is_background);
 
-    if (hasActiveShare && !isBackgroundLiveUpdate && requestId === null) {
+    // Automatisk bakgrundsuppdatering (från background-task eller live-timer):
+    if (isBackground) {
+      if (!hasActiveShare) {
+        // Delningen har redan gått ut: skapa ALDRIG en ny delning eller skicka notiser från bakgrunden!
+        await client.query('ROLLBACK');
+        return res.status(410).json({ error: 'Share has expired', code: 'EXPIRED' });
+      }
+
+      // Uppdatera befintlig aktiv delning tyst utan notis
+      const updated = await client.query(
+        `UPDATE public.position_requests
+            SET location = ST_SetSRID(ST_MakePoint($1, $2), 4326),
+                accuracy_meters = $3,
+                shared_at = NOW()
+          WHERE id = $4
+          RETURNING id, expires_at, message`,
+        [coords.longitude, coords.latitude, coords.accuracy_meters, activeShare.rows[0].id]
+      );
+      await client.query('COMMIT');
+      return res.json(updated.rows[0]);
+    }
+
+    // Manuell delning: neka om användaren redan delar med personen
+    if (hasActiveShare && requestId === null) {
       await client.query('ROLLBACK');
       const name = await getDisplayName(receiverId);
       return res.status(409).json({
@@ -318,28 +339,13 @@ app.post('/position/share', async (req, res) => {
       ? req.body.message.trim().slice(0, 100) 
       : null;
 
-    let share;
-    if (isBackgroundLiveUpdate && activeShare.rows[0]?.id) {
-      // UPPDATERA befintlig rad istället för att skapa en ny rad var 30-60 sekund!
-      const updated = await client.query(
-        `UPDATE public.position_requests
-            SET location = ST_SetSRID(ST_MakePoint($1, $2), 4326),
-                accuracy_meters = $3,
-                shared_at = NOW()
-          WHERE id = $4
-          RETURNING id, expires_at, message`,
-        [coords.longitude, coords.latitude, coords.accuracy_meters, activeShare.rows[0].id]
-      );
-      share = updated.rows[0];
-    } else {
-      share = await insertShare(client, senderId, receiverId, coords, requestId, customMsg, durationMinutes);
-    }
+    const share = await insertShare(client, senderId, receiverId, coords, requestId, customMsg, durationMinutes);
 
     await client.query('COMMIT');
     res.json(share);
     
-    // Skicka bara notis vid NY manuell delning (inte tysta bakgrundsuppdateringar eller motdelning efter svar)
-    if (requestId === null && !isBackgroundLiveUpdate) {
+    // Skicka bara notis vid ny manuell delning (inte motdelning efter svar)
+    if (requestId === null) {
       getDisplayName(senderId).then(name => {
         const bodyText = customMsg ? `Meddelande: ${customMsg}` : `Delar sin position i ${durationMinutes} minuter.`;
         sendPush(receiverId, `${name} delade sin position`, bodyText, { type: 'share', sender_id: senderId });
