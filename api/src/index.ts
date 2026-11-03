@@ -77,8 +77,9 @@ app.get('/health', async (req, res) => {
   try {
     const result = await pool.query('SELECT NOW()');
     res.json({ status: 'ok', db_time: result.rows[0].now });
-  } catch (error) {
-    res.status(500).json({ status: 'error', message: 'Database connection failed' });
+  } catch (error: any) {
+    console.error('[Health] Database error:', error);
+    res.status(500).json({ status: 'error', message: error?.message || 'Database connection failed' });
   }
 });
 
@@ -604,13 +605,11 @@ async function cleanupExpiredData() {
   }
 }
 
-ensurePushSchema()
-  .catch(error => console.error('Kunde inte uppdatera schema:', error))
-  .finally(() => {
-    app.listen(port, () => {
-      console.log(`API running on http://localhost:${port}`);
-      cleanupExpiredData();
-      setInterval(cleanupExpiredData, 1000 * 60 * 15); // Kör automatisk städning var 15:e minut
-    });
-  });
+app.listen(port, () => {
+  console.log(`API running on http://localhost:${port}`);
+  ensurePushSchema()
+    .then(() => cleanupExpiredData())
+    .catch(error => console.error('Kunde inte uppdatera schema:', error));
+  setInterval(cleanupExpiredData, 1000 * 60 * 15); // Kör automatisk städning var 15:e minut
+});
 

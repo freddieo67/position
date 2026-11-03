@@ -4,17 +4,24 @@ const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';
 
 // Skapar token-kolumnen, cooldown-tabeller och ev. saknade kolumner (körs vid uppstart)
 export async function ensurePushSchema() {
-  await pool.query('ALTER TABLE public.users ADD COLUMN IF NOT EXISTS expo_push_token TEXT');
-  await pool.query('ALTER TABLE public.position_requests ADD COLUMN IF NOT EXISTS message TEXT');
-  await pool.query("ALTER TABLE public.position_requests ADD COLUMN IF NOT EXISTS icon VARCHAR(16) DEFAULT '🐷'");
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS public.signal_cooldowns (
-      sender_id   INTEGER NOT NULL,
-      receiver_id INTEGER NOT NULL,
-      last_sent   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-      PRIMARY KEY (sender_id, receiver_id)
-    );
-  `);
+  const client = await pool.connect();
+  try {
+    await client.query("SET lock_timeout = '4s'");
+    await client.query("SET statement_timeout = '8s'");
+    await client.query('ALTER TABLE public.users ADD COLUMN IF NOT EXISTS expo_push_token TEXT');
+    await client.query('ALTER TABLE public.position_requests ADD COLUMN IF NOT EXISTS message TEXT');
+    await client.query("ALTER TABLE public.position_requests ADD COLUMN IF NOT EXISTS icon VARCHAR(16) DEFAULT '🐷'");
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS public.signal_cooldowns (
+        sender_id   INTEGER NOT NULL,
+        receiver_id INTEGER NOT NULL,
+        last_sent   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        PRIMARY KEY (sender_id, receiver_id)
+      );
+    `);
+  } finally {
+    client.release();
+  }
 }
 
 export async function getDisplayName(userId: number): Promise<string> {

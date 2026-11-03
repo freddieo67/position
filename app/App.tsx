@@ -72,6 +72,8 @@ export default function App() {
 
     (async () => {
       const saved = await loadUser();
+      // Sätt sparad användare direkt så att appen aldrig fastnar på laddningsskärmen om servern är seg
+      setUser(saved);
       if (saved) {
         try {
           await api.getUser(saved.id);
@@ -79,12 +81,10 @@ export default function App() {
           if (error instanceof ApiError && error.status === 404) {
             await clearUser();
             setUser(null);
-            return;
           }
-          // Nätverksfel: behåll användaren, pollningen visar felet senare
+          // Nätverksfel/timeout: behåll användaren inloggad
         }
       }
-      setUser(saved);
     })();
   }, []);
 
@@ -99,16 +99,41 @@ export default function App() {
         return;
       }
 
+      // 1. Visa senast kända position omedelbart om den finns så kartan dyker upp direkt
       try {
-        let currentLocation = await Location.getCurrentPositionAsync({
+        const lastKnown = await Location.getLastKnownPositionAsync();
+        if (active && lastKnown) {
+          locationRef.current = lastKnown;
+          setLocation(lastKnown);
+        }
+      } catch (_) {}
+
+      // 2. Hämta färsk position med timeout så att appen inte står och snurrar inomhus
+      try {
+        const posPromise = Location.getCurrentPositionAsync({
           accuracy: Location.Accuracy.Balanced,
         });
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('Initial location timeout')), 5000)
+        );
+        const currentLocation = await Promise.race([posPromise, timeoutPromise]);
         if (active) {
           locationRef.current = currentLocation;
           setLocation(currentLocation);
         }
       } catch (e) {
-        console.warn('Kunde inte hämta initial position:', e);
+        console.warn('Kunde inte hämta initial position (Balanced), provar lägre noggrannhet:', e);
+        try {
+          const lowLocation = await Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.Low,
+          });
+          if (active) {
+            locationRef.current = lowLocation;
+            setLocation(lowLocation);
+          }
+        } catch (err) {
+          console.warn('Kunde inte hämta initial position:', err);
+        }
       }
 
       try {
