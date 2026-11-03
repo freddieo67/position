@@ -6,6 +6,7 @@ const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';
 export async function ensurePushSchema() {
   await pool.query('ALTER TABLE public.users ADD COLUMN IF NOT EXISTS expo_push_token TEXT');
   await pool.query('ALTER TABLE public.position_requests ADD COLUMN IF NOT EXISTS message TEXT');
+  await pool.query("ALTER TABLE public.position_requests ADD COLUMN IF NOT EXISTS icon VARCHAR(16) DEFAULT '🐷'");
   await pool.query(`
     CREATE TABLE IF NOT EXISTS public.signal_cooldowns (
       sender_id   INTEGER NOT NULL,

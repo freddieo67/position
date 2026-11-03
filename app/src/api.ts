@@ -23,6 +23,7 @@ export interface IncomingPosition {
   shared_at: string;
   expires_at: string;
   message?: string | null;
+  icon?: string | null;
 }
 
 // Någon vill se min position
@@ -53,6 +54,7 @@ export interface ActiveShare {
   receiver_name: string;
   expires_at: string;
   message?: string | null;
+  icon?: string | null;
 }
 
 export interface Inbox {
@@ -72,7 +74,7 @@ export const api = {
   matchContacts: (phone_numbers: string[]) =>
     apiPost<{ matches: User[] }>('/contacts/match', { phone_numbers }),
 
-  sharePosition: (body: Coords & { sender_id: number; receiver_id: number; request_id?: number | null; message?: string; duration_minutes?: number; is_background?: boolean }) =>
+  sharePosition: (body: Coords & { sender_id: number; receiver_id: number; request_id?: number | null; message?: string; duration_minutes?: number; is_background?: boolean; icon?: string }) =>
     apiPost<{ id: number; expires_at: string }>('/position/share', body),
 
   stopSharing: (sender_id: number, receiver_id: number) =>
@@ -81,7 +83,7 @@ export const api = {
   requestPosition: (requester_id: number, target_id: number) =>
     apiPost<{ id: number; status: string; expires_at: string }>('/requests', { requester_id, target_id }),
 
-  respondToRequest: (requestId: number, body: { user_id: number; accept: boolean; message?: string; duration_minutes?: number } & Partial<Coords>) =>
+  respondToRequest: (requestId: number, body: { user_id: number; accept: boolean; message?: string; duration_minutes?: number; icon?: string } & Partial<Coords>) =>
     apiPost<{ status: string }>(`/requests/${requestId}/respond`, body),
 
   inbox: (userId: number) => apiGet<Inbox>(`/users/${userId}/inbox`),

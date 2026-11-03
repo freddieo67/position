@@ -4,6 +4,7 @@ import * as Contacts from 'expo-contacts/legacy';
 import { normalizePhone } from '../config';
 import { api } from '../api';
 import { SIGNALS } from '../signals';
+import { MAP_ICONS, getSavedMapIcon, saveMapIcon, MapIconEmoji, DEFAULT_MAP_ICON } from '../mapIcons';
 import i18n from '../i18n';
 
 // En kontakt i telefonboken som också har appen
@@ -19,7 +20,7 @@ interface ContactsModalProps {
   mode: 'send' | 'request' | 'signal' | 'ping' | null;
   currentUserId: number;
   onClose: () => void;
-  onSelect: (contacts: AppContact | AppContact[], signalType?: string, message?: string, durationMinutes?: number) => void;
+  onSelect: (contacts: AppContact | AppContact[], signalType?: string, message?: string, durationMinutes?: number, icon?: string) => void;
 }
 
 export default function ContactsModal({ visible, mode, currentUserId, onClose, onSelect }: ContactsModalProps) {
@@ -33,7 +34,8 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
   const [checkedContacts, setCheckedContacts] = useState<AppContact[]>([]);
   const [showCustomMessageInput, setShowCustomMessageInput] = useState(false);
   const [customMessageText, setCustomMessageText] = useState('');
-  const [selectedDuration, setSelectedDuration] = useState<5 | 15 | 30>(15);
+  const [selectedDuration, setSelectedDuration] = useState<15 | 30 | 60>(15);
+  const [selectedIcon, setSelectedIcon] = useState<MapIconEmoji>(DEFAULT_MAP_ICON);
 
   useEffect(() => {
     if (visible) {
@@ -44,6 +46,7 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
       setShowCustomMessageInput(false);
       setCustomMessageText('');
       setSelectedDuration(15);
+      getSavedMapIcon().then(setSelectedIcon);
       loadContacts();
     }
   }, [visible]);
@@ -118,7 +121,7 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
                 <>
                   <Text style={styles.subtitle}>Hur länge vill du dela?</Text>
                   <View style={styles.durationRow}>
-                    {([5, 15, 30] as const).map(mins => (
+                    {([15, 30, 60] as const).map(mins => (
                       <TouchableOpacity
                         key={mins}
                         style={[
@@ -139,11 +142,36 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
                     ))}
                   </View>
 
+                  <Text style={styles.subtitle}>Din kartikon (stannar kvar):</Text>
+                  <View style={styles.mapIconRow}>
+                    {MAP_ICONS.map(item => {
+                      const isSelected = selectedIcon === item.emoji;
+                      return (
+                        <TouchableOpacity
+                          key={item.id}
+                          style={[
+                            styles.mapIconBtn,
+                            isSelected && styles.mapIconBtnActive,
+                          ]}
+                          onPress={() => {
+                            setSelectedIcon(item.emoji);
+                            saveMapIcon(item.emoji);
+                          }}
+                        >
+                          <Text style={styles.mapIconEmoji}>{item.emoji}</Text>
+                          <Text style={[styles.mapIconLabel, isSelected && styles.mapIconLabelActive]}>
+                            {item.label}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+
                   <TouchableOpacity
                     style={styles.justPositionBtn}
-                    onPress={() => onSelect(chosenContacts, 'none', undefined, selectedDuration)}
+                    onPress={() => onSelect(chosenContacts, 'none', undefined, selectedDuration, selectedIcon)}
                   >
-                    <Text style={styles.justPositionEmoji}>📍</Text>
+                    <Text style={styles.justPositionEmoji}>{selectedIcon}</Text>
                     <Text style={styles.justPositionText}>
                       {i18n.t('just_position')} ({selectedDuration} min)
                     </Text>
@@ -160,7 +188,7 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
                   <TouchableOpacity
                     key={s.type}
                     style={styles.quickBtn}
-                    onPress={() => onSelect(chosenContacts, s.type, undefined, selectedDuration)}
+                    onPress={() => onSelect(chosenContacts, s.type, undefined, selectedDuration, selectedIcon)}
                   >
                     <Text style={styles.emoji}>{s.emoji}</Text>
                     <Text style={styles.quickText}>{i18n.t(`signal_${s.type}`, { defaultValue: s.label })}</Text>
@@ -181,7 +209,7 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
               <TouchableOpacity
                 style={[styles.sendBtn, !customMessageText.trim() && styles.disabledBtn]}
                 disabled={!customMessageText.trim()}
-                onPress={() => onSelect(chosenContacts, 'custom', customMessageText.trim(), selectedDuration)}
+                onPress={() => onSelect(chosenContacts, 'custom', customMessageText.trim(), selectedDuration, selectedIcon)}
               >
                 <Text style={styles.sendBtnText}>
                   {mode === 'send' ? `${i18n.t('send_position_and_message')} (${selectedDuration} min)` : 'Skicka meddelande 💬'}
@@ -389,10 +417,10 @@ const styles = StyleSheet.create({
   },
   durationBtn: {
     flex: 1,
-    paddingVertical: 10,
+    paddingVertical: 8,
     marginHorizontal: 4,
     backgroundColor: '#f0f0f0',
-    borderRadius: 12,
+    borderRadius: 4,
     alignItems: 'center',
     borderWidth: 1.5,
     borderColor: '#e0e0e0',
@@ -414,13 +442,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#f4f5f7',
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: '#e1e4e8',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 14,
-    marginBottom: 16,
-    marginTop: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 4,
+    marginBottom: 14,
+    marginTop: 4,
   },
   justPositionEmoji: {
     fontSize: 20,
@@ -434,25 +462,62 @@ const styles = StyleSheet.create({
   quickButtons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 16,
+    marginBottom: 10,
+    gap: 6,
   },
   quickBtn: {
     alignItems: 'center',
-    backgroundColor: '#f0f0f0',
-    paddingVertical: 12,
-    paddingHorizontal: 6,
-    borderRadius: 16,
+    backgroundColor: '#f5f5f7',
+    paddingVertical: 6,
+    paddingHorizontal: 2,
+    borderRadius: 4, // Fyrkantig ruta
     flex: 1,
-    marginHorizontal: 4,
+    borderWidth: 1.5,
+    borderColor: '#e2e4e8',
   },
   emoji: {
-    fontSize: 28,
-    marginBottom: 4,
+    fontSize: 24,
+    marginBottom: 1,
   },
   quickText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
     textAlign: 'center',
+    color: '#333',
+  },
+  mapIconRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+    gap: 6,
+  },
+  mapIconBtn: {
+    alignItems: 'center',
+    backgroundColor: '#f5f5f7',
+    paddingVertical: 6,
+    paddingHorizontal: 2,
+    borderRadius: 4, // Fyrkantig ruta
+    flex: 1,
+    borderWidth: 1.5,
+    borderColor: '#e2e4e8',
+  },
+  mapIconBtnActive: {
+    backgroundColor: '#eaf2ff',
+    borderColor: '#007AFF',
+  },
+  mapIconEmoji: {
+    fontSize: 24,
+    marginBottom: 1,
+  },
+  mapIconLabel: {
+    fontSize: 10.5,
+    fontWeight: '600',
+    color: '#555',
+    textAlign: 'center',
+  },
+  mapIconLabelActive: {
+    color: '#007AFF',
+    fontWeight: '700',
   },
   divider: {
     height: 1,

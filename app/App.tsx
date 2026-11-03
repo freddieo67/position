@@ -16,6 +16,7 @@ import { clearUser, loadUser } from './src/session';
 import { getCurrentCoords } from './src/location';
 import { syncBackgroundLocation, addActiveShare } from './src/backgroundLocation';
 import { SIGNALS } from './src/signals';
+import { getSavedMapIcon, saveMapIcon, MapIconEmoji, DEFAULT_MAP_ICON } from './src/mapIcons';
 import { registerForPushToken, getNotifications } from './src/push';
 import type * as NotificationsType from 'expo-notifications';
 import i18n from './src/i18n';
@@ -44,6 +45,11 @@ export default function App() {
   const [inbox, setInbox] = useState<Inbox>(EMPTY_INBOX);
   const [pendingRequest, setPendingRequest] = useState<IncomingRequest | null>(null);
   const [sendingBackIds, setSendingBackIds] = useState<Set<number>>(new Set());
+  const [myMapIcon, setMyMapIcon] = useState<MapIconEmoji>(DEFAULT_MAP_ICON);
+
+  useEffect(() => {
+    getSavedMapIcon().then(setMyMapIcon);
+  }, []);
   const [isRespondingRequest, setIsRespondingRequest] = useState(false);
 
   const mapRef = useRef<LeafletMapRef>(null);
@@ -142,12 +148,13 @@ export default function App() {
   }, [user]);
 
   // Dela min (färska) position med en annan användare
-  const shareTo = useCallback(async (receiverId: number, requestId: number | null = null, message?: string, durationMinutes: number = 15) => {
+  const shareTo = useCallback(async (receiverId: number, requestId: number | null = null, message?: string, durationMinutes: number = 15, icon?: string) => {
     if (!user) return;
     const coords = await getCurrentCoords(locationRef.current);
-    await api.sharePosition({ sender_id: user.id, receiver_id: receiverId, request_id: requestId, message, duration_minutes: durationMinutes, ...coords });
+    const activeIcon = icon || myMapIcon || DEFAULT_MAP_ICON;
+    await api.sharePosition({ sender_id: user.id, receiver_id: receiverId, request_id: requestId, message, duration_minutes: durationMinutes, icon: activeIcon, ...coords });
     await addActiveShare(receiverId, durationMinutes);
-  }, [user]);
+  }, [user, myMapIcon]);
 
   const respondToRequest = useCallback(async (req: IncomingRequest, accept: boolean, message?: string, durationMinutes: number = 15) => {
     if (!user) return;
@@ -155,7 +162,7 @@ export default function App() {
     try {
       if (accept) {
         const coords = await getCurrentCoords(locationRef.current);
-        await api.respondToRequest(req.id, { user_id: user.id, accept: true, message, duration_minutes: durationMinutes, ...coords });
+        await api.respondToRequest(req.id, { user_id: user.id, accept: true, message, duration_minutes: durationMinutes, icon: myMapIcon, ...coords });
         await addActiveShare(req.requester_id, durationMinutes);
         Alert.alert(i18n.t('shared'), `${req.requester_name} och du ser nu varandras position i ${durationMinutes} minuter.`);
       } else {
@@ -372,10 +379,16 @@ export default function App() {
     contactOrContacts: AppContact | AppContact[],
     signalType?: string,
     message?: string,
-    durationMinutes: number = 15
+    durationMinutes: number = 15,
+    icon?: string
   ) => {
     setModalVisible(false);
     if (!user) return;
+
+    if (icon) {
+      setMyMapIcon(icon as MapIconEmoji);
+      saveMapIcon(icon as MapIconEmoji);
+    }
 
     const contacts = Array.isArray(contactOrContacts) ? contactOrContacts : [contactOrContacts];
     const names = contacts.map(c => c.name).join(', ');
@@ -413,10 +426,10 @@ export default function App() {
         }
 
         if (signalType === 'custom' && message) {
-          for (const contact of contacts) await shareTo(contact.userId, null, message, durationMinutes);
+          for (const contact of contacts) await shareTo(contact.userId, null, message, durationMinutes, icon);
           Alert.alert(i18n.t('shared'), `${i18n.t('position_shared_with_message')} "${message}" (${durationMinutes} min)`);
         } else {
-          for (const contact of contacts) await shareTo(contact.userId, null, undefined, durationMinutes);
+          for (const contact of contacts) await shareTo(contact.userId, null, undefined, durationMinutes, icon);
           if (signalType && signalType !== 'none') {
             for (const contact of contacts) await api.sendSignal(user.id, contact.userId, signalType);
             const sent = SIGNALS.find(s => s.type === signalType);
@@ -521,14 +534,14 @@ export default function App() {
               centerLat={location.coords.latitude}
               centerLng={location.coords.longitude}
               markers={[
-                { id: 'me', lat: location.coords.latitude, lng: location.coords.longitude, title: 'Min position', color: '#007AFF', emoji: '🐷' },
+                { id: 'me', lat: location.coords.latitude, lng: location.coords.longitude, title: 'Min position', color: '#007AFF', emoji: myMapIcon },
                 ...inbox.positions.map(pos => ({
                   id: String(pos.sender_id),
                   lat: pos.latitude,
                   lng: pos.longitude,
                   title: pos.message ? `${pos.sender_name}: "${pos.message}"` : pos.sender_name,
                   color: '#FF3B30',
-                  emoji: '🐷'
+                  emoji: pos.icon || '🐷'
                 }))
               ]}
             />
@@ -556,6 +569,7 @@ export default function App() {
                 <View key={`my-share-${share.receiver_id}`} style={styles.shareCard}>
                   <View style={styles.shareHeader}>
                     <Text style={styles.shareTitle} numberOfLines={1}>
+                      <Text style={{ fontSize: 16 }}>{share.icon || myMapIcon} </Text>
                       <Text style={styles.shareMeta}>Du delar med </Text>
                       <Text style={styles.shareName}>{share.receiver_name}</Text>
                     </Text>
@@ -569,6 +583,7 @@ export default function App() {
                 <TouchableOpacity style={{ flex: 1 }} onPress={() => focusOn(pos)}>
                   <View style={styles.shareHeader}>
                     <Text style={styles.shareTitle} numberOfLines={1}>
+                      <Text style={{ fontSize: 16 }}>{pos.icon || '🐷'} </Text>
                       <Text style={styles.shareName}>{pos.sender_name}</Text>
                       <Text style={styles.shareMeta}> delar sin position</Text>
                     </Text>

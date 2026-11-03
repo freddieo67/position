@@ -47,6 +47,8 @@ function parseId(value: unknown): number | null {
   return Number.isInteger(n) && n > 0 ? n : null;
 }
 
+const VALID_ICONS = ['🐷', '👽', '🤡', '🍺', '🦉'];
+
 // Sparar en delad position (sender -> receiver) som syns i durationMinutes
 async function insertShare(
   client: PoolClient,
@@ -55,16 +57,18 @@ async function insertShare(
   coords: Coords,
   requestId: number | null,
   message: string | null = null,
-  durationMinutes: number = 15
+  durationMinutes: number = 15,
+  icon: string = '🐷'
 ) {
-  const mins = [5, 15, 30].includes(durationMinutes) ? durationMinutes : 15;
+  const mins = [5, 15, 30, 60].includes(durationMinutes) ? durationMinutes : 15;
+  const safeIcon = VALID_ICONS.includes(icon) ? icon : '🐷';
   const result = await client.query(
     `INSERT INTO public.position_requests
-       (sender_id, receiver_id, location, accuracy_meters, expires_at, shared_at, status, request_id, message)
+       (sender_id, receiver_id, location, accuracy_meters, expires_at, shared_at, status, request_id, message, icon)
      VALUES
-       ($1, $2, ST_SetSRID(ST_MakePoint($3, $4), 4326), $5, NOW() + make_interval(mins => $6::int), NOW(), 'shared', $7, $8)
-     RETURNING id, expires_at, message`,
-    [senderId, receiverId, coords.longitude, coords.latitude, coords.accuracy_meters, mins, requestId, message]
+       ($1, $2, ST_SetSRID(ST_MakePoint($3, $4), 4326), $5, NOW() + make_interval(mins => $6::int), NOW(), 'shared', $7, $8, $9)
+     RETURNING id, expires_at, message, icon`,
+    [senderId, receiverId, coords.longitude, coords.latitude, coords.accuracy_meters, mins, requestId, message, safeIcon]
   );
   return result.rows[0];
 }
@@ -338,8 +342,9 @@ app.post('/position/share', async (req, res) => {
     const customMsg = typeof req.body.message === 'string' && req.body.message.trim().length > 0 
       ? req.body.message.trim().slice(0, 100) 
       : null;
+    const icon = typeof req.body.icon === 'string' ? req.body.icon : '🐷';
 
-    const share = await insertShare(client, senderId, receiverId, coords, requestId, customMsg, durationMinutes);
+    const share = await insertShare(client, senderId, receiverId, coords, requestId, customMsg, durationMinutes, icon);
 
     await client.query('COMMIT');
     res.json(share);
@@ -462,7 +467,8 @@ app.post('/requests/:id/respond', async (req, res) => {
 
     let share = null;
     if (accept) {
-      share = await insertShare(client, userId, updated.rows[0].requester_id, coords!, requestId, customMsg, durationMinutes);
+      const icon = typeof req.body.icon === 'string' ? req.body.icon : '🐷';
+      share = await insertShare(client, userId, updated.rows[0].requester_id, coords!, requestId, customMsg, durationMinutes, icon);
     }
     await client.query('COMMIT');
     res.json({ status: accept ? 'accepted' : 'declined', share });
@@ -500,7 +506,8 @@ app.get('/users/:id/inbox', async (req, res) => {
         `SELECT DISTINCT ON (p.sender_id)
                 p.id, p.sender_id, u.display_name AS sender_name,
                 ST_Y(p.location) AS latitude, ST_X(p.location) AS longitude,
-                p.accuracy_meters, p.shared_at, p.expires_at, p.message
+                p.accuracy_meters, p.shared_at, p.expires_at, p.message,
+                COALESCE(p.icon, '🐷') AS icon
            FROM public.position_requests p
            JOIN public.users u ON u.id = p.sender_id
           WHERE p.receiver_id = $1 AND p.expires_at > NOW() AND p.location IS NOT NULL
@@ -527,7 +534,8 @@ app.get('/users/:id/inbox', async (req, res) => {
       pool.query(
         `SELECT DISTINCT ON (p.receiver_id)
                 p.id, p.receiver_id, u.display_name AS receiver_name,
-                p.expires_at, p.message
+                p.expires_at, p.message,
+                COALESCE(p.icon, '🐷') AS icon
            FROM public.position_requests p
            JOIN public.users u ON u.id = p.receiver_id
           WHERE p.sender_id = $1 AND p.expires_at > NOW() AND p.location IS NOT NULL

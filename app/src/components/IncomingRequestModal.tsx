@@ -27,7 +27,7 @@ export default function IncomingRequestModal({
   onDecline,
 }: IncomingRequestModalProps) {
   const [customText, setCustomText] = useState('');
-  const [selectedDuration, setSelectedDuration] = useState<5 | 15 | 30>(15);
+  const [selectedDuration, setSelectedDuration] = useState<15 | 30 | 60>(15);
 
   useEffect(() => {
     if (request) {
@@ -71,7 +71,7 @@ export default function IncomingRequestModal({
 
           <Text style={styles.durationLabel}>Hur länge vill du dela?</Text>
           <View style={styles.durationRow}>
-            {([5, 15, 30] as const).map(mins => (
+            {([15, 30, 60] as const).map(mins => (
               <TouchableOpacity
                 key={mins}
                 style={[
@@ -180,9 +180,9 @@ const styles = StyleSheet.create({
   },
   durationBtn: {
     flex: 1,
-    paddingVertical: 9,
+    paddingVertical: 8,
     backgroundColor: '#f0f0f0',
-    borderRadius: 12,
+    borderRadius: 4,
     alignItems: 'center',
     borderWidth: 1.5,
     borderColor: '#e0e0e0',
