@@ -9,19 +9,22 @@ export interface MapMarkerData {
   title: string;
   color: string;
   emoji?: string;
+  photoThumb?: string | null;
+  shareId?: number;
 }
 
 interface Props {
   centerLat: number;
   centerLng: number;
   markers: MapMarkerData[];
+  onMarkerPress?: (marker: MapMarkerData) => void;
 }
 
 export interface LeafletMapRef {
   focusOn: (lat: number, lng: number) => void;
 }
 
-const LeafletMap = React.forwardRef<LeafletMapRef, Props>(({ centerLat, centerLng, markers }, ref) => {
+const LeafletMap = React.forwardRef<LeafletMapRef, Props>(({ centerLat, centerLng, markers, onMarkerPress }, ref) => {
   const webViewRef = useRef<WebView>(null);
   const readyRef = useRef(false);
   const pendingFocus = useRef<{ lat: number; lng: number } | null>(null);
@@ -72,25 +75,65 @@ const LeafletMap = React.forwardRef<LeafletMapRef, Props>(({ centerLat, centerLn
           newMarkers.forEach(function(m) {
             newIds[m.id] = true;
             var isUser = m.id === 'me';
-            if (markers[m.id]) {
-              markers[m.id].setLatLng([m.lat, m.lng]);
-              if (markers[m.id].getPopup()) {
-                markers[m.id].getPopup().setContent(m.title);
+            var existing = markers[m.id];
+            var prevThumb = existing ? (existing._photoThumb || '') : '';
+            var prevEmoji = existing ? (existing._emoji || '') : '';
+            var nextThumb = m.photoThumb || '';
+            var nextEmoji = m.emoji || '';
+
+            if (existing && prevThumb === nextThumb && prevEmoji === nextEmoji) {
+              existing.setLatLng([m.lat, m.lng]);
+              if (existing.getPopup()) {
+                existing.getPopup().setContent(m.title);
               }
             } else {
+              if (existing) {
+                map.removeLayer(existing);
+                delete markers[m.id];
+              }
               var marker;
-              if (m.emoji) {
-                var nameHtml = !isUser && m.title ? '<div style="margin-top:-4px;font-size:11px;font-weight:600;color:#fff;background:rgba(0,0,0,0.6);padding:2px 6px;border-radius:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:70px;text-align:center;">' + m.title.split(' ')[0] + '</div>' : '';
+              var nameHtml = !isUser && m.title ? '<div style="margin-top:2px;font-size:11px;font-weight:600;color:#fff;background:rgba(0,0,0,0.65);padding:2px 6px;border-radius:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:76px;text-align:center;">' + m.title.split(':')[0].split(' ')[0] + '</div>' : '';
+
+              if (m.photoThumb) {
+                var thumbHtml = '<div style="position:relative;width:48px;height:48px;border-radius:12px;border:2.5px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.45);overflow:hidden;background:#222;">' +
+                  '<img src="' + m.photoThumb + '" style="width:100%;height:100%;object-fit:cover;display:block;" />' +
+                  '<div style="position:absolute;bottom:1px;right:2px;font-size:11px;line-height:12px;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.8));">📷</div>' +
+                '</div>';
+                marker = L.marker([m.lat, m.lng], {
+                  icon: L.divIcon({
+                    className: '',
+                    html: '<div style="display:flex;flex-direction:column;align-items:center;width:84px;justify-content:center;">' + thumbHtml + nameHtml + '</div>',
+                    iconSize: [84, 84],
+                    iconAnchor: [42, 48],
+                    popupAnchor: [0, -34],
+                  }),
+                });
+                marker.on('click', function() {
+                  if (window.ReactNativeWebView) {
+                    window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'markerPress', id: m.id, shareId: m.shareId }));
+                  }
+                });
+              } else if (m.emoji) {
+                var emojiNameHtml = !isUser && m.title ? '<div style="margin-top:-4px;font-size:11px;font-weight:600;color:#fff;background:rgba(0,0,0,0.6);padding:2px 6px;border-radius:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:70px;text-align:center;">' + m.title.split(':')[0].split(' ')[0] + '</div>' : '';
 
                 marker = L.marker([m.lat, m.lng], {
                   icon: L.divIcon({
                     className: '',
-                    html: '<div style="display:flex;flex-direction:column;align-items:center;width:80px;justify-content:center;"><div style="font-size:44px;line-height:44px;text-align:center;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.45));">' + m.emoji + '</div>' + nameHtml + '</div>',
+                    html: '<div style="display:flex;flex-direction:column;align-items:center;width:80px;justify-content:center;"><div style="font-size:44px;line-height:44px;text-align:center;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.45));">' + m.emoji + '</div>' + emojiNameHtml + '</div>',
                     iconSize: [80, 80],
                     iconAnchor: [40, 44],
                     popupAnchor: [0, -30],
                   }),
                 });
+                if (m.shareId && m.emoji === '📷') {
+                  marker.on('click', function() {
+                    if (window.ReactNativeWebView) {
+                      window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'markerPress', id: m.id, shareId: m.shareId }));
+                    }
+                  });
+                } else {
+                  marker.bindPopup(m.title);
+                }
               } else {
                 marker = L.circleMarker([m.lat, m.lng], {
                   color: m.color,
@@ -99,8 +142,11 @@ const LeafletMap = React.forwardRef<LeafletMapRef, Props>(({ centerLat, centerLn
                   radius: isUser ? 6 : 8,
                   weight: isUser ? 2 : 0,
                 });
+                marker.bindPopup(m.title);
               }
-              marker.addTo(map).bindPopup(m.title);
+              marker._photoThumb = nextThumb;
+              marker._emoji = nextEmoji;
+              marker.addTo(map);
               markers[m.id] = marker;
             }
           });
@@ -130,6 +176,15 @@ const LeafletMap = React.forwardRef<LeafletMapRef, Props>(({ centerLat, centerLn
         source={{ html }}
         style={styles.map}
         scrollEnabled={false}
+        onMessage={(event) => {
+          try {
+            const payload = JSON.parse(event.nativeEvent.data);
+            if (payload?.type === 'markerPress' && onMarkerPress) {
+              const found = markers.find(m => m.id === String(payload.id));
+              if (found) onMarkerPress(found);
+            }
+          } catch (_) {}
+        }}
         onLoadEnd={() => {
           readyRef.current = true;
           webViewRef.current?.injectJavaScript(`updateMarkers(${JSON.stringify(markers)}); true;`);

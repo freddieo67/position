@@ -14,6 +14,8 @@ export async function ensurePushSchema(): Promise<boolean> {
     await client.query('ALTER TABLE public.users ADD COLUMN IF NOT EXISTS expo_push_token TEXT');
     await client.query('ALTER TABLE public.position_requests ADD COLUMN IF NOT EXISTS message TEXT');
     await client.query("ALTER TABLE public.position_requests ADD COLUMN IF NOT EXISTS icon VARCHAR(16) DEFAULT '🐷'");
+    await client.query('ALTER TABLE public.position_requests ADD COLUMN IF NOT EXISTS photo_thumb TEXT');
+    await client.query('ALTER TABLE public.position_requests ADD COLUMN IF NOT EXISTS photo_data TEXT');
     await client.query(`
       CREATE TABLE IF NOT EXISTS public.signal_cooldowns (
         sender_id   INTEGER NOT NULL,

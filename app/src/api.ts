@@ -24,6 +24,8 @@ export interface IncomingPosition {
   expires_at: string;
   message?: string | null;
   icon?: string | null;
+  photo_thumb?: string | null;
+  has_photo?: boolean;
 }
 
 // Någon vill se min position
@@ -55,6 +57,18 @@ export interface ActiveShare {
   expires_at: string;
   message?: string | null;
   icon?: string | null;
+  photo_thumb?: string | null;
+  has_photo?: boolean;
+}
+
+export interface SharePhotoResponse {
+  id: number;
+  sender_id: number;
+  sender_name: string;
+  message?: string | null;
+  shared_at: string;
+  expires_at: string;
+  photo_data: string;
 }
 
 export interface Inbox {
@@ -74,8 +88,11 @@ export const api = {
   matchContacts: (phone_numbers: string[]) =>
     apiPost<{ matches: User[] }>('/contacts/match', { phone_numbers }),
 
-  sharePosition: (body: Coords & { sender_id: number; receiver_id: number; request_id?: number | null; message?: string; duration_minutes?: number; is_background?: boolean; icon?: string }) =>
+  sharePosition: (body: Coords & { sender_id: number; receiver_id: number; request_id?: number | null; message?: string; duration_minutes?: number; is_background?: boolean; icon?: string; photo_thumb?: string | null; photo_data?: string | null }) =>
     apiPost<{ id: number; expires_at: string }>('/position/share', body),
+
+  getSharePhoto: (shareId: number) =>
+    apiGet<SharePhotoResponse>(`/position/photo/${shareId}`),
 
   stopSharing: (sender_id: number, receiver_id?: number) =>
     apiPost<{ ok: boolean }>('/position/stop', receiver_id != null ? { sender_id, receiver_id } : { sender_id }),

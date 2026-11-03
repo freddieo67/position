@@ -9,6 +9,8 @@
     "expo-build-properties": "^57.0.22",
     "expo-contacts": "~57.0.8",
     "expo-device": "~57.0.2",
+    "expo-image-manipulator": "~57.0.21",
+    "expo-image-picker": "~57.0.20",
     "expo-localization": "^57.0.2",
     "expo-location": "~57.0.22",
     "expo-notifications": "~57.0.24",

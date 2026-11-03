@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Modal, View, Text, StyleSheet, TouchableOpacity, FlatList, TextInput, ActivityIndicator, ScrollView } from 'react-native';
+import { Modal, View, Text, StyleSheet, TouchableOpacity, FlatList, TextInput, ActivityIndicator, ScrollView, Alert, Image } from 'react-native';
 import * as Contacts from 'expo-contacts/legacy';
+import * as ImagePicker from 'expo-image-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
 import { normalizePhone } from '../config';
 import { api } from '../api';
 import { SIGNALS } from '../signals';
@@ -20,7 +22,15 @@ interface ContactsModalProps {
   mode: 'send' | 'request' | 'signal' | 'ping' | null;
   currentUserId: number;
   onClose: () => void;
-  onSelect: (contacts: AppContact | AppContact[], signalType?: string, message?: string, durationMinutes?: number, icon?: string) => void;
+  onSelect: (
+    contacts: AppContact | AppContact[],
+    signalType?: string,
+    message?: string,
+    durationMinutes?: number,
+    icon?: string,
+    photoThumb?: string | null,
+    photoData?: string | null
+  ) => void;
 }
 
 export default function ContactsModal({ visible, mode, currentUserId, onClose, onSelect }: ContactsModalProps) {
@@ -36,6 +46,9 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
   const [customMessageText, setCustomMessageText] = useState('');
   const [selectedDuration, setSelectedDuration] = useState<15 | 30 | 60>(15);
   const [selectedIcon, setSelectedIcon] = useState<MapIconEmoji>(DEFAULT_MAP_ICON);
+  const [photoThumb, setPhotoThumb] = useState<string | null>(null);
+  const [photoData, setPhotoData] = useState<string | null>(null);
+  const [processingPhoto, setProcessingPhoto] = useState(false);
 
   useEffect(() => {
     if (visible) {
@@ -46,10 +59,101 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
       setShowCustomMessageInput(false);
       setCustomMessageText('');
       setSelectedDuration(15);
+      setPhotoThumb(null);
+      setPhotoData(null);
+      setProcessingPhoto(false);
       getSavedMapIcon().then(setSelectedIcon);
       loadContacts();
     }
   }, [visible]);
+
+  const processSelectedAsset = async (uri: string) => {
+    setProcessingPhoto(true);
+    try {
+      const [thumbRes, fullRes] = await Promise.all([
+        ImageManipulator.manipulateAsync(
+          uri,
+          [{ resize: { width: 160 } }],
+          { compress: 0.65, format: ImageManipulator.SaveFormat.JPEG, base64: true }
+        ),
+        ImageManipulator.manipulateAsync(
+          uri,
+          [{ resize: { width: 900 } }],
+          { compress: 0.68, format: ImageManipulator.SaveFormat.JPEG, base64: true }
+        ),
+      ]);
+      if (thumbRes.base64) {
+        setPhotoThumb(`data:image/jpeg;base64,${thumbRes.base64}`);
+      }
+      if (fullRes.base64) {
+        setPhotoData(`data:image/jpeg;base64,${fullRes.base64}`);
+      }
+    } catch (e) {
+      console.warn('Kunde inte bearbeta bild:', e);
+      Alert.alert('Fel', 'Kunde inte läsa in bilden.');
+    } finally {
+      setProcessingPhoto(false);
+    }
+  };
+
+  const pickFromCamera = async () => {
+    try {
+      const perm = await ImagePicker.requestCameraPermissionsAsync();
+      if (!perm.granted) {
+        Alert.alert('Behörighet saknas', 'Appen behöver tillgång till kameran för att ta en bild.');
+        return;
+      }
+      const res = await ImagePicker.launchCameraAsync({
+        mediaTypes: ['images'],
+        quality: 0.8,
+      });
+      if (!res.canceled && res.assets?.[0]?.uri) {
+        await processSelectedAsset(res.assets[0].uri);
+      }
+    } catch (e) {
+      console.warn('Kamerafel:', e);
+      Alert.alert('Fel', 'Kunde inte öppna kameran.');
+    }
+  };
+
+  const pickFromLibrary = async () => {
+    try {
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perm.granted) {
+        Alert.alert('Behörighet saknas', 'Appen behöver tillgång till dina bilder.');
+        return;
+      }
+      const res = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        quality: 0.8,
+      });
+      if (!res.canceled && res.assets?.[0]?.uri) {
+        await processSelectedAsset(res.assets[0].uri);
+      }
+    } catch (e) {
+      console.warn('Bildbiblioteksfel:', e);
+      Alert.alert('Fel', 'Kunde inte öppna bildbiblioteket.');
+    }
+  };
+
+  const handleCameraIconPress = () => {
+    const buttons: { text: string; onPress?: () => void; style?: 'cancel' | 'destructive' }[] = [
+      { text: '📷 Ta bild', onPress: pickFromCamera },
+      { text: '🖼️ Välj bild', onPress: pickFromLibrary },
+    ];
+    if (photoThumb) {
+      buttons.push({
+        text: 'Ta bort bild',
+        style: 'destructive',
+        onPress: () => {
+          setPhotoThumb(null);
+          setPhotoData(null);
+        },
+      });
+    }
+    buttons.push({ text: 'Avbryt', style: 'cancel' });
+    Alert.alert('Dela med bild 📷', 'Vill du ta en bild med kameran eller välja från ditt bildbibliotek?', buttons);
+  };
 
   const loadContacts = async () => {
     setLoading(true);
@@ -145,7 +249,7 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
                   <Text style={styles.subtitle}>Din kartikon (stannar kvar):</Text>
                   <View style={styles.mapIconRow}>
                     {MAP_ICONS.map(item => {
-                      const isSelected = selectedIcon === item.emoji;
+                      const isSelected = !photoThumb && selectedIcon === item.emoji;
                       return (
                         <TouchableOpacity
                           key={item.id}
@@ -154,6 +258,8 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
                             isSelected && styles.mapIconBtnActive,
                           ]}
                           onPress={() => {
+                            setPhotoThumb(null);
+                            setPhotoData(null);
                             setSelectedIcon(item.emoji);
                             saveMapIcon(item.emoji);
                           }}
@@ -165,15 +271,49 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
                         </TouchableOpacity>
                       );
                     })}
+                    <TouchableOpacity
+                      style={[
+                        styles.mapIconBtn,
+                        Boolean(photoThumb) && styles.mapIconBtnActive,
+                      ]}
+                      onPress={handleCameraIconPress}
+                      disabled={processingPhoto}
+                    >
+                      {processingPhoto ? (
+                        <ActivityIndicator size="small" color="#007AFF" />
+                      ) : photoThumb ? (
+                        <Image source={{ uri: photoThumb }} style={styles.cameraThumbPreview} />
+                      ) : (
+                        <Text style={styles.mapIconEmoji}>📷</Text>
+                      )}
+                      <Text style={[styles.mapIconLabel, Boolean(photoThumb) && styles.mapIconLabelActive]}>
+                        {photoThumb ? 'Byt bild' : 'Foto'}
+                      </Text>
+                    </TouchableOpacity>
                   </View>
 
                   <TouchableOpacity
                     style={styles.justPositionBtn}
-                    onPress={() => onSelect(chosenContacts, 'none', undefined, selectedDuration, selectedIcon)}
+                    disabled={processingPhoto}
+                    onPress={() =>
+                      onSelect(
+                        chosenContacts,
+                        'none',
+                        undefined,
+                        selectedDuration,
+                        photoThumb ? '📷' : selectedIcon,
+                        photoThumb,
+                        photoData
+                      )
+                    }
                   >
-                    <Text style={styles.justPositionEmoji}>{selectedIcon}</Text>
+                    {photoThumb ? (
+                      <Image source={{ uri: photoThumb }} style={styles.justPositionThumb} />
+                    ) : (
+                      <Text style={styles.justPositionEmoji}>{selectedIcon}</Text>
+                    )}
                     <Text style={styles.justPositionText}>
-                      {i18n.t('just_position')} ({selectedDuration} min)
+                      {photoThumb ? `Dela position med bild (${selectedDuration} min)` : `${i18n.t('just_position')} (${selectedDuration} min)`}
                     </Text>
                   </TouchableOpacity>
                 </>
@@ -188,7 +328,18 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
                   <TouchableOpacity
                     key={s.type}
                     style={styles.mapIconBtn}
-                    onPress={() => onSelect(chosenContacts, s.type, undefined, selectedDuration, selectedIcon)}
+                    disabled={processingPhoto}
+                    onPress={() =>
+                      onSelect(
+                        chosenContacts,
+                        s.type,
+                        undefined,
+                        selectedDuration,
+                        photoThumb ? '📷' : selectedIcon,
+                        photoThumb,
+                        photoData
+                      )
+                    }
                   >
                     <Text style={styles.mapIconEmoji}>{s.emoji}</Text>
                     <Text style={styles.mapIconLabel}>{s.label}</Text>
@@ -207,9 +358,19 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
                 maxLength={100}
               />
               <TouchableOpacity
-                style={[styles.sendBtn, !customMessageText.trim() && styles.disabledBtn]}
-                disabled={!customMessageText.trim()}
-                onPress={() => onSelect(chosenContacts, 'custom', customMessageText.trim(), selectedDuration, selectedIcon)}
+                style={[styles.sendBtn, (!customMessageText.trim() || processingPhoto) && styles.disabledBtn]}
+                disabled={!customMessageText.trim() || processingPhoto}
+                onPress={() =>
+                  onSelect(
+                    chosenContacts,
+                    'custom',
+                    customMessageText.trim(),
+                    selectedDuration,
+                    photoThumb ? '📷' : selectedIcon,
+                    photoThumb,
+                    photoData
+                  )
+                }
               >
                 <Text style={styles.sendBtnText}>
                   {mode === 'send' ? `${i18n.t('send_position_and_message')} (${selectedDuration} min)` : 'Skicka meddelande 💬'}
@@ -453,6 +614,18 @@ const styles = StyleSheet.create({
   justPositionEmoji: {
     fontSize: 20,
     marginRight: 8,
+  },
+  justPositionThumb: {
+    width: 26,
+    height: 26,
+    borderRadius: 6,
+    marginRight: 8,
+  },
+  cameraThumbPreview: {
+    width: 28,
+    height: 28,
+    borderRadius: 6,
+    marginBottom: 2,
   },
   justPositionText: {
     fontSize: 15,

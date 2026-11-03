@@ -1,6 +1,6 @@
 import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { StyleSheet, Text, View, ActivityIndicator, TouchableOpacity, Platform, Alert, AppState, ScrollView, Image } from 'react-native';
+import { StyleSheet, Text, View, ActivityIndicator, TouchableOpacity, Platform, Alert, AppState, ScrollView, Image, Modal } from 'react-native';
 import * as Location from 'expo-location';
 import { FontAwesome6 } from '@expo/vector-icons';
 import LeafletMap, { MapMarkerData, LeafletMapRef } from './src/components/LeafletMap';
@@ -46,6 +46,42 @@ export default function App() {
   const [pendingRequest, setPendingRequest] = useState<IncomingRequest | null>(null);
   const [sendingBackIds, setSendingBackIds] = useState<Set<number>>(new Set());
   const [myMapIcon, setMyMapIcon] = useState<MapIconEmoji>(DEFAULT_MAP_ICON);
+  const [photoViewer, setPhotoViewer] = useState<{
+    shareId: number;
+    senderName: string;
+    message?: string | null;
+    expiresAt?: string;
+    imageUri: string;
+    loadingFull: boolean;
+  } | null>(null);
+
+  const openPhotoViewer = useCallback(async (
+    shareId: number,
+    senderName: string,
+    thumbUri?: string | null,
+    message?: string | null,
+    expiresAt?: string
+  ) => {
+    setPhotoViewer({
+      shareId,
+      senderName,
+      message,
+      expiresAt,
+      imageUri: thumbUri || '',
+      loadingFull: true,
+    });
+    try {
+      const full = await api.getSharePhoto(shareId);
+      setPhotoViewer(prev =>
+        prev && prev.shareId === shareId
+          ? { ...prev, imageUri: full.photo_data || prev.imageUri, loadingFull: false }
+          : prev
+      );
+    } catch (e) {
+      console.warn('Kunde inte hämta fullstor bild:', e);
+      setPhotoViewer(prev => (prev && prev.shareId === shareId ? { ...prev, loadingFull: false } : prev));
+    }
+  }, []);
 
   useEffect(() => {
     getSavedMapIcon().then(setMyMapIcon);
@@ -173,11 +209,29 @@ export default function App() {
   }, [user]);
 
   // Dela min (färska) position med en annan användare
-  const shareTo = useCallback(async (receiverId: number, requestId: number | null = null, message?: string, durationMinutes: number = 15, icon?: string) => {
+  const shareTo = useCallback(async (
+    receiverId: number,
+    requestId: number | null = null,
+    message?: string,
+    durationMinutes: number = 15,
+    icon?: string,
+    photoThumb?: string | null,
+    photoData?: string | null
+  ) => {
     if (!user) return;
     const coords = await getCurrentCoords(locationRef.current);
-    const activeIcon = icon || myMapIcon || DEFAULT_MAP_ICON;
-    await api.sharePosition({ sender_id: user.id, receiver_id: receiverId, request_id: requestId, message, duration_minutes: durationMinutes, icon: activeIcon, ...coords });
+    const activeIcon = photoThumb ? '📷' : (icon || myMapIcon || DEFAULT_MAP_ICON);
+    await api.sharePosition({
+      sender_id: user.id,
+      receiver_id: receiverId,
+      request_id: requestId,
+      message,
+      duration_minutes: durationMinutes,
+      icon: activeIcon,
+      photo_thumb: photoThumb ?? null,
+      photo_data: photoData ?? null,
+      ...coords,
+    });
     await addActiveShare(receiverId, durationMinutes);
   }, [user, myMapIcon]);
 
@@ -405,12 +459,14 @@ export default function App() {
     signalType?: string,
     message?: string,
     durationMinutes: number = 15,
-    icon?: string
+    icon?: string,
+    photoThumb?: string | null,
+    photoData?: string | null
   ) => {
     setModalVisible(false);
     if (!user) return;
 
-    if (icon) {
+    if (icon && icon !== '📷') {
       setMyMapIcon(icon as MapIconEmoji);
       saveMapIcon(icon as MapIconEmoji);
     }
@@ -451,16 +507,16 @@ export default function App() {
         }
 
         if (signalType === 'custom' && message) {
-          for (const contact of contacts) await shareTo(contact.userId, null, message, durationMinutes, icon);
+          for (const contact of contacts) await shareTo(contact.userId, null, message, durationMinutes, icon, photoThumb, photoData);
           Alert.alert(i18n.t('shared'), `${i18n.t('position_shared_with_message')} "${message}" (${durationMinutes} min)`);
         } else {
-          for (const contact of contacts) await shareTo(contact.userId, null, undefined, durationMinutes, icon);
+          for (const contact of contacts) await shareTo(contact.userId, null, undefined, durationMinutes, icon, photoThumb, photoData);
           if (signalType && signalType !== 'none') {
             for (const contact of contacts) await api.sendSignal(user.id, contact.userId, signalType);
             const sent = SIGNALS.find(s => s.type === signalType);
-            Alert.alert(i18n.t('shared'), `${names} ser din position i ${durationMinutes} min ${sent?.emoji ?? ''}`);
+            Alert.alert(i18n.t('shared'), `${names} ser din position${photoThumb ? ' och bild' : ''} i ${durationMinutes} min ${sent?.emoji ?? ''}`);
           } else {
-            Alert.alert(i18n.t('shared'), `${names} ser din position i ${durationMinutes} minuter.`);
+            Alert.alert(i18n.t('shared'), `${names} ser din position${photoThumb ? ' och bild' : ''} i ${durationMinutes} minuter.`);
           }
         }
       } else {
@@ -607,6 +663,7 @@ export default function App() {
 
   const pendingOutgoing = inbox.outgoing.filter(o => o.status === 'pending' && minutesLeft(o.expires_at) > 0);
   const activeShares = inbox.active_shares ?? [];
+  const myActivePhotoShare = activeShares.find(s => Boolean(s.photo_thumb));
   const hasTopItems = activeShares.length > 0 || inbox.positions.length > 0 || pendingOutgoing.length > 0;
 
   return (
@@ -623,16 +680,44 @@ export default function App() {
               centerLat={location.coords.latitude}
               centerLng={location.coords.longitude}
               markers={[
-                { id: 'me', lat: location.coords.latitude, lng: location.coords.longitude, title: 'Min position', color: '#007AFF', emoji: myMapIcon },
+                {
+                  id: 'me',
+                  lat: location.coords.latitude,
+                  lng: location.coords.longitude,
+                  title: 'Min position',
+                  color: '#007AFF',
+                  emoji: myActivePhotoShare ? '📷' : myMapIcon,
+                  photoThumb: myActivePhotoShare?.photo_thumb ?? null,
+                  shareId: myActivePhotoShare?.id,
+                },
                 ...inbox.positions.map(pos => ({
                   id: String(pos.sender_id),
                   lat: pos.latitude,
                   lng: pos.longitude,
                   title: pos.message ? `${pos.sender_name}: "${pos.message}"` : pos.sender_name,
                   color: '#FF3B30',
-                  emoji: pos.icon || '🐷'
+                  emoji: pos.icon || '🐷',
+                  photoThumb: pos.photo_thumb ?? null,
+                  shareId: pos.id,
                 }))
               ]}
+              onMarkerPress={(marker) => {
+                if (!marker.shareId) return;
+                if (marker.id === 'me' && myActivePhotoShare) {
+                  openPhotoViewer(
+                    myActivePhotoShare.id,
+                    user.display_name,
+                    myActivePhotoShare.photo_thumb,
+                    myActivePhotoShare.message,
+                    myActivePhotoShare.expires_at
+                  );
+                  return;
+                }
+                const pos = inbox.positions.find(p => String(p.sender_id) === marker.id);
+                if (pos && (pos.photo_thumb || pos.has_photo || pos.icon === '📷')) {
+                  openPhotoViewer(pos.id, pos.sender_name, pos.photo_thumb, pos.message, pos.expires_at);
+                }
+              }}
             />
           )
         ) : (
@@ -685,12 +770,25 @@ export default function App() {
 
             {inbox.positions.map(pos => (
               <View key={`card-${pos.sender_id}`} style={styles.shareCard}>
-                <TouchableOpacity style={{ flex: 1 }} onPress={() => focusOn(pos)}>
+                <TouchableOpacity
+                  style={{ flex: 1 }}
+                  onPress={() => {
+                    focusOn(pos);
+                    if (pos.photo_thumb || pos.has_photo) {
+                      openPhotoViewer(pos.id, pos.sender_name, pos.photo_thumb, pos.message, pos.expires_at);
+                    }
+                  }}
+                >
                   <View style={styles.shareHeader}>
+                    {pos.photo_thumb ? (
+                      <Image source={{ uri: pos.photo_thumb }} style={styles.cardThumb} />
+                    ) : null}
                     <Text style={styles.shareTitle} numberOfLines={1}>
-                      <Text style={{ fontSize: 16 }}>{pos.icon || '🐷'} </Text>
+                      {!pos.photo_thumb && <Text style={{ fontSize: 16 }}>{pos.icon || '🐷'} </Text>}
                       <Text style={styles.shareName}>{pos.sender_name}</Text>
-                      <Text style={styles.shareMeta}> delar sin position</Text>
+                      <Text style={styles.shareMeta}>
+                        {pos.photo_thumb || pos.has_photo ? ' delade en bild 📷' : ' delar sin position'}
+                      </Text>
                     </Text>
                     <Text style={styles.shareBadge}>{minutesLeft(pos.expires_at)}m</Text>
                   </View>
@@ -824,6 +922,58 @@ export default function App() {
         onAccept={(req, msg, dur) => respondToRequest(req, true, msg, dur)}
         onDecline={(req) => respondToRequest(req, false)}
       />
+
+      <Modal
+        visible={photoViewer !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPhotoViewer(null)}
+      >
+        <TouchableOpacity
+          style={styles.photoModalOverlay}
+          activeOpacity={1}
+          onPress={() => setPhotoViewer(null)}
+        >
+          <TouchableOpacity
+            activeOpacity={1}
+            style={styles.photoModalCard}
+            onPress={() => {}}
+          >
+            <View style={styles.photoModalHeader}>
+              <Text style={styles.photoModalTitle}>📷 {photoViewer?.senderName}</Text>
+              {photoViewer?.expiresAt && (
+                <Text style={styles.photoModalBadge}>{minutesLeft(photoViewer.expiresAt)} min kvar</Text>
+              )}
+            </View>
+
+            <View style={styles.photoImageContainer}>
+              {photoViewer?.imageUri ? (
+                <Image
+                  source={{ uri: photoViewer.imageUri }}
+                  style={styles.photoModalImage}
+                  resizeMode="contain"
+                />
+              ) : null}
+              {photoViewer?.loadingFull && (
+                <View style={styles.photoLoadingBadge}>
+                  <ActivityIndicator size="small" color="#fff" />
+                </View>
+              )}
+            </View>
+
+            {Boolean(photoViewer?.message) && (
+              <Text style={styles.photoModalMessage}>💬 "{photoViewer?.message}"</Text>
+            )}
+
+            <TouchableOpacity
+              style={styles.photoModalCloseBtn}
+              onPress={() => setPhotoViewer(null)}
+            >
+              <Text style={styles.photoModalCloseText}>Stäng</Text>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
 
       <StatusBar style="auto" />
     </View>
@@ -1052,5 +1202,91 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 10,
     fontSize: 16,
-  }
+  },
+  cardThumb: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    marginRight: 6,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  photoModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.82)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 18,
+  },
+  photoModalCard: {
+    width: '100%',
+    maxWidth: 420,
+    backgroundColor: '#1c1c1e',
+    borderRadius: 18,
+    padding: 14,
+    alignItems: 'center',
+  },
+  photoModalHeader: {
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+    paddingHorizontal: 4,
+  },
+  photoModalTitle: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  photoModalBadge: {
+    color: '#ccc',
+    fontSize: 13,
+    fontWeight: '600',
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  photoImageContainer: {
+    width: '100%',
+    height: 380,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: '#000',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  photoModalImage: {
+    width: '100%',
+    height: '100%',
+  },
+  photoLoadingBadge: {
+    position: 'absolute',
+    bottom: 10,
+    right: 10,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    borderRadius: 14,
+    padding: 6,
+  },
+  photoModalMessage: {
+    color: '#f2f2f7',
+    fontSize: 15,
+    fontStyle: 'italic',
+    marginTop: 10,
+    textAlign: 'center',
+  },
+  photoModalCloseBtn: {
+    marginTop: 14,
+    width: '100%',
+    backgroundColor: '#5d7e80',
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  photoModalCloseText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
 });

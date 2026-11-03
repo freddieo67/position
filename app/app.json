@@ -21,6 +21,8 @@
         "NSLocationAlwaysAndWhenInUseUsageDescription": "Position behöver din plats i bakgrunden för att kunna uppdatera positionen i 10 minuter.",
         "NSLocationAlwaysUsageDescription": "Position behöver din plats i bakgrunden för att kunna uppdatera positionen i 10 minuter.",
         "NSContactsUsageDescription": "Position behöver tillgång till dina kontakter så att du kan hitta vänner och dela position.",
+        "NSCameraUsageDescription": "Position behöver tillgång till kameran så att du kan ta en bild när du delar din position.",
+        "NSPhotoLibraryUsageDescription": "Position behöver tillgång till dina bilder så att du kan välja en bild när du delar din position.",
         "UIBackgroundModes": [
           "location",
           "fetch",
@@ -37,7 +39,8 @@
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_FINE_LOCATION",
         "android.permission.FOREGROUND_SERVICE",
-        "android.permission.FOREGROUND_SERVICE_LOCATION"
+        "android.permission.FOREGROUND_SERVICE_LOCATION",
+        "android.permission.CAMERA"
       ]
     },
     "web": {
@@ -45,6 +48,13 @@
     },
     "plugins": [
       "expo-notifications",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Position behöver tillgång till dina bilder så att du kan välja en bild när du delar din position.",
+          "cameraPermission": "Position behöver tillgång till kameran så att du kan ta en bild när du delar din position."
+        }
+      ],
       [
         "expo-contacts",
         {

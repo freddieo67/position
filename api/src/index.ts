@@ -11,7 +11,7 @@ const SHARE_MINUTES = 10;   // hur länge en delad position syns
 const REQUEST_MINUTES = 10; // hur länge en förfrågan kan besvaras
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '5mb' }));
 
 // Normaliserar svenska nummer till E.164, t.ex. "070-999 80 90" -> "+46709998090"
 function normalizePhone(raw: string): string {
@@ -47,7 +47,7 @@ function parseId(value: unknown): number | null {
   return Number.isInteger(n) && n > 0 ? n : null;
 }
 
-const VALID_ICONS = ['🐷', '👽', '🤡', '🍺', '🦉'];
+const VALID_ICONS = ['🐷', '👽', '🤡', '🍺', '🦉', '📷'];
 
 // Sparar en delad position (sender -> receiver) som syns i durationMinutes
 async function insertShare(
@@ -58,17 +58,21 @@ async function insertShare(
   requestId: number | null,
   message: string | null = null,
   durationMinutes: number = 15,
-  icon: string = '🐷'
+  icon: string = '🐷',
+  photoThumb: string | null = null,
+  photoData: string | null = null
 ) {
   const mins = [5, 15, 30, 60].includes(durationMinutes) ? durationMinutes : 15;
-  const safeIcon = VALID_ICONS.includes(icon) ? icon : '🐷';
+  const safeIcon = photoThumb ? '📷' : (VALID_ICONS.includes(icon) ? icon : '🐷');
+  const safeThumb = typeof photoThumb === 'string' && photoThumb.startsWith('data:image/') && photoThumb.length <= 150000 ? photoThumb : null;
+  const safePhoto = typeof photoData === 'string' && photoData.startsWith('data:image/') && photoData.length <= 2000000 ? photoData : safeThumb;
   const result = await client.query(
     `INSERT INTO public.position_requests
-       (sender_id, receiver_id, location, accuracy_meters, expires_at, shared_at, status, request_id, message, icon)
+       (sender_id, receiver_id, location, accuracy_meters, expires_at, shared_at, status, request_id, message, icon, photo_thumb, photo_data)
      VALUES
-       ($1, $2, ST_SetSRID(ST_MakePoint($3, $4), 4326), $5, NOW() + make_interval(mins => $6::int), NOW(), 'shared', $7, $8, $9)
+       ($1, $2, ST_SetSRID(ST_MakePoint($3, $4), 4326), $5, NOW() + make_interval(mins => $6::int), NOW(), 'shared', $7, $8, $9, $10, $11)
      RETURNING id, expires_at, message, icon`,
-    [senderId, receiverId, coords.longitude, coords.latitude, coords.accuracy_meters, mins, requestId, message, safeIcon]
+    [senderId, receiverId, coords.longitude, coords.latitude, coords.accuracy_meters, mins, requestId, message, safeIcon, safeThumb, safePhoto]
   );
   return result.rows[0];
 }
@@ -349,8 +353,10 @@ app.post('/position/share', async (req, res) => {
       ? req.body.message.trim().slice(0, 100) 
       : null;
     const icon = typeof req.body.icon === 'string' ? req.body.icon : '🐷';
+    const photoThumb = typeof req.body.photo_thumb === 'string' ? req.body.photo_thumb : null;
+    const photoData = typeof req.body.photo_data === 'string' ? req.body.photo_data : null;
 
-    const share = await insertShare(client, senderId, receiverId, coords, requestId, customMsg, durationMinutes, icon);
+    const share = await insertShare(client, senderId, receiverId, coords, requestId, customMsg, durationMinutes, icon, photoThumb, photoData);
 
     await client.query('COMMIT');
     res.json(share);
@@ -358,8 +364,13 @@ app.post('/position/share', async (req, res) => {
     // Skicka bara notis vid ny manuell delning (inte motdelning efter svar)
     if (requestId === null) {
       getDisplayName(senderId).then(name => {
-        const bodyText = customMsg ? `Meddelande: ${customMsg}` : `Delar sin position i ${durationMinutes} minuter.`;
-        sendPush(receiverId, `${name} delade sin position`, bodyText, { type: 'share', sender_id: senderId });
+        const titleText = photoThumb ? `📷 ${name} delade en bild och position` : `${name} delade sin position`;
+        const bodyText = customMsg
+          ? `Meddelande: ${customMsg}`
+          : photoThumb
+            ? `Tryck för att se bilden och positionen (${durationMinutes} min).`
+            : `Delar sin position i ${durationMinutes} minuter.`;
+        sendPush(receiverId, titleText, bodyText, { type: 'share', sender_id: senderId });
       });
     }
   } catch (error: any) {
@@ -513,7 +524,9 @@ app.get('/users/:id/inbox', async (req, res) => {
                 p.id, p.sender_id, u.display_name AS sender_name,
                 ST_Y(p.location) AS latitude, ST_X(p.location) AS longitude,
                 p.accuracy_meters, p.shared_at, p.expires_at, p.message,
-                COALESCE(p.icon, '🐷') AS icon
+                COALESCE(p.icon, '🐷') AS icon,
+                p.photo_thumb,
+                (p.photo_data IS NOT NULL OR p.photo_thumb IS NOT NULL) AS has_photo
            FROM public.position_requests p
            JOIN public.users u ON u.id = p.sender_id
           WHERE p.receiver_id = $1 AND p.expires_at > NOW() AND p.location IS NOT NULL
@@ -541,7 +554,9 @@ app.get('/users/:id/inbox', async (req, res) => {
         `SELECT DISTINCT ON (p.receiver_id)
                 p.id, p.receiver_id, u.display_name AS receiver_name,
                 p.expires_at, p.message,
-                COALESCE(p.icon, '🐷') AS icon
+                COALESCE(p.icon, '🐷') AS icon,
+                p.photo_thumb,
+                (p.photo_data IS NOT NULL OR p.photo_thumb IS NOT NULL) AS has_photo
            FROM public.position_requests p
            JOIN public.users u ON u.id = p.receiver_id
           WHERE p.sender_id = $1 AND p.expires_at > NOW() AND p.location IS NOT NULL
@@ -557,6 +572,32 @@ app.get('/users/:id/inbox', async (req, res) => {
       sharing: sharing.rows.map(r => r.receiver_id),
       active_shares: sharing.rows,
     });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Hämta högupplöst foto för en aktiv delning
+app.get('/position/photo/:id', async (req, res) => {
+  const shareId = parseId(req.params.id);
+  if (!shareId) return res.status(400).json({ error: 'Invalid share id' });
+
+  try {
+    const result = await pool.query(
+      `SELECT p.id, p.sender_id, u.display_name AS sender_name,
+              p.message, p.shared_at, p.expires_at,
+              COALESCE(p.photo_data, p.photo_thumb) AS photo_data
+         FROM public.position_requests p
+         JOIN public.users u ON u.id = p.sender_id
+        WHERE p.id = $1 AND p.expires_at > NOW()
+        LIMIT 1`,
+      [shareId]
+    );
+    if (!result.rows[0] || !result.rows[0].photo_data) {
+      return res.status(404).json({ error: 'Photo not found or expired' });
+    }
+    res.json(result.rows[0]);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Internal server error' });

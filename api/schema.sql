@@ -55,6 +55,12 @@ ALTER TABLE public.position_requests
 ALTER TABLE public.position_requests
   ADD COLUMN IF NOT EXISTS icon VARCHAR(16) DEFAULT '🐷';
 
+ALTER TABLE public.position_requests
+  ADD COLUMN IF NOT EXISTS photo_thumb TEXT;
+
+ALTER TABLE public.position_requests
+  ADD COLUMN IF NOT EXISTS photo_data TEXT;
+
 CREATE TABLE IF NOT EXISTS public.signal_cooldowns (
   sender_id   INTEGER NOT NULL,
   receiver_id INTEGER NOT NULL,
