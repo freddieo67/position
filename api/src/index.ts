@@ -75,6 +75,7 @@ async function insertShare(
 
 app.get('/health', async (req, res) => {
   try {
+    await ensurePushSchema();
     const result = await pool.query('SELECT NOW()');
     res.json({ status: 'ok', db_time: result.rows[0].now });
   } catch (error: any) {

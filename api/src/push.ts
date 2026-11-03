@@ -2,8 +2,11 @@ import { pool } from './db';
 
 const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';
 
-// Skapar token-kolumnen, cooldown-tabeller och ev. saknade kolumner (körs vid uppstart)
-export async function ensurePushSchema() {
+let schemaReady = false;
+
+// Skapar token-kolumnen, cooldown-tabeller och ev. saknade kolumner (körs vid uppstart och vid behov)
+export async function ensurePushSchema(): Promise<boolean> {
+  if (schemaReady) return true;
   const client = await pool.connect();
   try {
     await client.query("SET lock_timeout = '4s'");
@@ -19,6 +22,8 @@ export async function ensurePushSchema() {
         PRIMARY KEY (sender_id, receiver_id)
       );
     `);
+    schemaReady = true;
+    return true;
   } finally {
     client.release();
   }

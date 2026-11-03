@@ -45,6 +45,23 @@ CREATE INDEX IF NOT EXISTS idx_location_requests_requester ON public.location_re
 ALTER TABLE public.position_requests
   ADD COLUMN IF NOT EXISTS request_id INTEGER REFERENCES public.location_requests(id) ON DELETE SET NULL;
 
+-- Extra kolumner för push-notiser, meddelanden och kartikoner
+ALTER TABLE public.users
+  ADD COLUMN IF NOT EXISTS expo_push_token TEXT;
+
+ALTER TABLE public.position_requests
+  ADD COLUMN IF NOT EXISTS message TEXT;
+
+ALTER TABLE public.position_requests
+  ADD COLUMN IF NOT EXISTS icon VARCHAR(16) DEFAULT '🐷';
+
+CREATE TABLE IF NOT EXISTS public.signal_cooldowns (
+  sender_id   INTEGER NOT NULL,
+  receiver_id INTEGER NOT NULL,
+  last_sent   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (sender_id, receiver_id)
+);
+
 -- Testanvändare (appen använder hårdkodat sender_id = 1 under testning)
 INSERT INTO public.users (id, phone_number, display_name)
 VALUES (1, '+46700000001', 'Testanvändare')
