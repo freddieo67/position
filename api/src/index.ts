@@ -66,6 +66,7 @@ async function insertShare(
   const safeIcon = photoThumb ? '📷' : (VALID_ICONS.includes(icon) ? icon : '🐷');
   const safeThumb = typeof photoThumb === 'string' && photoThumb.startsWith('data:image/') && photoThumb.length <= 150000 ? photoThumb : null;
   const safePhoto = typeof photoData === 'string' && photoData.startsWith('data:image/') && photoData.length <= 2000000 ? photoData : safeThumb;
+  await client.query('DELETE FROM public.position_requests WHERE expires_at <= NOW()');
   const result = await client.query(
     `INSERT INTO public.position_requests
        (sender_id, receiver_id, location, accuracy_meters, expires_at, shared_at, status, request_id, message, icon, photo_thumb, photo_data)
@@ -615,16 +616,14 @@ app.post('/position/stop', async (req, res) => {
   try {
     if (receiverId) {
       await pool.query(
-        `UPDATE public.position_requests
-            SET expires_at = NOW()
-          WHERE sender_id = $1 AND receiver_id = $2 AND expires_at > NOW()`,
+        `DELETE FROM public.position_requests
+          WHERE sender_id = $1 AND receiver_id = $2`,
         [senderId, receiverId]
       );
     } else {
       await pool.query(
-        `UPDATE public.position_requests
-            SET expires_at = NOW()
-          WHERE sender_id = $1 AND expires_at > NOW()`,
+        `DELETE FROM public.position_requests
+          WHERE sender_id = $1`,
         [senderId]
       );
     }
@@ -635,15 +634,15 @@ app.post('/position/stop', async (req, res) => {
   }
 });
 
-// Automatisk städning av utgångna positioner och gamla förfrågningar
+// Automatisk städning av utgångna positioner (och bilder) samt gamla förfrågningar
 async function cleanupExpiredData() {
   try {
-    // 1. Rensa utgångna positionsdelningar (äldre än 15 minuter efter att de löpt ut)
+    // 1. Rensa utgångna positionsdelningar och bilder direkt när de löpt ut (max 60 min)
     const posRes = await pool.query(
-      `DELETE FROM public.position_requests WHERE expires_at < NOW() - INTERVAL '15 minutes'`
+      `DELETE FROM public.position_requests WHERE expires_at <= NOW()`
     );
     if (posRes.rowCount && posRes.rowCount > 0) {
-      console.log(`[Cleanup] Rensade ${posRes.rowCount} utgångna positionsdelningar.`);
+      console.log(`[Cleanup] Rensade ${posRes.rowCount} utgångna positionsdelningar/bilder.`);
     }
 
     // 2. Rensa gamla förfrågningar (äldre än 1 dygn)
