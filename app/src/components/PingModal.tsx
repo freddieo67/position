@@ -199,7 +199,7 @@ export default function PingModal({
           <ScrollView showsVerticalScrollIndicator={false}>
             <Text style={styles.title}>Foto-Ping till {targetNames} 📷</Text>
 
-            {/* Foto-sektion överst */}
+            {/* Foto-sektion överst: startar kameran direkt */}
             <View style={styles.photoPickerRow}>
               <TouchableOpacity
                 style={styles.photoOptionBtn}
@@ -207,16 +207,7 @@ export default function PingModal({
                 disabled={loading || processingPhoto}
               >
                 <Text style={styles.photoOptionEmoji}>📷</Text>
-                <Text style={styles.photoOptionText}>Ta bild</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.photoOptionBtn}
-                onPress={pickFromLibrary}
-                disabled={loading || processingPhoto}
-              >
-                <Text style={styles.photoOptionEmoji}>🖼️</Text>
-                <Text style={styles.photoOptionText}>Välj bild</Text>
+                <Text style={styles.photoOptionText}>{photoThumb ? 'Ta ny bild' : 'Ta bild med kameran'}</Text>
               </TouchableOpacity>
             </View>
 

@@ -137,22 +137,7 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
   };
 
   const handleCameraIconPress = () => {
-    const buttons: { text: string; onPress?: () => void; style?: 'cancel' | 'destructive' }[] = [
-      { text: '📷 Ta bild', onPress: pickFromCamera },
-      { text: '🖼️ Välj bild', onPress: pickFromLibrary },
-    ];
-    if (photoThumb) {
-      buttons.push({
-        text: 'Ta bort bild',
-        style: 'destructive',
-        onPress: () => {
-          setPhotoThumb(null);
-          setPhotoData(null);
-        },
-      });
-    }
-    buttons.push({ text: 'Avbryt', style: 'cancel' });
-    Alert.alert('Dela med bild 📷', 'Vill du ta en bild med kameran eller välja från ditt bildbibliotek?', buttons);
+    pickFromCamera();
   };
 
   const loadContacts = async () => {
