@@ -97,9 +97,9 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     backgroundColor: '#fff',
-    width: '85%',
+    width: '94%',
     borderRadius: 20,
-    padding: 24,
+    padding: 16,
     alignItems: 'stretch',
     elevation: 5,
   },
@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '700',
     textAlign: 'center',
-    marginBottom: 20,
+    marginBottom: 16,
   },
   subtitle: {
     fontSize: 14,
@@ -122,11 +122,13 @@ const styles = StyleSheet.create({
   },
   quickBtn: {
     alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: '#f5f5f7',
-    paddingVertical: 6,
+    paddingVertical: 4,
     paddingHorizontal: 2,
     borderRadius: 4,
     flex: 1,
+    aspectRatio: 1,
     borderWidth: 1.5,
     borderColor: '#e2e4e8',
   },
@@ -135,9 +137,10 @@ const styles = StyleSheet.create({
     marginBottom: 1,
   },
   quickText: {
-    fontSize: 11,
+    fontSize: 10.5,
     fontWeight: '600',
-    color: '#333',
+    color: '#555',
+    textAlign: 'center',
   },
   divider: {
     height: 1,

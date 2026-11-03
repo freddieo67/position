@@ -493,11 +493,13 @@ const styles = StyleSheet.create({
   },
   mapIconBtn: {
     alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: '#f5f5f7',
-    paddingVertical: 6,
+    paddingVertical: 4,
     paddingHorizontal: 2,
     borderRadius: 4, // Fyrkantig ruta
     flex: 1,
+    aspectRatio: 1,
     borderWidth: 1.5,
     borderColor: '#e2e4e8',
   },
