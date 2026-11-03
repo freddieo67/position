@@ -22,8 +22,11 @@ export const sv = {
   eg_see_you_bar: 'T.ex. Vi ses vid baren!',
   send_position_and_message: "Dela position och meddelande",
   back: 'Tillbaka',
-  signal_beer: 'Ta en öl?',
-  signal_hug: 'Ge en kram',
+  signal_beer: 'Öl?',
+  signal_hug: 'Kram',
+  signal_great: 'Great',
+  signal_angry: 'Arg',
+  signal_happy: 'Glad',
   signal_kiss: 'Ge en puss',
   
   // App Alerts

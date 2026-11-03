@@ -6,7 +6,9 @@ export interface SignalType {
 }
 
 export const SIGNALS: SignalType[] = [
-  { type: 'beer', emoji: '🍺', label: 'Bjud på öl' },
+  { type: 'beer', emoji: '🍺', label: 'Öl?' },
   { type: 'hug', emoji: '🤗', label: 'Kram' },
-  { type: 'kiss', emoji: '😘', label: 'Kyss' },
+  { type: 'great', emoji: '👍', label: 'Great' },
+  { type: 'angry', emoji: '😠', label: 'Arg' },
+  { type: 'happy', emoji: '😊', label: 'Glad' },
 ];

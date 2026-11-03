@@ -150,6 +150,9 @@ const SIGNALS: Record<string, { title: string; body: string }> = {
   wave: { title: '👋 {name} vinkar', body: 'Var håller du hus?' },
   hug: { title: '🤗 {name} skickar en kram', body: 'Det behövs ibland.' },
   kiss: { title: '😘 {name} skickar en kyss', body: 'Mwah!' },
+  great: { title: '👍 {name} ger tummen upp!', body: 'Great!' },
+  angry: { title: '😠 {name} är arg!', body: 'Bäst att se upp!' },
+  happy: { title: '😊 {name} är glad!', body: 'Sprider bra energi!' },
 };
 
 app.post('/signals', async (req, res) => {

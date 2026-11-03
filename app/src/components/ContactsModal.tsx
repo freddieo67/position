@@ -183,15 +183,15 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
                 {mode === 'send' ? i18n.t('want_to_send_signal') : 'Snabbmeddelande:'}
               </Text>
 
-              <View style={styles.quickButtons}>
+              <View style={styles.mapIconRow}>
                 {SIGNALS.map(s => (
                   <TouchableOpacity
                     key={s.type}
-                    style={styles.quickBtn}
+                    style={styles.mapIconBtn}
                     onPress={() => onSelect(chosenContacts, s.type, undefined, selectedDuration, selectedIcon)}
                   >
-                    <Text style={styles.emoji}>{s.emoji}</Text>
-                    <Text style={styles.quickText}>{i18n.t(`signal_${s.type}`, { defaultValue: s.label })}</Text>
+                    <Text style={styles.mapIconEmoji}>{s.emoji}</Text>
+                    <Text style={styles.mapIconLabel}>{s.label}</Text>
                   </TouchableOpacity>
                 ))}
               </View>

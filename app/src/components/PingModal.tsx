@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { StyleSheet, Text, View, Modal, TouchableOpacity, TextInput, ActivityIndicator, Alert } from 'react-native';
 import { api } from '../api';
 import { ApiError } from '../config';
+import { SIGNALS } from '../signals';
 
 import { AppContact } from './ContactsModal';
 
@@ -47,18 +48,16 @@ export default function PingModal({ visible, currentUserId, targets, onClose, on
           <Text style={styles.title}>Pinga {targetNames}</Text>
           
           <View style={styles.quickButtons}>
-            <TouchableOpacity style={styles.quickBtn} onPress={() => sendPing('beer')}>
-              <Text style={styles.emoji}>🍻</Text>
-              <Text style={styles.quickText}>Öl?</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.quickBtn} onPress={() => sendPing('coffee', 'Sugen på en kaffe?')}>
-              <Text style={styles.emoji}>☕</Text>
-              <Text style={styles.quickText}>Kaffe?</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.quickBtn} onPress={() => sendPing('wave', 'Var håller du hus?')}>
-              <Text style={styles.emoji}>👋</Text>
-              <Text style={styles.quickText}>Hallå?</Text>
-            </TouchableOpacity>
+            {SIGNALS.map(s => (
+              <TouchableOpacity
+                key={s.type}
+                style={styles.quickBtn}
+                onPress={() => sendPing(s.type)}
+              >
+                <Text style={styles.emoji}>{s.emoji}</Text>
+                <Text style={styles.quickText}>{s.label}</Text>
+              </TouchableOpacity>
+            ))}
           </View>
 
           <View style={styles.divider} />
