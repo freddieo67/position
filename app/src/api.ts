@@ -77,8 +77,8 @@ export const api = {
   sharePosition: (body: Coords & { sender_id: number; receiver_id: number; request_id?: number | null; message?: string; duration_minutes?: number; is_background?: boolean; icon?: string }) =>
     apiPost<{ id: number; expires_at: string }>('/position/share', body),
 
-  stopSharing: (sender_id: number, receiver_id: number) =>
-    apiPost<{ ok: boolean }>('/position/stop', { sender_id, receiver_id }),
+  stopSharing: (sender_id: number, receiver_id?: number) =>
+    apiPost<{ ok: boolean }>('/position/stop', receiver_id != null ? { sender_id, receiver_id } : { sender_id }),
 
   requestPosition: (requester_id: number, target_id: number) =>
     apiPost<{ id: number; status: string; expires_at: string }>('/requests', { requester_id, target_id }),

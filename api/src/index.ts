@@ -563,21 +563,30 @@ app.get('/users/:id/inbox', async (req, res) => {
   }
 });
 
-// Avsluta delning i förtid
+// Avsluta delning i förtid (med specifik mottagare, eller med alla om receiver_id utelämnas)
 app.post('/position/stop', async (req, res) => {
   const senderId = parseId(req.body.sender_id);
-  const receiverId = parseId(req.body.receiver_id);
-  if (!senderId || !receiverId) {
-    return res.status(400).json({ error: 'sender_id and receiver_id are required' });
+  const receiverId = req.body.receiver_id != null ? parseId(req.body.receiver_id) : null;
+  if (!senderId) {
+    return res.status(400).json({ error: 'sender_id is required' });
   }
 
   try {
-    await pool.query(
-      `UPDATE public.position_requests
-          SET expires_at = NOW()
-        WHERE sender_id = $1 AND receiver_id = $2 AND expires_at > NOW()`,
-      [senderId, receiverId]
-    );
+    if (receiverId) {
+      await pool.query(
+        `UPDATE public.position_requests
+            SET expires_at = NOW()
+          WHERE sender_id = $1 AND receiver_id = $2 AND expires_at > NOW()`,
+        [senderId, receiverId]
+      );
+    } else {
+      await pool.query(
+        `UPDATE public.position_requests
+            SET expires_at = NOW()
+          WHERE sender_id = $1 AND expires_at > NOW()`,
+        [senderId]
+      );
+    }
     res.json({ ok: true });
   } catch (error) {
     console.error(error);

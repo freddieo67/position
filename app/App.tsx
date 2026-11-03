@@ -506,6 +506,70 @@ export default function App() {
     mapRef.current?.focusOn(pos.latitude, pos.longitude);
   };
 
+  const handleStopSharePress = (clickedShare: ActiveShare) => {
+    if (!user) return;
+    const allShares = inbox.active_shares ?? [];
+    const isMultiple = allShares.length > 1;
+
+    const stopAll = async () => {
+      try {
+        const ids = Array.from(
+          new Set([
+            ...(inbox.sharing ?? []),
+            ...allShares.map(s => s.receiver_id),
+          ])
+        );
+        await syncBackgroundLocation([]);
+        if (ids.length > 0) {
+          await Promise.all(ids.map(rid => api.stopSharing(user.id, rid)));
+        } else {
+          await api.stopSharing(user.id);
+        }
+        setInbox(prev => ({ ...prev, sharing: [], active_shares: [] }));
+        refreshRef.current();
+      } catch (error) {
+        Alert.alert(i18n.t('error'), errorText(error));
+      }
+    };
+
+    const stopSingle = async (receiverId: number) => {
+      try {
+        await api.stopSharing(user.id, receiverId);
+        const remaining = allShares.filter(s => s.receiver_id !== receiverId);
+        await syncBackgroundLocation(remaining);
+        setInbox(prev => ({
+          ...prev,
+          sharing: (prev.sharing ?? []).filter(id => id !== receiverId),
+          active_shares: (prev.active_shares ?? []).filter(s => s.receiver_id !== receiverId),
+        }));
+        refreshRef.current();
+      } catch (error) {
+        Alert.alert(i18n.t('error'), errorText(error));
+      }
+    };
+
+    if (!isMultiple) {
+      Alert.alert(
+        'Sluta dela position?',
+        `Vill du sluta dela din position med ${clickedShare.receiver_name}?`,
+        [
+          { text: 'Avbryt', style: 'cancel' },
+          { text: 'Sluta dela', style: 'destructive', onPress: stopAll },
+        ]
+      );
+    } else {
+      Alert.alert(
+        'Sluta dela position?',
+        `Du delar med ${allShares.length} personer.`,
+        [
+          { text: `Bara med ${clickedShare.receiver_name}`, onPress: () => stopSingle(clickedShare.receiver_id) },
+          { text: 'Sluta dela med alla', style: 'destructive', onPress: stopAll },
+          { text: 'Avbryt', style: 'cancel' },
+        ]
+      );
+    }
+  };
+
   const logout = () => {
     Alert.alert('Byt användare', 'Vill du logga ut från den här telefonen?', [
       { text: 'Avbryt', style: 'cancel' },
@@ -591,16 +655,21 @@ export default function App() {
             >
               {/* Mina aktiva utgående delningar */}
               {activeShares.map(share => (
-                <View key={`my-share-${share.receiver_id}`} style={styles.shareCard}>
+                <TouchableOpacity
+                  key={`my-share-${share.receiver_id}`}
+                  style={styles.shareCard}
+                  activeOpacity={0.8}
+                  onPress={() => handleStopSharePress(share)}
+                >
                   <View style={styles.shareHeader}>
                     <Text style={styles.shareTitle} numberOfLines={1}>
                       <Text style={{ fontSize: 16 }}>{share.icon || myMapIcon} </Text>
                       <Text style={styles.shareMeta}>Du delar med </Text>
                       <Text style={styles.shareName}>{share.receiver_name}</Text>
                     </Text>
-                    <Text style={styles.shareBadge}>{minutesLeft(share.expires_at)}m</Text>
+                    <Text style={styles.shareBadge}>{minutesLeft(share.expires_at)}m ✕</Text>
                   </View>
-                </View>
+                </TouchableOpacity>
               ))}
 
             {inbox.positions.map(pos => (
