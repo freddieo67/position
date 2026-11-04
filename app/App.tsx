@@ -758,8 +758,11 @@ export default function App() {
                   onPress={() => handleStopSharePress(share)}
                 >
                   <View style={styles.shareHeader}>
+                    {share.photo_thumb ? (
+                      <Image source={{ uri: share.photo_thumb }} style={styles.cardThumb} />
+                    ) : null}
                     <Text style={styles.shareTitle} numberOfLines={1}>
-                      <Text style={{ fontSize: 16 }}>{share.icon || myMapIcon} </Text>
+                      {!share.photo_thumb && <Text style={{ fontSize: 16 }}>{share.icon || myMapIcon} </Text>}
                       <Text style={styles.shareMeta}>Du delar med </Text>
                       <Text style={styles.shareName}>{share.receiver_name}</Text>
                     </Text>
@@ -960,7 +963,7 @@ export default function App() {
                 <Image
                   source={{ uri: photoViewer.imageUri }}
                   style={styles.photoModalImage}
-                  resizeMode="contain"
+                  resizeMode="cover"
                 />
               ) : null}
               {photoViewer?.loadingFull && (
@@ -1259,10 +1262,10 @@ const styles = StyleSheet.create({
   },
   photoImageContainer: {
     width: '100%',
-    height: 380,
+    aspectRatio: 4 / 5,
     borderRadius: 12,
     overflow: 'hidden',
-    backgroundColor: '#000',
+    backgroundColor: '#111',
     justifyContent: 'center',
     alignItems: 'center',
   },
