@@ -860,7 +860,7 @@ export default function App() {
             style={[styles.actionButton, styles.pingButton]} 
             onPress={() => openModal('ping')}
           >
-            <Text style={[styles.buttonText, styles.pingButtonText, { fontSize: 13, lineHeight: 16 }]}>{'Foto\nPing'}</Text>
+            <Text style={[styles.buttonText, styles.pingButtonText]}>Phing</Text>
           </TouchableOpacity>
 
           <TouchableOpacity 
@@ -912,7 +912,7 @@ export default function App() {
           }
           setPingModalVisible(false);
           const names = targets.map(t => t.name).join(', ');
-          Alert.alert('Foto-Ping skickat! 📷', `${names} ser nu din bild och position på kartan i ${durationMinutes} minuter.`);
+          Alert.alert('Phing skickat! 📷', `${names} ser nu din bild och position på kartan i ${durationMinutes} minuter.`);
           refreshRef.current();
         }}
       />

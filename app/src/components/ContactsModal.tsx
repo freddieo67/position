@@ -369,7 +369,7 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
           ) : (
             <>
               <Text style={styles.title}>
-                {mode === 'send' ? 'Dela position med...' : mode === 'signal' ? 'Skicka signal till...' : mode === 'ping' ? 'Foto-Pinga... 📷' : 'Begär position från...'}
+                {mode === 'send' ? 'Dela position med...' : mode === 'signal' ? 'Skicka signal till...' : mode === 'ping' ? 'Phinga... 📷' : 'Begär position från...'}
               </Text>
               {mode !== 'send' && (
                 <Text style={styles.subtitle}>

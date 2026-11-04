@@ -134,8 +134,8 @@ export default function PingModal({
     } catch (error: any) {
       const msg = error instanceof ApiError && error.serverMessage
         ? error.serverMessage
-        : (error?.serverMessage || error?.message || 'Kunde inte skicka foto-ping.');
-      Alert.alert('Foto-Ping', msg);
+        : (error?.serverMessage || error?.message || 'Kunde inte skicka Phing.');
+      Alert.alert('Phing', msg);
     } finally {
       setLoading(false);
     }
@@ -163,8 +163,8 @@ export default function PingModal({
       } catch (error: any) {
         const msg = error instanceof ApiError && error.serverMessage
           ? error.serverMessage
-          : (error?.serverMessage || error?.message || 'Kunde inte skicka foto-ping.');
-        Alert.alert('Foto-Ping', msg);
+          : (error?.serverMessage || error?.message || 'Kunde inte skicka Phing.');
+        Alert.alert('Phing', msg);
       } finally {
         setLoading(false);
       }
@@ -181,8 +181,8 @@ export default function PingModal({
     } catch (error: any) {
       const msg = error instanceof ApiError && error.serverMessage 
         ? error.serverMessage 
-        : (error?.serverMessage || error?.message || 'Kunde inte skicka ping.');
-      Alert.alert('Pinga', msg);
+        : (error?.serverMessage || error?.message || 'Kunde inte skicka Phing.');
+      Alert.alert('Phing', msg);
     } finally {
       setLoading(false);
     }
@@ -197,7 +197,7 @@ export default function PingModal({
       <View style={styles.overlay}>
         <View style={styles.modalContainer}>
           <ScrollView showsVerticalScrollIndicator={false}>
-            <Text style={styles.title}>Foto-Ping till {targetNames} 📷</Text>
+            <Text style={styles.title}>Phinga {targetNames} 📷</Text>
 
             {/* Foto-sektion överst: startar kameran direkt */}
             <View style={styles.photoPickerRow}>
@@ -266,7 +266,7 @@ export default function PingModal({
                   <ActivityIndicator color="#fff" />
                 ) : (
                   <Text style={styles.sendBtnText}>
-                    📷 Skicka Foto-Ping ({selectedDuration} min)
+                    📷 Skicka Phing ({selectedDuration} min)
                   </Text>
                 )}
               </TouchableOpacity>
