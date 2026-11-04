@@ -131,7 +131,7 @@ export default function App() {
     (async () => {
       let { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        setErrorMsg('Permission to access location was denied');
+        setErrorMsg(i18n.t('location_permission_denied'));
         return;
       }
 
@@ -243,7 +243,7 @@ export default function App() {
         const coords = await getCurrentCoords(locationRef.current);
         await api.respondToRequest(req.id, { user_id: user.id, accept: true, message, duration_minutes: durationMinutes, icon: myMapIcon, ...coords });
         await addActiveShare(req.requester_id, durationMinutes);
-        Alert.alert(i18n.t('shared'), `${req.requester_name} och du ser nu varandras position i ${durationMinutes} minuter.`);
+        Alert.alert(i18n.t('shared'), i18n.t('you_and_name_see_each_other', { name: req.requester_name, mins: durationMinutes }));
       } else {
         await api.respondToRequest(req.id, { user_id: user.id, accept: false });
       }
@@ -251,7 +251,7 @@ export default function App() {
       setPendingRequest(null);
       refreshRef.current();
     } catch (error) {
-      Alert.alert('Kunde inte svara', errorText(error));
+      Alert.alert(i18n.t('could_not_respond'), errorText(error));
     } finally {
       setIsRespondingRequest(false);
     }
@@ -280,7 +280,7 @@ export default function App() {
         });
       } else if (out.status === 'declined' && !notifiedDeclines.current.has(out.id)) {
         notifiedDeclines.current.add(out.id);
-        Alert.alert('Nekad', `${out.target_name} valde att inte dela sin position.`);
+        Alert.alert(i18n.t('declined_title'), i18n.t('declined_body', { name: out.target_name }));
       }
     }
   }, [respondToRequest, shareTo]);
@@ -399,7 +399,7 @@ export default function App() {
           const senderContact: AppContact = {
             id: String(payload.sender_id),
             userId: payload.sender_id,
-            name: payload.sender_name || 'En vän',
+            name: payload.sender_name || i18n.t('a_friend'),
             phoneNumber: '',
           };
 
@@ -409,7 +409,7 @@ export default function App() {
             setPingModalVisible(true);
           } else {
             // Användaren tryckte på själva notisen: visa vad personen skickade så det inte missas
-            const title = payload.title || response.notification.request.content.title || `${senderContact.name} pingade dig!`;
+            const title = payload.title || response.notification.request.content.title || i18n.t('pinged_you', { name: senderContact.name });
             const message = payload.message || response.notification.request.content.body || '';
             setReceivedPing({
               title,
@@ -484,7 +484,7 @@ export default function App() {
       if (modalMode === 'signal' && signalType) {
         for (const contact of contacts) await api.sendSignal(user.id, contact.userId, signalType);
         const sent = SIGNALS.find(s => s.type === signalType);
-        Alert.alert('Skickat', `${sent?.emoji ?? ''} ${names} har fått din signal.`);
+        Alert.alert(i18n.t('sent'), i18n.t('signal_received', { emoji: sent?.emoji ?? '', names }).trim());
         return;
       }
       if (modalMode === 'send') {
@@ -500,24 +500,25 @@ export default function App() {
           const share = activeSharesList.find(s => s.receiver_id === contact.userId);
           const mins = share ? minutesLeft(share.expires_at) : 15;
           const msg = alreadySharingContacts.length === 1
-            ? `Du delar redan din position med ${contact.name} (${mins} minuter kvar).`
-            : `Du delar redan din position med ${alreadySharingContacts.map(c => c.name).join(', ')}.`;
-          Alert.alert('Delar redan', msg);
+            ? i18n.t('already_sharing_one', { name: contact.name, mins })
+            : i18n.t('already_sharing_multi', { names: alreadySharingContacts.map(c => c.name).join(', ') });
+          Alert.alert(i18n.t('already_sharing_title'), msg);
           return;
         }
 
         if (signalType === 'custom' && message) {
           for (const contact of contacts) await shareTo(contact.userId, null, message, durationMinutes, icon, photoThumb, photoData);
-          Alert.alert(i18n.t('shared'), `${i18n.t('position_shared_with_message')} "${message}" (${durationMinutes} min)`);
+          Alert.alert(i18n.t('shared'), `${i18n.t('position_shared_with_message')} "${message}" (${durationMinutes} ${i18n.t('min_short')})`);
         } else {
           for (const contact of contacts) await shareTo(contact.userId, null, undefined, durationMinutes, icon, photoThumb, photoData);
+          const sent = signalType && signalType !== 'none' ? SIGNALS.find(s => s.type === signalType) : undefined;
           if (signalType && signalType !== 'none') {
             for (const contact of contacts) await api.sendSignal(user.id, contact.userId, signalType);
-            const sent = SIGNALS.find(s => s.type === signalType);
-            Alert.alert(i18n.t('shared'), `${names} ser din position${photoThumb ? ' och bild' : ''} i ${durationMinutes} min ${sent?.emoji ?? ''}`);
-          } else {
-            Alert.alert(i18n.t('shared'), `${names} ser din position${photoThumb ? ' och bild' : ''} i ${durationMinutes} minuter.`);
           }
+          Alert.alert(
+            i18n.t('shared'),
+            i18n.t(photoThumb ? 'shared_photo_for_mins' : 'shared_for_mins', { names, mins: durationMinutes, emoji: sent?.emoji ?? '' }).trim()
+          );
         }
       } else {
         for (const contact of contacts) await api.requestPosition(user.id, contact.userId);
@@ -529,10 +530,10 @@ export default function App() {
       refreshRef.current();
     } catch (error) {
       if (error instanceof ApiError && error.status === 409 && error.serverMessage) {
-        Alert.alert('Delar redan', error.serverMessage);
+        Alert.alert(i18n.t('already_sharing_title'), error.serverMessage);
         return;
       }
-      Alert.alert('Något gick fel', errorText(error));
+      Alert.alert(i18n.t('error'), errorText(error));
     }
   };
 
@@ -545,7 +546,7 @@ export default function App() {
       refreshRef.current();
     } catch (error) {
       if (error instanceof ApiError && error.status === 409 && error.serverMessage) {
-        Alert.alert('Delar redan', error.serverMessage);
+        Alert.alert(i18n.t('already_sharing_title'), error.serverMessage);
       } else {
         Alert.alert(i18n.t('error'), errorText(error));
       }
@@ -606,31 +607,31 @@ export default function App() {
 
     if (!isMultiple) {
       Alert.alert(
-        'Sluta dela position?',
-        `Vill du sluta dela din position med ${clickedShare.receiver_name}?`,
+        i18n.t('stop_sharing_title'),
+        i18n.t('stop_sharing_one', { name: clickedShare.receiver_name }),
         [
-          { text: 'Avbryt', style: 'cancel' },
-          { text: 'Sluta dela', style: 'destructive', onPress: stopAll },
+          { text: i18n.t('cancel'), style: 'cancel' },
+          { text: i18n.t('stop_sharing_btn'), style: 'destructive', onPress: stopAll },
         ]
       );
     } else {
       Alert.alert(
-        'Sluta dela position?',
-        `Du delar med ${allShares.length} personer.`,
+        i18n.t('stop_sharing_title'),
+        i18n.t('stop_sharing_count', { count: allShares.length }),
         [
-          { text: `Bara med ${clickedShare.receiver_name}`, onPress: () => stopSingle(clickedShare.receiver_id) },
-          { text: 'Sluta dela med alla', style: 'destructive', onPress: stopAll },
-          { text: 'Avbryt', style: 'cancel' },
+          { text: i18n.t('stop_only_name', { name: clickedShare.receiver_name }), onPress: () => stopSingle(clickedShare.receiver_id) },
+          { text: i18n.t('stop_with_all'), style: 'destructive', onPress: stopAll },
+          { text: i18n.t('cancel'), style: 'cancel' },
         ]
       );
     }
   };
 
   const logout = () => {
-    Alert.alert('Byt användare', 'Vill du logga ut från den här telefonen?', [
-      { text: 'Avbryt', style: 'cancel' },
+    Alert.alert(i18n.t('switch_user'), i18n.t('logout_confirm'), [
+      { text: i18n.t('cancel'), style: 'cancel' },
       {
-        text: 'Logga ut',
+        text: i18n.t('logout'),
         style: 'destructive',
         onPress: async () => {
           await clearUser();
@@ -672,7 +673,7 @@ export default function App() {
         {location ? (
           Platform.OS === 'web' ? (
             <View style={{ flex: 1, backgroundColor: '#e1e1e1', justifyContent: 'center', alignItems: 'center', width: '100%', height: '100%' }}>
-              <Text>Kartan är avstängd på webben under testning.</Text>
+              <Text>{i18n.t('map_disabled_web')}</Text>
             </View>
           ) : (
             <LeafletMap 
@@ -684,7 +685,7 @@ export default function App() {
                   id: 'me',
                   lat: location.coords.latitude,
                   lng: location.coords.longitude,
-                  title: 'Min position',
+                  title: i18n.t('my_position'),
                   color: '#007AFF',
                   emoji: myActivePhotoShare ? '📷' : myMapIcon,
                   photoThumb: myActivePhotoShare?.photo_thumb ?? null,
@@ -723,7 +724,7 @@ export default function App() {
         ) : (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#0000ff" />
-            <Text style={styles.loadingText}>{errorMsg || 'Hämtar position...'}</Text>
+            <Text style={styles.loadingText}>{errorMsg || i18n.t('fetching_position')}</Text>
           </View>
         )}
 
@@ -763,10 +764,10 @@ export default function App() {
                     ) : null}
                     <Text style={styles.shareTitle} numberOfLines={1}>
                       {!share.photo_thumb && <Text style={{ fontSize: 16 }}>{share.icon || myMapIcon} </Text>}
-                      <Text style={styles.shareMeta}>Du delar med </Text>
+                      <Text style={styles.shareMeta}>{i18n.t('you_share_with')} </Text>
                       <Text style={styles.shareName}>{share.receiver_name}</Text>
                     </Text>
-                    <Text style={styles.shareBadge}>{minutesLeft(share.expires_at)}m ✕</Text>
+                    <Text style={styles.shareBadge}>{minutesLeft(share.expires_at)}{i18n.t('min_short')} ✕</Text>
                   </View>
                 </TouchableOpacity>
               ))}
@@ -793,7 +794,7 @@ export default function App() {
                         {pos.photo_thumb || pos.has_photo ? ' delade en bild 📷' : ' delar sin position'}
                       </Text>
                     </Text>
-                    <Text style={styles.shareBadge}>{minutesLeft(pos.expires_at)}m</Text>
+                    <Text style={styles.shareBadge}>{minutesLeft(pos.expires_at)}{i18n.t('min_short')}</Text>
                   </View>
                   {Boolean(pos.message) && (
                     <Text style={styles.shareMessage} numberOfLines={1}>
@@ -853,7 +854,7 @@ export default function App() {
             style={[styles.actionButton, styles.requestButton]} 
             onPress={() => openModal('request')}
           >
-            <Text style={[styles.buttonText, styles.requestButtonText]}>Begär</Text>
+            <Text style={[styles.buttonText, styles.requestButtonText]}>{i18n.t('request')}</Text>
           </TouchableOpacity>
           
           <TouchableOpacity 
@@ -904,7 +905,7 @@ export default function App() {
         onSuccess={() => {
           setPingModalVisible(false);
           const names = pingTarget?.map(t => t.name).join(', ') ?? '';
-          Alert.alert('Skickat!', `Du pingade ${names}.`);
+          Alert.alert(i18n.t('sent'), i18n.t('ping_sent_to', { names }));
         }}
         onSendPhotoPing={async (targets, photoThumb, photoData, message, durationMinutes) => {
           for (const target of targets) {
@@ -912,7 +913,7 @@ export default function App() {
           }
           setPingModalVisible(false);
           const names = targets.map(t => t.name).join(', ');
-          Alert.alert('Phing skickat! 📷', `${names} ser nu din bild och position på kartan i ${durationMinutes} minuter.`);
+          Alert.alert(i18n.t('sent'), i18n.t('shared_photo_for_mins', { names, mins: durationMinutes, emoji: '📷' }));
           refreshRef.current();
         }}
       />
@@ -954,7 +955,7 @@ export default function App() {
             <View style={styles.photoModalHeader}>
               <Text style={styles.photoModalTitle}>📷 {photoViewer?.senderName}</Text>
               {photoViewer?.expiresAt && (
-                <Text style={styles.photoModalBadge}>{minutesLeft(photoViewer.expiresAt)} min kvar</Text>
+                <Text style={styles.photoModalBadge}>{i18n.t('min_left', { mins: minutesLeft(photoViewer.expiresAt) })}</Text>
               )}
             </View>
 
@@ -981,7 +982,7 @@ export default function App() {
               style={styles.photoModalCloseBtn}
               onPress={() => setPhotoViewer(null)}
             >
-              <Text style={styles.photoModalCloseText}>Stäng</Text>
+              <Text style={styles.photoModalCloseText}>{i18n.t('close')}</Text>
             </TouchableOpacity>
           </TouchableOpacity>
         </TouchableOpacity>

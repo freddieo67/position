@@ -41,7 +41,7 @@ export default function RegisterScreen({ onRegistered }: RegisterScreenProps) {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <Text style={styles.title}>{i18n.t('welcome', { defaultValue: 'Välkommen till Position' })}</Text>
+      <Text style={styles.title}>{i18n.t('welcome')}</Text>
       <Text style={styles.subtitle}>
         {i18n.t('privacy_policy_agree')}
       </Text>

@@ -1,17 +1,28 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import i18n from './i18n';
 
 export interface MapIconItem {
   id: string;
   emoji: string;
-  label: string;
+  readonly label: string;
+}
+
+function mapIcon(id: string, emoji: string): MapIconItem {
+  return {
+    id,
+    emoji,
+    get label() {
+      return i18n.t(`icon_${id}`);
+    },
+  };
 }
 
 export const MAP_ICONS: MapIconItem[] = [
-  { id: 'pig', emoji: '🐷', label: 'Gris' },
-  { id: 'alien', emoji: '👽', label: 'Alien' },
-  { id: 'clown', emoji: '🤡', label: 'Clown' },
-  { id: 'beer', emoji: '🍺', label: 'Öl' },
-  { id: 'owl', emoji: '🦉', label: 'Uggla' },
+  mapIcon('pig', '🐷'),
+  mapIcon('alien', '👽'),
+  mapIcon('clown', '🤡'),
+  mapIcon('beer', '🍺'),
+  mapIcon('owl', '🦉'),
 ];
 
 export type MapIconEmoji = typeof MAP_ICONS[number]['emoji'];

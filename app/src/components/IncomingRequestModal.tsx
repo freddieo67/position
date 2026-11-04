@@ -69,7 +69,7 @@ export default function IncomingRequestModal({
             {i18n.t('if_share_see_each_other_10m')}
           </Text>
 
-          <Text style={styles.durationLabel}>Hur länge vill du dela?</Text>
+          <Text style={styles.durationLabel}>{i18n.t('how_long_share')}</Text>
           <View style={styles.durationRow}>
             {([15, 30, 60] as const).map(mins => (
               <TouchableOpacity
@@ -86,7 +86,7 @@ export default function IncomingRequestModal({
                     selectedDuration === mins && styles.durationTextActive,
                   ]}
                 >
-                  {mins} min
+                  {mins} {i18n.t('min_short')}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -113,8 +113,8 @@ export default function IncomingRequestModal({
             ) : (
               <Text style={styles.shareBtnText}>
                 {hasMessage
-                  ? `Dela med meddelande (${selectedDuration} min) 💬`
-                  : `Dela position (${selectedDuration} min) 📍`}
+                  ? `${i18n.t('share_with_message')} (${selectedDuration} ${i18n.t('min_short')}) 💬`
+                  : `${i18n.t('share_position_btn')} (${selectedDuration} ${i18n.t('min_short')}) 📍`}
               </Text>
             )}
           </TouchableOpacity>

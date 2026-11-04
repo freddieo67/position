@@ -150,8 +150,8 @@ export async function startBackgroundLocation(): Promise<void> {
       timeInterval: 30000, // var 30:e sekund
       distanceInterval: 10, // eller minst 10 meters förflyttning
       foregroundService: {
-        notificationTitle: i18n.t('bg_notification_title') || 'Position delar din plats',
-        notificationBody: i18n.t('bg_notification_body') || 'Din plats uppdateras live för dina kontakter.',
+        notificationTitle: i18n.t('bg_notification_title'),
+        notificationBody: i18n.t('bg_notification_body'),
         notificationColor: '#3B82F6',
         killServiceOnDestroy: true,
       },

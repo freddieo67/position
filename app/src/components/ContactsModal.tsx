@@ -90,7 +90,7 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
       }
     } catch (e) {
       console.warn('Kunde inte bearbeta bild:', e);
-      Alert.alert('Fel', 'Kunde inte läsa in bilden.');
+      Alert.alert(i18n.t('error'), i18n.t('photo_error'));
     } finally {
       setProcessingPhoto(false);
     }
@@ -100,7 +100,7 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
     try {
       const perm = await ImagePicker.requestCameraPermissionsAsync();
       if (!perm.granted) {
-        Alert.alert('Behörighet saknas', 'Appen behöver tillgång till kameran för att ta en bild.');
+        Alert.alert(i18n.t('permission_missing_title'), i18n.t('camera_permission_needed'));
         return;
       }
       const res = await ImagePicker.launchCameraAsync({
@@ -112,27 +112,7 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
       }
     } catch (e) {
       console.warn('Kamerafel:', e);
-      Alert.alert('Fel', 'Kunde inte öppna kameran.');
-    }
-  };
-
-  const pickFromLibrary = async () => {
-    try {
-      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!perm.granted) {
-        Alert.alert('Behörighet saknas', 'Appen behöver tillgång till dina bilder.');
-        return;
-      }
-      const res = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
-        quality: 0.8,
-      });
-      if (!res.canceled && res.assets?.[0]?.uri) {
-        await processSelectedAsset(res.assets[0].uri);
-      }
-    } catch (e) {
-      console.warn('Bildbiblioteksfel:', e);
-      Alert.alert('Fel', 'Kunde inte öppna bildbiblioteket.');
+      Alert.alert(i18n.t('error'), i18n.t('camera_error'));
     }
   };
 
@@ -156,7 +136,7 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
   const loadContactsInner = async () => {
     const { status } = await Contacts.requestPermissionsAsync();
     if (status !== 'granted') {
-      setErrorMsg('Appen behöver tillgång till dina kontakter för att hitta vänner.');
+      setErrorMsg(i18n.t('contacts_permission_needed'));
       return;
     }
 
@@ -203,12 +183,12 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
           {chosenContacts.length > 0 ? (
             <ScrollView showsVerticalScrollIndicator={false}>
               <Text style={styles.title}>
-                {mode === 'send' ? `Dela med ${chosenContacts.map(c => c.name).join(', ')}` : `${i18n.t('send_to')} ${chosenContacts.map(c => c.name).join(', ')}`}
+                {mode === 'send' ? i18n.t('share_with_names', { names: chosenContacts.map(c => c.name).join(', ') }) : `${i18n.t('send_to')} ${chosenContacts.map(c => c.name).join(', ')}`}
               </Text>
 
               {mode === 'send' && (
                 <>
-                  <Text style={styles.subtitle}>Hur länge vill du dela?</Text>
+                  <Text style={styles.subtitle}>{i18n.t('how_long_share')}</Text>
                   <View style={styles.durationRow}>
                     {([15, 30, 60] as const).map(mins => (
                       <TouchableOpacity
@@ -225,13 +205,13 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
                             selectedDuration === mins && styles.durationTextActive,
                           ]}
                         >
-                          {mins} min
+                          {mins} {i18n.t('min_short')}
                         </Text>
                       </TouchableOpacity>
                     ))}
                   </View>
 
-                  <Text style={styles.subtitle}>Din kartikon (stannar kvar):</Text>
+                  <Text style={styles.subtitle}>{i18n.t('your_map_icon')}</Text>
                   <View style={styles.mapIconRow}>
                     {MAP_ICONS.map(item => {
                       const isSelected = !photoThumb && selectedIcon === item.emoji;
@@ -272,7 +252,7 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
                         <Text style={styles.mapIconEmoji}>📷</Text>
                       )}
                       <Text style={[styles.mapIconLabel, Boolean(photoThumb) && styles.mapIconLabelActive]}>
-                        {photoThumb ? 'Byt bild' : 'Foto'}
+                        {photoThumb ? i18n.t('change_photo') : i18n.t('photo_label')}
                       </Text>
                     </TouchableOpacity>
                   </View>
@@ -298,14 +278,16 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
                       <Text style={styles.justPositionEmoji}>{selectedIcon}</Text>
                     )}
                     <Text style={styles.justPositionText}>
-                      {photoThumb ? `Dela position med bild (${selectedDuration} min)` : `${i18n.t('just_position')} (${selectedDuration} min)`}
+                      {photoThumb
+                        ? `${i18n.t('share_position_with_photo')} (${selectedDuration} ${i18n.t('min_short')})`
+                        : `${i18n.t('just_position')} (${selectedDuration} ${i18n.t('min_short')})`}
                     </Text>
                   </TouchableOpacity>
                 </>
               )}
 
               <Text style={styles.subtitle}>
-                {mode === 'send' ? i18n.t('want_to_send_signal') : 'Snabbmeddelande:'}
+                {mode === 'send' ? i18n.t('want_to_send_signal') : i18n.t('quick_message')}
               </Text>
 
               <View style={styles.mapIconRow}>
@@ -358,7 +340,7 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
                 }
               >
                 <Text style={styles.sendBtnText}>
-                  {mode === 'send' ? `${i18n.t('send_position_and_message')} (${selectedDuration} min)` : 'Skicka meddelande 💬'}
+                  {mode === 'send' ? `${i18n.t('send_position_and_message')} (${selectedDuration} ${i18n.t('min_short')})` : `${i18n.t('send_message_btn')} 💬`}
                 </Text>
               </TouchableOpacity>
 
@@ -369,15 +351,21 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
           ) : (
             <>
               <Text style={styles.title}>
-                {mode === 'send' ? 'Dela position med...' : mode === 'signal' ? 'Skicka signal till...' : mode === 'ping' ? 'Phinga... 📷' : 'Begär position från...'}
+                {mode === 'send'
+                  ? i18n.t('share_position_with')
+                  : mode === 'signal'
+                  ? i18n.t('send_signal_to')
+                  : mode === 'ping'
+                  ? i18n.t('phing_to_title')
+                  : i18n.t('request_from_title')}
               </Text>
               {mode !== 'send' && (
                 <Text style={styles.subtitle}>
                   {mode === 'signal'
-                    ? 'Bjud på en öl, skicka en kram eller en kyss.'
+                    ? i18n.t('signal_hint')
                     : mode === 'ping'
-                    ? 'Skicka en bild & position (max 60 min) eller snabb-ping till...'
-                    : 'När de tackar ja ser ni varandras position.'}
+                    ? i18n.t('phing_hint')
+                    : i18n.t('request_hint')}
                 </Text>
               )}
               <Text style={styles.hint}>({i18n.t('long_press_hint')})</Text>
@@ -429,7 +417,7 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
                       )}
                     </TouchableOpacity>
                   )}
-                  ListEmptyComponent={<Text style={styles.emptyText}>Inga vänner med appen hittades.</Text>}
+                  ListEmptyComponent={<Text style={styles.emptyText}>{i18n.t('no_friends_found')}</Text>}
                 />
               )}
               {multiSelectMode && checkedContacts.length > 0 && (
@@ -443,7 +431,7 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
                     }
                   }}
                 >
-                  <Text style={styles.closeButtonText}>Gå vidare ({checkedContacts.length} valda)</Text>
+                  <Text style={styles.closeButtonText}>{i18n.t('continue_selected', { count: checkedContacts.length })}</Text>
                 </TouchableOpacity>
               )}
             </>
@@ -451,7 +439,7 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
 
           {chosenContacts.length === 0 && (
             <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-              <Text style={styles.closeButtonText}>Avbryt</Text>
+              <Text style={styles.closeButtonText}>{i18n.t('cancel')}</Text>
             </TouchableOpacity>
           )}
         </View>

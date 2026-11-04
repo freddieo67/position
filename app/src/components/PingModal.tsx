@@ -5,6 +5,7 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import { api } from '../api';
 import { ApiError } from '../config';
 import { SIGNALS } from '../signals';
+import i18n from '../i18n';
 
 import { AppContact } from './ContactsModal';
 
@@ -71,7 +72,7 @@ export default function PingModal({
       }
     } catch (e) {
       console.warn('Kunde inte bearbeta bild:', e);
-      Alert.alert('Fel', 'Kunde inte läsa in bilden.');
+      Alert.alert(i18n.t('error'), i18n.t('photo_error'));
     } finally {
       setProcessingPhoto(false);
     }
@@ -81,7 +82,7 @@ export default function PingModal({
     try {
       const perm = await ImagePicker.requestCameraPermissionsAsync();
       if (!perm.granted) {
-        Alert.alert('Behörighet saknas', 'Appen behöver tillgång till kameran för att ta en bild.');
+        Alert.alert(i18n.t('permission_missing_title'), i18n.t('camera_permission_needed'));
         return;
       }
       const res = await ImagePicker.launchCameraAsync({
@@ -93,27 +94,7 @@ export default function PingModal({
       }
     } catch (e) {
       console.warn('Kamerafel:', e);
-      Alert.alert('Fel', 'Kunde inte öppna kameran.');
-    }
-  };
-
-  const pickFromLibrary = async () => {
-    try {
-      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!perm.granted) {
-        Alert.alert('Behörighet saknas', 'Appen behöver tillgång till dina bilder.');
-        return;
-      }
-      const res = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
-        quality: 0.8,
-      });
-      if (!res.canceled && res.assets?.[0]?.uri) {
-        await processSelectedAsset(res.assets[0].uri);
-      }
-    } catch (e) {
-      console.warn('Bildbiblioteksfel:', e);
-      Alert.alert('Fel', 'Kunde inte öppna bildbiblioteket.');
+      Alert.alert(i18n.t('error'), i18n.t('camera_error'));
     }
   };
 
@@ -134,7 +115,7 @@ export default function PingModal({
     } catch (error: any) {
       const msg = error instanceof ApiError && error.serverMessage
         ? error.serverMessage
-        : (error?.serverMessage || error?.message || 'Kunde inte skicka Phing.');
+        : (error?.serverMessage || error?.message || i18n.t('phing_send_failed'));
       Alert.alert('Phing', msg);
     } finally {
       setLoading(false);
@@ -163,7 +144,7 @@ export default function PingModal({
       } catch (error: any) {
         const msg = error instanceof ApiError && error.serverMessage
           ? error.serverMessage
-          : (error?.serverMessage || error?.message || 'Kunde inte skicka Phing.');
+          : (error?.serverMessage || error?.message || i18n.t('phing_send_failed'));
         Alert.alert('Phing', msg);
       } finally {
         setLoading(false);
@@ -181,7 +162,7 @@ export default function PingModal({
     } catch (error: any) {
       const msg = error instanceof ApiError && error.serverMessage 
         ? error.serverMessage 
-        : (error?.serverMessage || error?.message || 'Kunde inte skicka Phing.');
+        : (error?.serverMessage || error?.message || i18n.t('phing_send_failed'));
       Alert.alert('Phing', msg);
     } finally {
       setLoading(false);
@@ -197,7 +178,7 @@ export default function PingModal({
       <View style={styles.overlay}>
         <View style={styles.modalContainer}>
           <ScrollView showsVerticalScrollIndicator={false}>
-            <Text style={styles.title}>Phinga {targetNames} 📷</Text>
+            <Text style={styles.title}>{i18n.t('phing_target_title', { names: targetNames })}</Text>
 
             {/* Foto-sektion överst: startar kameran direkt */}
             <View style={styles.photoPickerRow}>
@@ -207,14 +188,14 @@ export default function PingModal({
                 disabled={loading || processingPhoto}
               >
                 <Text style={styles.photoOptionEmoji}>📷</Text>
-                <Text style={styles.photoOptionText}>{photoThumb ? 'Ta ny bild' : 'Ta bild med kameran'}</Text>
+                <Text style={styles.photoOptionText}>{photoThumb ? i18n.t('take_new_photo') : i18n.t('take_photo_camera')}</Text>
               </TouchableOpacity>
             </View>
 
             {processingPhoto && (
               <View style={{ paddingVertical: 12, alignItems: 'center' }}>
                 <ActivityIndicator size="small" color="#805072" />
-                <Text style={{ fontSize: 12, color: '#666', marginTop: 4 }}>Förbereder bild...</Text>
+                <Text style={{ fontSize: 12, color: '#666', marginTop: 4 }}>{i18n.t('preparing_photo')}</Text>
               </View>
             )}
 
@@ -222,7 +203,7 @@ export default function PingModal({
               <View style={styles.previewBox}>
                 <Image source={{ uri: photoThumb }} style={styles.previewImage} resizeMode="cover" />
                 <View style={styles.previewControls}>
-                  <Text style={styles.durationLabel}>Visas på kartan i (max 60 min):</Text>
+                  <Text style={styles.durationLabel}>{i18n.t('shown_on_map_for')}</Text>
                   <View style={styles.durationRow}>
                     {([15, 30, 60] as const).map(mins => (
                       <TouchableOpacity
@@ -239,7 +220,7 @@ export default function PingModal({
                             selectedDuration === mins && styles.durationTextActive,
                           ]}
                         >
-                          {mins}m
+                          {mins} {i18n.t('min_short')}
                         </Text>
                       </TouchableOpacity>
                     ))}
@@ -250,7 +231,7 @@ export default function PingModal({
                       setPhotoData(null);
                     }}
                   >
-                    <Text style={styles.removePhotoText}>Ta bort bild ✕</Text>
+                    <Text style={styles.removePhotoText}>{i18n.t('remove_photo')}</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -266,7 +247,7 @@ export default function PingModal({
                   <ActivityIndicator color="#fff" />
                 ) : (
                   <Text style={styles.sendBtnText}>
-                    📷 Skicka Phing ({selectedDuration} min)
+                    {i18n.t('send_phing_btn', { mins: selectedDuration })}
                   </Text>
                 )}
               </TouchableOpacity>
@@ -275,7 +256,7 @@ export default function PingModal({
             <View style={styles.divider} />
 
             <Text style={styles.subtitle}>
-              {photoThumb ? 'Eller skicka bild + snabb-signal:' : 'Snabb-ping (utan bild):'}
+              {photoThumb ? i18n.t('or_send_photo_signal') : i18n.t('quick_ping_no_photo')}
             </Text>
             <View style={styles.quickButtons}>
               {SIGNALS.map(s => (
@@ -291,10 +272,10 @@ export default function PingModal({
               ))}
             </View>
 
-            <Text style={styles.subtitle}>Valfritt meddelande:</Text>
+            <Text style={styles.subtitle}>{i18n.t('optional_message_label')}</Text>
             <TextInput
               style={styles.input}
-              placeholder={photoThumb ? 'Skriv en bildtext (valfritt)...' : 'Skriv ett meddelande...'}
+              placeholder={photoThumb ? i18n.t('caption_placeholder') : i18n.t('message_placeholder')}
               value={customText}
               onChangeText={setCustomText}
               maxLength={100}
@@ -306,12 +287,12 @@ export default function PingModal({
                 disabled={!customText.trim() || loading}
                 onPress={() => sendPing('custom', customText.trim())}
               >
-                {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.sendBtnText}>Skicka meddelande ⚡</Text>}
+                {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.sendBtnText}>{i18n.t('send_message_btn')} ⚡</Text>}
               </TouchableOpacity>
             )}
 
             <TouchableOpacity style={styles.closeBtn} onPress={onClose} disabled={loading}>
-              <Text style={styles.closeBtnText}>Avbryt</Text>
+              <Text style={styles.closeBtnText}>{i18n.t('cancel')}</Text>
             </TouchableOpacity>
           </ScrollView>
         </View>

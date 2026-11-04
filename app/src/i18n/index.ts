@@ -31,6 +31,8 @@ const i18n = new I18n({
   pl,
   fr,
   no,
+  nb: no,
+  nn: no,
   nl,
   pt,
   el,
@@ -41,8 +43,29 @@ const i18n = new I18n({
   bn,
 });
 
+const SUPPORTED_LANGUAGES = Object.keys(i18n.translations);
+
+// Äldre språkkoder som vissa Android-versioner rapporterar
+const LANGUAGE_ALIASES: Record<string, string> = { in: 'id' };
+
+// Telefonens systemspråk styr appens språk: välj första av användarens föredragna språk som appen stödjer
+export function syncSystemLocale(): string {
+  const preferred = Localization.getLocales() ?? [];
+  let code = 'en';
+  for (const l of preferred) {
+    const raw = (l.languageCode || l.languageTag?.split(/[-_]/)[0] || '').toLowerCase();
+    const candidate = LANGUAGE_ALIASES[raw] ?? raw;
+    if (candidate && SUPPORTED_LANGUAGES.includes(candidate)) {
+      code = candidate;
+      break;
+    }
+  }
+  i18n.locale = code;
+  return code;
+}
+
 // Sätt appens språk baserat på telefonens inställningar
-i18n.locale = Localization.getLocales()[0]?.languageCode ?? 'en';
+syncSystemLocale();
 
 // Om en text saknas på valt språk, fall tillbaka till engelska
 i18n.enableFallback = true;

@@ -2,6 +2,7 @@ import { Platform } from 'react-native';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import * as Device from 'expo-device';
 import type * as NotificationsType from 'expo-notifications';
+import i18n from './i18n';
 
 // Expo Go (SDK 53+) kraschar redan vid import av expo-notifications, så modulen laddas
 // bara i en development/produktionsbygge. I Expo Go returneras null och push hoppas över.
@@ -27,16 +28,8 @@ export function getNotifications(): typeof NotificationsType | null {
       }),
     });
 
-    // Registrera åtgärdsknapp "Pinga tillbaka" på notiser
-    Notifications.setNotificationCategoryAsync('ping_category', [
-      {
-        identifier: 'reply_ping',
-        buttonTitle: 'Pinga tillbaka',
-        options: {
-          opensAppToForeground: true,
-        },
-      },
-    ]).catch(err => console.warn('Kunde inte sätta notification category:', err));
+    // Registrera åtgärdsknapp "Pinga tillbaka" på notiser (översatt efter telefonens språk)
+    registerPingCategory(Notifications);
 
     cached = Notifications;
   } catch (error) {
@@ -44,6 +37,31 @@ export function getNotifications(): typeof NotificationsType | null {
     cached = null;
   }
   return cached;
+}
+
+function registerPingCategory(Notifications: typeof NotificationsType) {
+  Notifications.setNotificationCategoryAsync('ping_category', [
+    {
+      identifier: 'reply_ping',
+      buttonTitle: i18n.t('ping_back'),
+      options: {
+        opensAppToForeground: true,
+      },
+    },
+  ]).catch(err => console.warn('Kunde inte sätta notification category:', err));
+}
+
+// Uppdatera översatta notis-texter (anropas när telefonens språk ändrats)
+export function refreshNotificationTexts() {
+  const Notifications = getNotifications();
+  if (!Notifications) return;
+  registerPingCategory(Notifications);
+  if (Platform.OS === 'android') {
+    Notifications.setNotificationChannelAsync('default', {
+      name: i18n.t('notification_channel'),
+      importance: Notifications.AndroidImportance.MAX,
+    }).catch(err => console.warn('Kunde inte uppdatera notiskanal:', err));
+  }
 }
 
 // Ber om tillstånd och returnerar enhetens Expo push-token, eller null om det inte går
@@ -57,7 +75,7 @@ export async function registerForPushToken(): Promise<string | null> {
 
     if (Platform.OS === 'android') {
       await Notifications.setNotificationChannelAsync('default', {
-        name: 'Standard',
+        name: i18n.t('notification_channel'),
         importance: Notifications.AndroidImportance.MAX,
       });
     }
