@@ -338,17 +338,6 @@ app.post('/position/share', async (req, res) => {
       return res.json(updated.rows[0]);
     }
 
-    // Manuell delning: neka om användaren redan delar med personen
-    if (hasActiveShare && requestId === null) {
-      await client.query('ROLLBACK');
-      const name = await getDisplayName(receiverId);
-      return res.status(409).json({
-        error: `Du delar redan din position med ${name} (${activeShare.rows[0].minutes_left} min kvar).`,
-        code: 'ALREADY_SHARING',
-        minutes_left: activeShare.rows[0].minutes_left,
-      });
-    }
-
     const durationMinutes = Number(req.body.duration_minutes) || 15;
     const customMsg = typeof req.body.message === 'string' && req.body.message.trim().length > 0 
       ? req.body.message.trim().slice(0, 100) 
@@ -356,6 +345,24 @@ app.post('/position/share', async (req, res) => {
     const icon = typeof req.body.icon === 'string' ? req.body.icon : '🐷';
     const photoThumb = typeof req.body.photo_thumb === 'string' ? req.body.photo_thumb : null;
     const photoData = typeof req.body.photo_data === 'string' ? req.body.photo_data : null;
+
+    // Manuell delning: neka om användaren redan delar med personen (om det inte är ett nytt Phing med foto som ersätter gamla bilden)
+    if (hasActiveShare && requestId === null) {
+      if (photoThumb) {
+        await client.query(
+          `DELETE FROM public.position_requests WHERE sender_id = $1 AND receiver_id = $2`,
+          [senderId, receiverId]
+        );
+      } else {
+        await client.query('ROLLBACK');
+        const name = await getDisplayName(receiverId);
+        return res.status(409).json({
+          error: `Du delar redan din position med ${name} (${activeShare.rows[0].minutes_left} min kvar).`,
+          code: 'ALREADY_SHARING',
+          minutes_left: activeShare.rows[0].minutes_left,
+        });
+      }
+    }
 
     const share = await insertShare(client, senderId, receiverId, coords, requestId, customMsg, durationMinutes, icon, photoThumb, photoData);
 
@@ -566,12 +573,15 @@ app.get('/users/:id/inbox', async (req, res) => {
       ),
     ]);
 
+    const sortedPositions = [...positions.rows].sort((a, b) => b.id - a.id);
+    const sortedSharing = [...sharing.rows].sort((a, b) => b.id - a.id);
+
     res.json({
-      positions: positions.rows,
+      positions: sortedPositions,
       requests: requests.rows,
       outgoing: outgoing.rows,
-      sharing: sharing.rows.map(r => r.receiver_id),
-      active_shares: sharing.rows,
+      sharing: sortedSharing.map(r => r.receiver_id),
+      active_shares: sortedSharing,
     });
   } catch (error) {
     console.error(error);
