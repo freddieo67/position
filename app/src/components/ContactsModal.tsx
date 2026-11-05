@@ -156,7 +156,7 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
                     contentContainerStyle={styles.mapIconScroll}
                   >
                     {MAP_ICONS.map(item => {
-                      const isSelected = selectedIcon === item.id || selectedIcon === item.emoji;
+                      const isSelected = selectedIcon === item.emoji;
                       return (
                         <TouchableOpacity
                           key={item.id}
@@ -165,26 +165,11 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
                             isSelected && styles.mapIconBtnActive,
                           ]}
                           onPress={() => {
-                            const iconVal = item.id === 'pin' ? 'pin' : item.id === 'hammarby' ? 'hammarby' : item.emoji;
-                            setSelectedIcon(iconVal);
-                            saveMapIcon(iconVal);
+                            setSelectedIcon(item.emoji);
+                            saveMapIcon(item.emoji);
                           }}
                         >
-                          {item.id === 'pin' ? (
-                            <Image
-                              source={require('../../assets/pin-icon.png')}
-                              style={styles.pinIconImage}
-                              resizeMode="contain"
-                            />
-                          ) : item.id === 'hammarby' ? (
-                            <Image
-                              source={require('../../assets/hammarby-icon.png')}
-                              style={styles.pinIconImage}
-                              resizeMode="contain"
-                            />
-                          ) : (
-                            <Text style={styles.mapIconEmoji}>{item.emoji}</Text>
-                          )}
+                          <Text style={styles.mapIconEmoji}>{item.emoji}</Text>
                           <Text style={[styles.mapIconLabel, isSelected && styles.mapIconLabelActive]}>
                             {item.label}
                           </Text>
@@ -205,21 +190,7 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
                       )
                     }
                   >
-                    {selectedIcon === 'pin' ? (
-                      <Image
-                        source={require('../../assets/pin-icon.png')}
-                        style={styles.justPositionPinThumb}
-                        resizeMode="contain"
-                      />
-                    ) : selectedIcon === 'hammarby' ? (
-                      <Image
-                        source={require('../../assets/hammarby-icon.png')}
-                        style={styles.justPositionPinThumb}
-                        resizeMode="contain"
-                      />
-                    ) : (
-                      <Text style={styles.justPositionEmoji}>{selectedIcon}</Text>
-                    )}
+                    <Text style={styles.justPositionEmoji}>{selectedIcon}</Text>
                     <Text style={styles.justPositionText}>
                       {`${i18n.t('just_position')} (${selectedDuration} ${i18n.t('min_short')})`}
                     </Text>

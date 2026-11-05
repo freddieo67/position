@@ -778,13 +778,7 @@ export default function App() {
                     ) : null}
                     <Text style={styles.shareTitle} numberOfLines={1}>
                       {!share.photo_thumb && (
-                        (share.icon === 'pin' || (!share.icon && myMapIcon === 'pin')) ? (
-                          <Image source={require('./assets/pin-icon.png')} style={styles.cardPinThumb} />
-                        ) : (share.icon === 'hammarby' || (!share.icon && myMapIcon === 'hammarby')) ? (
-                          <Image source={require('./assets/hammarby-icon.png')} style={styles.cardPinThumb} />
-                        ) : (
-                          <Text style={{ fontSize: 16 }}>{share.icon || myMapIcon || '🐷'} </Text>
-                        )
+                        <Text style={{ fontSize: 16 }}>{share.icon || myMapIcon || '🐷'} </Text>
                       )}
                       <Text style={styles.shareMeta}>{i18n.t('you_share_with')} </Text>
                       <Text style={styles.shareName}>{share.receiver_name}</Text>
@@ -811,13 +805,7 @@ export default function App() {
                     ) : null}
                     <Text style={styles.shareTitle} numberOfLines={1}>
                       {!pos.photo_thumb && (
-                        (pos.icon === 'pin' || pos.icon === '📍') ? (
-                          <Image source={require('./assets/pin-icon.png')} style={styles.cardPinThumb} />
-                        ) : pos.icon === 'hammarby' ? (
-                          <Image source={require('./assets/hammarby-icon.png')} style={styles.cardPinThumb} />
-                        ) : (
-                          <Text style={{ fontSize: 16 }}>{pos.icon || '🐷'} </Text>
-                        )
+                        <Text style={{ fontSize: 16 }}>{pos.icon || '🐷'} </Text>
                       )}
                       <Text style={styles.shareName}>{pos.sender_name}</Text>
                       <Text style={styles.shareMeta}>

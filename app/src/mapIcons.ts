@@ -5,14 +5,12 @@ export interface MapIconItem {
   id: string;
   emoji: string;
   readonly label: string;
-  isPin?: boolean;
 }
 
-function mapIcon(id: string, emoji: string, isPin?: boolean): MapIconItem {
+function mapIcon(id: string, emoji: string): MapIconItem {
   return {
     id,
     emoji,
-    isPin,
     get label() {
       return i18n.t(`icon_${id}`);
     },
@@ -20,7 +18,6 @@ function mapIcon(id: string, emoji: string, isPin?: boolean): MapIconItem {
 }
 
 export const MAP_ICONS: MapIconItem[] = [
-  mapIcon('pin', 'pin', true),
   mapIcon('pig', '🐷'),
   mapIcon('alien', '👽'),
   mapIcon('clown', '🤡'),
@@ -34,11 +31,10 @@ export const MAP_ICONS: MapIconItem[] = [
   mapIcon('skull', '💀'),
   mapIcon('snake', '🐍'),
   mapIcon('whale', '🐳'),
-  mapIcon('hammarby', 'hammarby'),
 ];
 
 export type MapIconEmoji = string;
-export const DEFAULT_MAP_ICON: MapIconEmoji = 'pin';
+export const DEFAULT_MAP_ICON: MapIconEmoji = '🐷';
 
 const MAP_ICON_KEY = 'position.user_map_icon';
 

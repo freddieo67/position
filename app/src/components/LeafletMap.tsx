@@ -1,7 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { WebView } from 'react-native-webview';
 import { StyleSheet, View } from 'react-native';
-import { PIN_DATA_URI, HAMMARBY_DATA_URI } from '../iconDataUris';
 
 export interface MapMarkerData {
   id: string;
@@ -116,26 +115,16 @@ const LeafletMap = React.forwardRef<LeafletMapRef, Props>(({ centerLat, centerLn
                   }
                 });
               } else if (m.emoji) {
-                var isPin = m.emoji === 'pin' || m.emoji === '📍';
-                var isHammarby = m.emoji === 'hammarby';
                 var emojiNameHtml = !isUser && m.title ? '<div style="margin-top:-4px;font-size:11px;font-weight:600;color:#fff;background:rgba(0,0,0,0.6);padding:2px 6px;border-radius:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:70px;text-align:center;">' + m.title.split(':')[0].split(' ')[0] + '</div>' : '';
-
-                var iconInnerHtml;
-                if (isPin) {
-                  iconInnerHtml = '<img src="' + PIN_DATA_URI + '" style="width:36px;height:36px;object-fit:contain;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.45));display:block;" />';
-                } else if (isHammarby) {
-                  iconInnerHtml = '<img src="' + HAMMARBY_DATA_URI + '" style="width:38px;height:38px;object-fit:contain;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.45));display:block;" />';
-                } else {
-                  iconInnerHtml = '<div style="font-size:44px;line-height:44px;text-align:center;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.45));">' + m.emoji + '</div>';
-                }
+                var iconInnerHtml = '<div style="font-size:44px;line-height:44px;text-align:center;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.45));">' + m.emoji + '</div>';
 
                 marker = L.marker([m.lat, m.lng], {
                   icon: L.divIcon({
                     className: '',
                     html: '<div style="display:flex;flex-direction:column;align-items:center;width:80px;justify-content:center;">' + iconInnerHtml + emojiNameHtml + '</div>',
                     iconSize: [80, 80],
-                    iconAnchor: [40, (isPin || isHammarby) ? 38 : 44],
-                    popupAnchor: [0, (isPin || isHammarby) ? -28 : -30],
+                    iconAnchor: [40, 44],
+                    popupAnchor: [0, -30],
                   }),
                 });
                 if (m.shareId && m.emoji === '📷') {
