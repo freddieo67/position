@@ -1197,15 +1197,16 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+    color: '#ff3131',
   },
   requestButtonText: {
-    color: '#7e895d',
+    color: '#ff3131',
   },
   pingButtonText: {
-    color: '#805072',
+    color: '#ff3131',
   },
   sendButtonText: {
-    color: '#5d7e80',
+    color: '#ff3131',
   },
   adContainer: {
     minHeight: 60,
