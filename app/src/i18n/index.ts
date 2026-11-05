@@ -50,15 +50,27 @@ const LANGUAGE_ALIASES: Record<string, string> = { in: 'id' };
 
 // Telefonens systemspråk styr appens språk: välj första av användarens föredragna språk som appen stödjer
 export function syncSystemLocale(): string {
-  const preferred = Localization.getLocales() ?? [];
   let code = 'en';
-  for (const l of preferred) {
-    const raw = (l.languageCode || l.languageTag?.split(/[-_]/)[0] || '').toLowerCase();
-    const candidate = LANGUAGE_ALIASES[raw] ?? raw;
-    if (candidate && SUPPORTED_LANGUAGES.includes(candidate)) {
-      code = candidate;
-      break;
+  try {
+    const preferred = (Localization.getLocales && Localization.getLocales()) || [];
+    for (const l of preferred) {
+      const raw = (l.languageCode || l.languageTag?.split(/[-_]/)[0] || '').toLowerCase();
+      const candidate = LANGUAGE_ALIASES[raw] ?? raw;
+      if (candidate && SUPPORTED_LANGUAGES.includes(candidate)) {
+        code = candidate;
+        break;
+      }
     }
+    // Fallback för plattformar där getLocales() inte returnerar array men Localization.locale finns
+    if (code === 'en' && preferred.length === 0 && (Localization as any).locale) {
+      const raw = String((Localization as any).locale).split(/[-_]/)[0].toLowerCase();
+      const candidate = LANGUAGE_ALIASES[raw] ?? raw;
+      if (candidate && SUPPORTED_LANGUAGES.includes(candidate)) {
+        code = candidate;
+      }
+    }
+  } catch (err) {
+    console.warn('Kunde inte läsa systemspråk:', err);
   }
   i18n.locale = code;
   return code;

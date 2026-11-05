@@ -17,9 +17,9 @@ import { getCurrentCoords } from './src/location';
 import { syncBackgroundLocation, addActiveShare } from './src/backgroundLocation';
 import { SIGNALS } from './src/signals';
 import { getSavedMapIcon, saveMapIcon, MapIconEmoji, DEFAULT_MAP_ICON } from './src/mapIcons';
-import { registerForPushToken, getNotifications } from './src/push';
+import { registerForPushToken, getNotifications, refreshNotificationTexts } from './src/push';
 import type * as NotificationsType from 'expo-notifications';
-import i18n from './src/i18n';
+import i18n, { syncSystemLocale } from './src/i18n';
 import mobileAds, { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
 const POLL_INTERVAL_MS = 30_000;
 const EMPTY_INBOX: Inbox = { positions: [], requests: [], outgoing: [], sharing: [], active_shares: [] };
@@ -54,6 +54,20 @@ export default function App() {
     imageUri: string;
     loadingFull: boolean;
   } | null>(null);
+
+  const [locale, setLocale] = useState(() => i18n.locale);
+
+  // Synka språket direkt om telefonens systemspråk ändras när appen återupptas
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', state => {
+      if (state === 'active') {
+        const next = syncSystemLocale();
+        setLocale(prev => (prev !== next ? next : prev));
+        refreshNotificationTexts();
+      }
+    });
+    return () => sub.remove();
+  }, []);
 
   const openPhotoViewer = useCallback(async (
     shareId: number,
@@ -409,8 +423,8 @@ export default function App() {
             setPingModalVisible(true);
           } else {
             // Användaren tryckte på själva notisen: visa vad personen skickade så det inte missas
-            const title = payload.title || response.notification.request.content.title || i18n.t('pinged_you', { name: senderContact.name });
-            const message = payload.message || response.notification.request.content.body || '';
+            const title: string = payload.title || (response.notification.request.content.title ?? undefined) || i18n.t('pinged_you', { name: senderContact.name });
+            const message: string = payload.message || (response.notification.request.content.body ?? '') || '';
             setReceivedPing({
               title,
               message,
@@ -791,7 +805,7 @@ export default function App() {
                       {!pos.photo_thumb && <Text style={{ fontSize: 16 }}>{pos.icon || '🐷'} </Text>}
                       <Text style={styles.shareName}>{pos.sender_name}</Text>
                       <Text style={styles.shareMeta}>
-                        {pos.photo_thumb || pos.has_photo ? ' delade en bild 📷' : ' delar sin position'}
+                        {pos.photo_thumb || pos.has_photo ? ` ${i18n.t('shared_photo')}` : ` ${i18n.t('shares_position')}`}
                       </Text>
                     </Text>
                     <Text style={styles.shareBadge}>{minutesLeft(pos.expires_at)}{i18n.t('min_short')}</Text>
@@ -812,7 +826,7 @@ export default function App() {
                     {sendingBackIds.has(pos.sender_id) ? (
                       <ActivityIndicator size="small" color="#fff" />
                     ) : (
-                      <Text style={styles.smallButtonText}>Dela tillbaka</Text>
+                      <Text style={styles.smallButtonText}>{i18n.t('share_back')}</Text>
                     )}
                   </TouchableOpacity>
                 )}
@@ -822,7 +836,7 @@ export default function App() {
             {pendingOutgoing.map(out => (
               <View key={`out-${out.id}`} style={styles.pendingChip}>
                 <ActivityIndicator size="small" color="#fff" />
-                <Text style={styles.pendingText}>Väntar på {out.target_name}…</Text>
+                <Text style={styles.pendingText}>{i18n.t('waiting_for', { name: out.target_name })}</Text>
               </View>
             ))}
           </ScrollView>
