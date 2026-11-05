@@ -88,6 +88,7 @@ export const da = {
   share_position_with_photo: "Del position med billede",
   quick_message: "Hurtig besked:",
   send_message_btn: "Send besked",
+  send_flash_mess_btn: "Send flash-mess",
   no_friends_found: "Ingen venner med appen fundet.",
   continue_selected: "Fortsæt (%{count} valgt)",
   contacts_permission_needed: "Appen har brug for adgang til dine kontakter for at finde venner.",

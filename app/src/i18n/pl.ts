@@ -88,6 +88,7 @@ export const pl = {
   share_position_with_photo: "Udostępnij lokalizację ze zdjęciem",
   quick_message: "Szybka wiadomość:",
   send_message_btn: "Wyślij wiadomość",
+  send_flash_mess_btn: "Wyślij flash-mess",
   no_friends_found: "Nie znaleziono znajomych z aplikacją.",
   continue_selected: "Dalej (wybrano: %{count})",
   contacts_permission_needed: "Aplikacja potrzebuje dostępu do kontaktów, aby znaleźć znajomych.",

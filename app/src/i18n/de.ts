@@ -92,6 +92,7 @@ export const de = {
   share_position_with_photo: "Standort mit Foto teilen",
   quick_message: "Schnellnachricht:",
   send_message_btn: "Nachricht senden",
+  send_flash_mess_btn: "Flash-mess senden",
   no_friends_found: "Keine Freunde mit der App gefunden.",
   continue_selected: "Weiter (%{count} ausgewählt)",
   contacts_permission_needed: "Die App benötigt Zugriff auf deine Kontakte, um Freunde zu finden.",

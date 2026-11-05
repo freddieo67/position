@@ -92,6 +92,7 @@ export const el = {
   share_position_with_photo: "Κοινοποίηση τοποθεσίας με φωτογραφία",
   quick_message: "Γρήγορο μήνυμα:",
   send_message_btn: "Αποστολή μηνύματος",
+  send_flash_mess_btn: "Αποστολή flash-mess",
   no_friends_found: "Δεν βρέθηκαν φίλοι με την εφαρμογή.",
   continue_selected: "Συνέχεια (%{count} επιλεγμένοι)",
   contacts_permission_needed: "Η εφαρμογή χρειάζεται πρόσβαση στις επαφές σου για να βρει φίλους.",

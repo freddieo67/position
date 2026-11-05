@@ -92,6 +92,7 @@ export const ja = {
   share_position_with_photo: "写真付きで位置情報を共有",
   quick_message: "クイックメッセージ:",
   send_message_btn: "メッセージを送信",
+  send_flash_mess_btn: "flash-mess を送信",
   no_friends_found: "アプリを使っている友だちが見つかりませんでした。",
   continue_selected: "続ける(%{count}人選択中)",
   contacts_permission_needed: "友だちを探すには、連絡先へのアクセスが必要です。",

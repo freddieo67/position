@@ -92,6 +92,7 @@ export const nl = {
   share_position_with_photo: "Locatie delen met foto",
   quick_message: "Snel bericht:",
   send_message_btn: "Bericht versturen",
+  send_flash_mess_btn: "Flash-mess versturen",
   no_friends_found: "Geen vrienden met de app gevonden.",
   continue_selected: "Doorgaan (%{count} geselecteerd)",
   contacts_permission_needed: "De app heeft toegang tot je contacten nodig om vrienden te vinden.",

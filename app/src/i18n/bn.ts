@@ -92,6 +92,7 @@ export const bn = {
   share_position_with_photo: "ছবিসহ অবস্থান শেয়ার করুন",
   quick_message: "দ্রুত বার্তা:",
   send_message_btn: "বার্তা পাঠান",
+  send_flash_mess_btn: "flash-mess পাঠান",
   no_friends_found: "অ্যাপ ব্যবহার করা কোনো বন্ধু পাওয়া যায়নি।",
   continue_selected: "এগিয়ে যান (%{count} জন নির্বাচিত)",
   contacts_permission_needed: "বন্ধুদের খুঁজতে অ্যাপের আপনার কন্টাক্টে অ্যাক্সেস প্রয়োজন।",

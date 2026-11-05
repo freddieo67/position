@@ -88,6 +88,7 @@ export const fi = {
   share_position_with_photo: "Jaa sijainti kuvan kanssa",
   quick_message: "Pikaviesti:",
   send_message_btn: "Lähetä viesti",
+  send_flash_mess_btn: "Lähetä flash-mess",
   no_friends_found: "Sovellusta käyttäviä ystäviä ei löytynyt.",
   continue_selected: "Jatka (%{count} valittu)",
   contacts_permission_needed: "Sovellus tarvitsee pääsyn yhteystietoihisi ystävien löytämiseksi.",

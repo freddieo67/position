@@ -92,6 +92,7 @@ export const fr = {
   share_position_with_photo: "Partager la position avec une photo",
   quick_message: "Message rapide :",
   send_message_btn: "Envoyer le message",
+  send_flash_mess_btn: "Envoyer flash-mess",
   no_friends_found: "Aucun ami avec l'application trouvé.",
   continue_selected: "Continuer (%{count} sélectionnés)",
   contacts_permission_needed: "L'application a besoin d'accéder à vos contacts pour trouver des amis.",

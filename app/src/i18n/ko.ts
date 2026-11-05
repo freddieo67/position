@@ -92,6 +92,7 @@ export const ko = {
   share_position_with_photo: "사진과 함께 위치 공유",
   quick_message: "빠른 메시지:",
   send_message_btn: "메시지 보내기",
+  send_flash_mess_btn: "flash-mess 보내기",
   no_friends_found: "앱을 사용하는 친구를 찾을 수 없습니다.",
   continue_selected: "계속 (%{count}명 선택됨)",
   contacts_permission_needed: "친구를 찾으려면 연락처 접근 권한이 필요합니다.",

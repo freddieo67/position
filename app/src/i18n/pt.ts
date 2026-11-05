@@ -92,6 +92,7 @@ export const pt = {
   share_position_with_photo: "Partilhar localização com foto",
   quick_message: "Mensagem rápida:",
   send_message_btn: "Enviar mensagem",
+  send_flash_mess_btn: "Enviar flash-mess",
   no_friends_found: "Nenhum amigo com a app encontrado.",
   continue_selected: "Continuar (%{count} selecionados)",
   contacts_permission_needed: "A app precisa de acesso aos teus contactos para encontrar amigos.",

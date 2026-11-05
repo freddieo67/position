@@ -92,6 +92,7 @@ export const no = {
   share_position_with_photo: "Del posisjon med bilde",
   quick_message: "Hurtigmelding:",
   send_message_btn: "Send melding",
+  send_flash_mess_btn: "Send flash-mess",
   no_friends_found: "Fant ingen venner med appen.",
   continue_selected: "Fortsett (%{count} valgt)",
   contacts_permission_needed: "Appen trenger tilgang til kontaktene dine for å finne venner.",

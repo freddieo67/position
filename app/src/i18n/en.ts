@@ -92,6 +92,7 @@ export const en = {
   share_position_with_photo: "Share location with photo",
   quick_message: "Quick message:",
   send_message_btn: "Send message",
+  send_flash_mess_btn: "Send flash-mess",
   no_friends_found: "No friends with the app found.",
   continue_selected: "Continue (%{count} selected)",
   contacts_permission_needed: "The app needs access to your contacts to find friends.",

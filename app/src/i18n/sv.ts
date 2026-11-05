@@ -97,6 +97,7 @@ export const sv = {
   share_position_with_photo: "Dela position med bild",
   quick_message: "Snabbmeddelande:",
   send_message_btn: "Skicka meddelande",
+  send_flash_mess_btn: "Skicka flash-mess",
   no_friends_found: "Inga vänner med appen hittades.",
   continue_selected: "Gå vidare (%{count} valda)",
   contacts_permission_needed: "Appen behöver tillgång till dina kontakter för att hitta vänner.",

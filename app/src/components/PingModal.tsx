@@ -298,8 +298,8 @@ export default function PingModal({
               ) : (
                 <Text style={styles.sendBtnText}>
                   {photoThumb
-                    ? `${i18n.t('send_message_btn')} (${selectedDuration} ${i18n.t('min_short')}) 💬`
-                    : `${i18n.t('send_message_btn')} ⚡`}
+                    ? `${i18n.t('send_flash_mess_btn')} (${selectedDuration} ${i18n.t('min_short')}) 💬`
+                    : `${i18n.t('send_flash_mess_btn')} ⚡`}
                 </Text>
               )}
             </TouchableOpacity>

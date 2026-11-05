@@ -92,6 +92,7 @@ export const id = {
   share_position_with_photo: "Bagikan lokasi dengan foto",
   quick_message: "Pesan cepat:",
   send_message_btn: "Kirim pesan",
+  send_flash_mess_btn: "Kirim flash-mess",
   no_friends_found: "Tidak ada teman yang memakai aplikasi ini.",
   continue_selected: "Lanjut (%{count} dipilih)",
   contacts_permission_needed: "Aplikasi memerlukan akses ke kontak Anda untuk menemukan teman.",

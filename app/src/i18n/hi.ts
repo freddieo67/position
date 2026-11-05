@@ -92,6 +92,7 @@ export const hi = {
   share_position_with_photo: "फ़ोटो के साथ स्थान साझा करें",
   quick_message: "त्वरित संदेश:",
   send_message_btn: "संदेश भेजें",
+  send_flash_mess_btn: "flash-mess भेजें",
   no_friends_found: "ऐप वाले कोई दोस्त नहीं मिले।",
   continue_selected: "आगे बढ़ें (%{count} चुने गए)",
   contacts_permission_needed: "दोस्तों को खोजने के लिए ऐप को आपके संपर्कों की अनुमति चाहिए।",
