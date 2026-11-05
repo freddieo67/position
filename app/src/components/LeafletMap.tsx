@@ -96,17 +96,23 @@ const LeafletMap = React.forwardRef<LeafletMapRef, Props>(({ centerLat, centerLn
               var nameHtml = !isUser && m.title ? '<div style="margin-top:2px;font-size:11px;font-weight:600;color:#fff;background:rgba(0,0,0,0.65);padding:2px 6px;border-radius:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:76px;text-align:center;">' + m.title.split(':')[0].split(' ')[0] + '</div>' : '';
 
               if (m.photoThumb) {
-                var thumbHtml = '<div style="position:relative;width:48px;height:48px;border-radius:12px;border:2.5px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.45);overflow:hidden;background:#222;">' +
-                  '<img src="' + m.photoThumb + '" style="width:100%;height:100%;object-fit:cover;display:block;" />' +
-                  '<div style="position:absolute;bottom:1px;right:2px;font-size:11px;line-height:12px;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.8));">📷</div>' +
-                '</div>';
+                var clipId = 'photoClip-' + String(m.id).replace(/[^a-zA-Z0-9]/g, '_');
+                var thumbHtml = '<svg width="46" height="54" viewBox="0 0 46 54" style="filter:drop-shadow(0 2px 5px rgba(0,0,0,0.55));display:block;">' +
+                  '<defs>' +
+                    '<clipPath id="' + clipId + '">' +
+                      '<circle cx="23" cy="20.5" r="17.5" />' +
+                    '</clipPath>' +
+                  '</defs>' +
+                  '<path d="M 23 53 C 12 39 3 30 3 20.5 A 20 20 0 1 1 43 20.5 C 43 30 34 39 23 53 Z" fill="#000" />' +
+                  '<image href="' + m.photoThumb + '" x="5.5" y="3" width="35" height="35" preserveAspectRatio="xMidYMid slice" clip-path="url(#' + clipId + ')" />' +
+                '</svg>';
                 marker = L.marker([m.lat, m.lng], {
                   icon: L.divIcon({
                     className: '',
-                    html: '<div style="display:flex;flex-direction:column;align-items:center;width:84px;justify-content:center;">' + thumbHtml + nameHtml + '</div>',
-                    iconSize: [84, 84],
-                    iconAnchor: [42, 48],
-                    popupAnchor: [0, -34],
+                    html: '<div style="display:flex;flex-direction:column;align-items:center;width:80px;justify-content:center;">' + thumbHtml + nameHtml + '</div>',
+                    iconSize: [80, 80],
+                    iconAnchor: [40, 54],
+                    popupAnchor: [0, -52],
                   }),
                 });
                 marker.on('click', function() {

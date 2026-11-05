@@ -971,7 +971,7 @@ export default function App() {
             onPress={() => {}}
           >
             <View style={styles.photoModalHeader}>
-              <Text style={styles.photoModalTitle}>📷 {photoViewer?.senderName}</Text>
+              <Text style={styles.photoModalTitle}>{photoViewer?.senderName}</Text>
               {photoViewer?.expiresAt && (
                 <Text style={styles.photoModalBadge}>{i18n.t('min_left', { mins: minutesLeft(photoViewer.expiresAt) })}</Text>
               )}
@@ -1317,14 +1317,17 @@ const styles = StyleSheet.create({
   photoModalCloseBtn: {
     marginTop: 14,
     width: '100%',
-    backgroundColor: '#5d7e80',
-    paddingVertical: 12,
-    borderRadius: 10,
+    height: 46,
+    backgroundColor: '#f4f5f7',
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: '#e1e4e8',
     alignItems: 'center',
+    justifyContent: 'center',
   },
   photoModalCloseText: {
-    color: '#fff',
-    fontSize: 16,
+    color: '#333',
+    fontSize: 15,
     fontWeight: '700',
   },
 });
