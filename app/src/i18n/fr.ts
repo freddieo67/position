@@ -99,7 +99,7 @@ export const fr = {
   permission_missing_title: "Autorisation manquante",
   photo_error: "Impossible de charger l'image.",
   camera_error: "Impossible d'ouvrir l'appareil photo.",
-  phing_target_title: "Phing à %{names} 📷",
+  phing_target_title: "Phing à %{names}",
   take_photo_camera: "Prendre une photo",
   take_new_photo: "Reprendre une photo",
   preparing_photo: "Préparation de la photo...",

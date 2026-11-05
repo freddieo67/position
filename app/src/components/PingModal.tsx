@@ -186,9 +186,11 @@ export default function PingModal({
                 style={styles.photoOptionBtn}
                 onPress={pickFromCamera}
                 disabled={loading || processingPhoto}
+                activeOpacity={0.8}
               >
-                <Text style={styles.photoOptionEmoji}>📷</Text>
-                <Text style={styles.photoOptionText}>{photoThumb ? i18n.t('take_new_photo') : i18n.t('take_photo_camera')}</Text>
+                <Text style={styles.photoOptionText}>
+                  {photoThumb ? i18n.t('take_new_photo') : i18n.t('take_photo_camera')} 📷
+                </Text>
               </TouchableOpacity>
             </View>
 
@@ -333,20 +335,27 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#f5f0f4',
+    backgroundColor: '#fff',
     borderWidth: 1.5,
-    borderColor: '#805072',
-    borderRadius: 10,
-    paddingVertical: 12,
-    gap: 8,
+    borderColor: 'rgba(255, 49, 49, 0.35)',
+    borderRadius: 12,
+    paddingVertical: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    elevation: 2,
   },
   photoOptionEmoji: {
-    fontSize: 22,
+    fontSize: 20,
   },
   photoOptionText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#805072',
+    fontSize: 14.5,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    color: '#ff3131',
   },
   previewBox: {
     flexDirection: 'row',
