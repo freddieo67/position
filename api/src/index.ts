@@ -191,7 +191,7 @@ app.post('/signals', async (req, res) => {
       if (secondsAgo < PING_COOLDOWN_SECONDS) {
         const minutesLeft = Math.max(1, Math.ceil((PING_COOLDOWN_SECONDS - secondsAgo) / 60));
         return res.status(429).json({
-          error: `Du har redan pingat denna kontakt. Vänta ${minutesLeft} min innan du pingar igen.`,
+          error: `Du har redan phingat denna kontakt. Vänta ${minutesLeft} min innan du phingar igen.`,
           code: 'COOLDOWN',
           minutes_left: minutesLeft,
         });
@@ -204,7 +204,7 @@ app.post('/signals', async (req, res) => {
     let pushBody = '';
 
     if (type === 'custom') {
-      pushTitle = `⚡ ${name} pingade dig!`;
+      pushTitle = `⚡ ${name} phingade dig!`;
       pushBody = customMessage || 'Ingen text angavs...';
     } else {
       pushTitle = signal.title.replace('{name}', name);

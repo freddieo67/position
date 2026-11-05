@@ -28,7 +28,7 @@ export function getNotifications(): typeof NotificationsType | null {
       }),
     });
 
-    // Registrera åtgärdsknapp "Pinga tillbaka" på notiser (översatt efter telefonens språk)
+    // Registrera åtgärdsknapp "Phinga tillbaka" på notiser (översatt efter telefonens språk)
     registerPingCategory(Notifications);
 
     cached = Notifications;
