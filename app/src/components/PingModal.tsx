@@ -188,9 +188,7 @@ export default function PingModal({
                 disabled={loading || processingPhoto}
                 activeOpacity={0.8}
               >
-                <Text style={styles.photoOptionText}>
-                  {photoThumb ? i18n.t('take_new_photo') : i18n.t('take_photo_camera')} 📷
-                </Text>
+                <Text style={styles.photoOptionEmoji}>📷</Text>
               </TouchableOpacity>
             </View>
 
@@ -326,36 +324,29 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   photoPickerRow: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 12,
-  },
-  photoOptionBtn: {
-    flex: 1,
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#fff',
-    borderWidth: 1.5,
-    borderColor: 'rgba(255, 49, 49, 0.35)',
-    borderRadius: 12,
-    paddingVertical: 14,
+    marginVertical: 10,
+  },
+  photoOptionBtn: {
+    width: 83,
+    height: 83,
+    borderRadius: 41.5,
+    backgroundColor: 'rgba(255, 255, 255, 0.72)',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 3,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.18,
+    shadowRadius: 4,
+    elevation: 5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: 'rgba(128, 80, 114, 0.35)',
   },
   photoOptionEmoji: {
-    fontSize: 20,
-  },
-  photoOptionText: {
-    fontSize: 14.5,
-    fontWeight: 'bold',
+    fontSize: 34,
     textAlign: 'center',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    color: '#ff3131',
+    lineHeight: 40,
   },
   previewBox: {
     flexDirection: 'row',
