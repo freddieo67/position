@@ -27,6 +27,14 @@ export const MAP_ICONS: MapIconItem[] = [
   mapIcon('beer', '🍺'),
   mapIcon('owl', '🦉'),
   mapIcon('frog', '🐸'),
+  mapIcon('monkey', '🐵'),
+  mapIcon('crab', '🦀'),
+  mapIcon('smiley', '🙂'),
+  mapIcon('ghost', '👻'),
+  mapIcon('skull', '💀'),
+  mapIcon('snake', '🐍'),
+  mapIcon('whale', '🐳'),
+  mapIcon('hammarby', 'hammarby'),
 ];
 
 export type MapIconEmoji = string;

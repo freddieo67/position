@@ -165,7 +165,7 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
                             isSelected && styles.mapIconBtnActive,
                           ]}
                           onPress={() => {
-                            const iconVal = item.id === 'pin' ? 'pin' : item.emoji;
+                            const iconVal = item.id === 'pin' ? 'pin' : item.id === 'hammarby' ? 'hammarby' : item.emoji;
                             setSelectedIcon(iconVal);
                             saveMapIcon(iconVal);
                           }}
@@ -173,6 +173,12 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
                           {item.id === 'pin' ? (
                             <Image
                               source={require('../../assets/pin-icon.png')}
+                              style={styles.pinIconImage}
+                              resizeMode="contain"
+                            />
+                          ) : item.id === 'hammarby' ? (
+                            <Image
+                              source={require('../../assets/hammarby-icon.png')}
                               style={styles.pinIconImage}
                               resizeMode="contain"
                             />
@@ -202,6 +208,12 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
                     {selectedIcon === 'pin' ? (
                       <Image
                         source={require('../../assets/pin-icon.png')}
+                        style={styles.justPositionPinThumb}
+                        resizeMode="contain"
+                      />
+                    ) : selectedIcon === 'hammarby' ? (
+                      <Image
+                        source={require('../../assets/hammarby-icon.png')}
                         style={styles.justPositionPinThumb}
                         resizeMode="contain"
                       />

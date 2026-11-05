@@ -780,6 +780,8 @@ export default function App() {
                       {!share.photo_thumb && (
                         (share.icon === 'pin' || (!share.icon && myMapIcon === 'pin')) ? (
                           <Image source={require('./assets/pin-icon.png')} style={styles.cardPinThumb} />
+                        ) : (share.icon === 'hammarby' || (!share.icon && myMapIcon === 'hammarby')) ? (
+                          <Image source={require('./assets/hammarby-icon.png')} style={styles.cardPinThumb} />
                         ) : (
                           <Text style={{ fontSize: 16 }}>{share.icon || myMapIcon || '🐷'} </Text>
                         )
@@ -811,6 +813,8 @@ export default function App() {
                       {!pos.photo_thumb && (
                         (pos.icon === 'pin' || pos.icon === '📍') ? (
                           <Image source={require('./assets/pin-icon.png')} style={styles.cardPinThumb} />
+                        ) : pos.icon === 'hammarby' ? (
+                          <Image source={require('./assets/hammarby-icon.png')} style={styles.cardPinThumb} />
                         ) : (
                           <Text style={{ fontSize: 16 }}>{pos.icon || '🐷'} </Text>
                         )
