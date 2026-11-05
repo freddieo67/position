@@ -132,6 +132,7 @@ export const sv = {
   icon_clown: "Clown",
   icon_beer: "Öl",
   icon_owl: "Uggla",
+  icon_frog: "Groda",
   // Övriga texter i appen (genererade/kompletterade)
   pinged_you: "%{name} phingade dig!",
   min_left: "%{mins} min kvar",

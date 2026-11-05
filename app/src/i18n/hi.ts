@@ -127,6 +127,7 @@ export const hi = {
   icon_clown: "जोकर",
   icon_beer: "बीयर",
   icon_owl: "उल्लू",
+  icon_frog: "मेंढक",
   // Övriga texter i appen (genererade/kompletterade)
   pinged_you: "%{name} ने आपको Phing भेजा!",
   min_left: "%{mins} मिनट शेष",

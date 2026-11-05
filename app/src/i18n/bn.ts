@@ -127,6 +127,7 @@ export const bn = {
   icon_clown: "ভাঁড়",
   icon_beer: "বিয়ার",
   icon_owl: "পেঁচা",
+  icon_frog: "ব্যাঙ",
   // Övriga texter i appen (genererade/kompletterade)
   pinged_you: "%{name} আপনাকে Phing করেছেন!",
   min_left: "%{mins} মিনিট বাকি",

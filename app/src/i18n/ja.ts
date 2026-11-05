@@ -127,6 +127,7 @@ export const ja = {
   icon_clown: "ピエロ",
   icon_beer: "ビール",
   icon_owl: "フクロウ",
+  icon_frog: "カエル",
   // Övriga texter i appen (genererade/kompletterade)
   pinged_you: "%{name}からPhingが届きました！",
   min_left: "残り%{mins}分",

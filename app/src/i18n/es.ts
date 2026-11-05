@@ -127,6 +127,7 @@ export const es = {
   icon_clown: "Payaso",
   icon_beer: "Cerveza",
   icon_owl: "Búho",
+  icon_frog: "Rana",
   // Övriga texter i appen (genererade/kompletterade)
   pinged_you: "¡%{name} te ha enviado un Phing!",
   min_left: "%{mins} min restantes",

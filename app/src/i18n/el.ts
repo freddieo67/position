@@ -127,6 +127,7 @@ export const el = {
   icon_clown: "Κλόουν",
   icon_beer: "Μπίρα",
   icon_owl: "Κουκουβάγια",
+  icon_frog: "Βάτραχος",
   // Övriga texter i appen (genererade/kompletterade)
   pinged_you: "Ο/Η %{name} σου έκανε Phing!",
   min_left: "απομένουν %{mins} λεπτά",

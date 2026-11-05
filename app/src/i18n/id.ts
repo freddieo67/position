@@ -127,6 +127,7 @@ export const id = {
   icon_clown: "Badut",
   icon_beer: "Bir",
   icon_owl: "Burung hantu",
+  icon_frog: "Katak",
   // Övriga texter i appen (genererade/kompletterade)
   pinged_you: "%{name} mem-Phing kamu!",
   min_left: "sisa %{mins} mnt",

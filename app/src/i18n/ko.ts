@@ -127,6 +127,7 @@ export const ko = {
   icon_clown: "광대",
   icon_beer: "맥주",
   icon_owl: "부엉이",
+  icon_frog: "개구리",
   // Övriga texter i appen (genererade/kompletterade)
   pinged_you: "%{name}님이 Phing을 보냈습니다!",
   min_left: "%{mins}분 남음",

@@ -23,6 +23,7 @@ export const MAP_ICONS: MapIconItem[] = [
   mapIcon('clown', '🤡'),
   mapIcon('beer', '🍺'),
   mapIcon('owl', '🦉'),
+  mapIcon('frog', '🐸'),
 ];
 
 export type MapIconEmoji = typeof MAP_ICONS[number]['emoji'];
