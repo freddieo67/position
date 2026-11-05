@@ -180,77 +180,82 @@ export default function PingModal({
           <ScrollView showsVerticalScrollIndicator={false}>
             <Text style={styles.title}>{i18n.t('phing_target_title', { names: targetNames })}</Text>
 
-            {/* Foto-sektion överst: startar kameran direkt */}
-            <View style={styles.photoPickerRow}>
-              <TouchableOpacity
-                style={styles.photoOptionBtn}
-                onPress={pickFromCamera}
-                disabled={loading || processingPhoto}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.photoOptionEmoji}>📷</Text>
-              </TouchableOpacity>
-            </View>
+            {/* Foto-sektion överst */}
+            {!photoThumb ? (
+              <View style={styles.photoPickerRow}>
+                <TouchableOpacity
+                  style={styles.photoOptionBtn}
+                  onPress={pickFromCamera}
+                  disabled={loading || processingPhoto}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.photoOptionEmoji}>📷</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={styles.photoPreviewCard}>
+                <Image source={{ uri: photoThumb }} style={styles.previewImage} resizeMode="cover" />
+                <TouchableOpacity
+                  style={styles.removePhotoBtn}
+                  onPress={() => {
+                    setPhotoThumb(null);
+                    setPhotoData(null);
+                  }}
+                >
+                  <Text style={styles.removePhotoText}>{i18n.t('remove_photo')}</Text>
+                </TouchableOpacity>
+              </View>
+            )}
 
             {processingPhoto && (
               <View style={{ paddingVertical: 12, alignItems: 'center' }}>
-                <ActivityIndicator size="small" color="#805072" />
+                <ActivityIndicator size="small" color="#ff3131" />
                 <Text style={{ fontSize: 12, color: '#666', marginTop: 4 }}>{i18n.t('preparing_photo')}</Text>
               </View>
             )}
 
             {photoThumb && (
-              <View style={styles.previewBox}>
-                <Image source={{ uri: photoThumb }} style={styles.previewImage} resizeMode="cover" />
-                <View style={styles.previewControls}>
-                  <Text style={styles.durationLabel}>{i18n.t('shown_on_map_for')}</Text>
-                  <View style={styles.durationRow}>
-                    {([15, 30, 60] as const).map(mins => (
-                      <TouchableOpacity
-                        key={mins}
+              <>
+                <Text style={styles.subtitle}>{i18n.t('shown_on_map_for')}</Text>
+                <View style={styles.durationRow}>
+                  {([15, 30, 60] as const).map(mins => (
+                    <TouchableOpacity
+                      key={mins}
+                      style={[
+                        styles.durationBtn,
+                        selectedDuration === mins && styles.durationBtnActive,
+                      ]}
+                      onPress={() => setSelectedDuration(mins)}
+                    >
+                      <Text
                         style={[
-                          styles.durationBtn,
-                          selectedDuration === mins && styles.durationBtnActive,
+                          styles.durationText,
+                          selectedDuration === mins && styles.durationTextActive,
                         ]}
-                        onPress={() => setSelectedDuration(mins)}
                       >
-                        <Text
-                          style={[
-                            styles.durationText,
-                            selectedDuration === mins && styles.durationTextActive,
-                          ]}
-                        >
-                          {mins} {i18n.t('min_short')}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                  <TouchableOpacity
-                    onPress={() => {
-                      setPhotoThumb(null);
-                      setPhotoData(null);
-                    }}
-                  >
-                    <Text style={styles.removePhotoText}>{i18n.t('remove_photo')}</Text>
-                  </TouchableOpacity>
+                        {mins} {i18n.t('min_short')}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
                 </View>
-              </View>
-            )}
 
-            {photoThumb && (
-              <TouchableOpacity
-                style={[styles.sendPhotoBtn, (loading || processingPhoto) && styles.disabledBtn]}
-                disabled={loading || processingPhoto}
-                onPress={handleSendPhoto}
-              >
-                {loading ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <Text style={styles.sendBtnText}>
-                    {i18n.t('send_phing_btn', { mins: selectedDuration })}
-                  </Text>
-                )}
-              </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.sendPhotoBtn, (loading || processingPhoto) && styles.disabledBtn]}
+                  disabled={loading || processingPhoto}
+                  onPress={handleSendPhoto}
+                >
+                  {loading ? (
+                    <ActivityIndicator color="#333" />
+                  ) : (
+                    <>
+                      <Text style={styles.sendPhotoEmoji}>📷</Text>
+                      <Text style={styles.sendPhotoBtnText}>
+                        {i18n.t('send_phing_btn', { mins: selectedDuration }).replace('📷 ', '')}
+                      </Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </>
             )}
 
             <View style={styles.divider} />
@@ -272,6 +277,8 @@ export default function PingModal({
               ))}
             </View>
 
+            <View style={styles.divider} />
+
             <Text style={styles.subtitle}>{i18n.t('optional_message_label')}</Text>
             <TextInput
               style={styles.input}
@@ -281,15 +288,21 @@ export default function PingModal({
               maxLength={100}
             />
 
-            {!photoThumb && (
-              <TouchableOpacity 
-                style={[styles.sendBtn, (!customText.trim() || loading) && styles.disabledBtn]} 
-                disabled={!customText.trim() || loading}
-                onPress={() => sendPing('custom', customText.trim())}
-              >
-                {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.sendBtnText}>{i18n.t('send_message_btn')} ⚡</Text>}
-              </TouchableOpacity>
-            )}
+            <TouchableOpacity 
+              style={[styles.sendBtn, (!customText.trim() || loading || processingPhoto) && styles.disabledBtn]} 
+              disabled={!customText.trim() || loading || processingPhoto}
+              onPress={() => photoThumb ? handleSendPhoto() : sendPing('custom', customText.trim())}
+            >
+              {loading ? (
+                <ActivityIndicator color="#333" />
+              ) : (
+                <Text style={styles.sendBtnText}>
+                  {photoThumb
+                    ? `${i18n.t('send_message_btn')} (${selectedDuration} ${i18n.t('min_short')}) 💬`
+                    : `${i18n.t('send_message_btn')} ⚡`}
+                </Text>
+              )}
+            </TouchableOpacity>
 
             <TouchableOpacity style={styles.closeBtn} onPress={onClose} disabled={loading}>
               <Text style={styles.closeBtnText}>{i18n.t('cancel')}</Text>
@@ -311,7 +324,7 @@ const styles = StyleSheet.create({
   modalContainer: {
     backgroundColor: '#fff',
     width: '94%',
-    maxHeight: '88%',
+    maxHeight: '90%',
     borderRadius: 20,
     padding: 16,
     alignItems: 'stretch',
@@ -322,6 +335,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textAlign: 'center',
     marginBottom: 14,
+    color: '#111',
   },
   photoPickerRow: {
     alignItems: 'center',
@@ -341,97 +355,108 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1.5,
-    borderColor: 'rgba(128, 80, 114, 0.35)',
+    borderColor: 'rgba(226, 228, 232, 0.9)',
   },
   photoOptionEmoji: {
     fontSize: 34,
     textAlign: 'center',
     lineHeight: 40,
   },
-  previewBox: {
-    flexDirection: 'row',
+  photoPreviewCard: {
     alignItems: 'center',
-    backgroundColor: '#f8f9fa',
-    borderRadius: 12,
-    padding: 10,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#e1e4e8',
-    gap: 12,
+    justifyContent: 'center',
+    marginVertical: 8,
   },
   previewImage: {
-    width: 78,
-    height: 78,
-    borderRadius: 10,
+    width: 120,
+    height: 120,
+    borderRadius: 12,
     backgroundColor: '#222',
   },
-  previewControls: {
-    flex: 1,
+  removePhotoBtn: {
+    marginTop: 8,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
   },
-  durationLabel: {
-    fontSize: 12,
+  removePhotoText: {
+    fontSize: 13,
+    color: '#ff3b30',
     fontWeight: '600',
-    color: '#555',
-    marginBottom: 6,
+  },
+  subtitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#666',
+    marginBottom: 8,
+    marginTop: 2,
   },
   durationRow: {
     flexDirection: 'row',
-    gap: 6,
-    marginBottom: 8,
+    justifyContent: 'space-between',
+    marginBottom: 12,
+    marginTop: 4,
   },
   durationBtn: {
     flex: 1,
-    paddingVertical: 6,
-    backgroundColor: '#fff',
-    borderRadius: 6,
+    height: 46,
+    marginHorizontal: 3,
+    backgroundColor: '#f4f5f7',
+    borderRadius: 8,
     alignItems: 'center',
+    justifyContent: 'center',
     borderWidth: 1.5,
-    borderColor: '#d0d4d9',
+    borderColor: '#e1e4e8',
   },
   durationBtnActive: {
-    backgroundColor: '#805072',
-    borderColor: '#805072',
+    backgroundColor: '#fff',
+    borderColor: '#ff3131',
   },
   durationText: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '700',
     color: '#555',
   },
   durationTextActive: {
-    color: '#fff',
-  },
-  removePhotoText: {
-    fontSize: 12,
-    color: '#ff3b30',
-    fontWeight: '600',
+    color: '#ff3131',
+    fontWeight: 'bold',
   },
   sendPhotoBtn: {
-    backgroundColor: '#805072',
-    padding: 14,
-    borderRadius: 12,
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 4,
+    justifyContent: 'center',
+    backgroundColor: '#f4f5f7',
+    borderWidth: 1.5,
+    borderColor: '#e1e4e8',
+    height: 46,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+    marginBottom: 14,
+    marginTop: 4,
   },
-  subtitle: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 8,
+  sendPhotoEmoji: {
+    fontSize: 18,
+    marginRight: 8,
+  },
+  sendPhotoBtnText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#333',
   },
   quickButtons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    marginBottom: 10,
     gap: 6,
   },
   quickBtn: {
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#f5f5f7',
-    paddingVertical: 4,
-    paddingHorizontal: 2,
-    borderRadius: 4,
+    paddingVertical: 6,
+    paddingHorizontal: 4,
+    borderRadius: 8,
     flex: 1,
-    aspectRatio: 1,
+    height: 54,
     borderWidth: 1.5,
     borderColor: '#e2e4e8',
   },
@@ -448,7 +473,7 @@ const styles = StyleSheet.create({
   divider: {
     height: 1,
     backgroundColor: '#e1e1e1',
-    marginVertical: 16,
+    marginVertical: 14,
   },
   input: {
     backgroundColor: '#f8f9fa',
@@ -457,30 +482,36 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 12,
     fontSize: 16,
-    marginBottom: 16,
+    marginBottom: 12,
   },
   sendBtn: {
-    backgroundColor: '#805d7e',
-    padding: 14,
-    borderRadius: 12,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f4f5f7',
+    borderWidth: 1.5,
+    borderColor: '#e1e4e8',
+    height: 46,
+    paddingHorizontal: 14,
+    borderRadius: 8,
     marginBottom: 8,
   },
   disabledBtn: {
     opacity: 0.5,
   },
   sendBtnText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
-    color: '#fff',
+    color: '#333',
   },
   closeBtn: {
-    padding: 14,
+    marginTop: 6,
+    padding: 12,
     alignItems: 'center',
   },
   closeBtnText: {
+    color: '#666',
+    fontWeight: 'bold',
     fontSize: 16,
-    color: '#007AFF',
-    fontWeight: '600',
   },
 });
