@@ -506,7 +506,7 @@ const styles = StyleSheet.create({
     color: '#555',
   },
   durationTextActive: {
-    color: '#ff3131',
+    color: '#000',
     fontWeight: 'bold',
   },
   justPositionBtn: {
