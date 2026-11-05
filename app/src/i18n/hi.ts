@@ -122,6 +122,7 @@ export const hi = {
   signal_great: "शानदार",
   signal_angry: "गुस्सा",
   signal_happy: "खुश",
+  icon_pin: "Position",
   icon_pig: "सूअर",
   icon_alien: "एलियन",
   icon_clown: "जोकर",

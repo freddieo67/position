@@ -122,6 +122,7 @@ export const pt = {
   signal_great: "Ótimo",
   signal_angry: "Zangado",
   signal_happy: "Feliz",
+  icon_pin: "Position",
   icon_pig: "Porco",
   icon_alien: "Alienígena",
   icon_clown: "Palhaço",

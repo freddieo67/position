@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Modal, View, Text, StyleSheet, TouchableOpacity, FlatList, TextInput, ActivityIndicator, ScrollView, Alert } from 'react-native';
+import { Modal, View, Text, StyleSheet, TouchableOpacity, FlatList, TextInput, ActivityIndicator, ScrollView, Alert, Image } from 'react-native';
 import * as Contacts from 'expo-contacts/legacy';
 import { normalizePhone } from '../config';
 import { api } from '../api';
@@ -150,9 +150,13 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
                   </View>
 
                   <Text style={styles.subtitle}>{i18n.t('your_map_icon')}</Text>
-                  <View style={styles.mapIconRow}>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.mapIconScroll}
+                  >
                     {MAP_ICONS.map(item => {
-                      const isSelected = selectedIcon === item.emoji;
+                      const isSelected = selectedIcon === item.id || selectedIcon === item.emoji;
                       return (
                         <TouchableOpacity
                           key={item.id}
@@ -161,18 +165,27 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
                             isSelected && styles.mapIconBtnActive,
                           ]}
                           onPress={() => {
-                            setSelectedIcon(item.emoji);
-                            saveMapIcon(item.emoji);
+                            const iconVal = item.id === 'pin' ? 'pin' : item.emoji;
+                            setSelectedIcon(iconVal);
+                            saveMapIcon(iconVal);
                           }}
                         >
-                          <Text style={styles.mapIconEmoji}>{item.emoji}</Text>
+                          {item.id === 'pin' ? (
+                            <Image
+                              source={require('../../assets/pin-icon.png')}
+                              style={styles.pinIconImage}
+                              resizeMode="contain"
+                            />
+                          ) : (
+                            <Text style={styles.mapIconEmoji}>{item.emoji}</Text>
+                          )}
                           <Text style={[styles.mapIconLabel, isSelected && styles.mapIconLabelActive]}>
                             {item.label}
                           </Text>
                         </TouchableOpacity>
                       );
                     })}
-                  </View>
+                  </ScrollView>
 
                   <TouchableOpacity
                     style={styles.justPositionBtn}
@@ -186,7 +199,15 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
                       )
                     }
                   >
-                    <Text style={styles.justPositionEmoji}>{selectedIcon}</Text>
+                    {selectedIcon === 'pin' ? (
+                      <Image
+                        source={require('../../assets/pin-icon.png')}
+                        style={styles.justPositionPinThumb}
+                        resizeMode="contain"
+                      />
+                    ) : (
+                      <Text style={styles.justPositionEmoji}>{selectedIcon}</Text>
+                    )}
                     <Text style={styles.justPositionText}>
                       {`${i18n.t('just_position')} (${selectedDuration} ${i18n.t('min_short')})`}
                     </Text>
@@ -498,6 +519,11 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#333',
   },
+  justPositionPinThumb: {
+    width: 20,
+    height: 20,
+    marginRight: 8,
+  },
   quickButtons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -524,6 +550,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#333',
   },
+  mapIconScroll: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingVertical: 4,
+    paddingHorizontal: 2,
+    marginBottom: 10,
+  },
   mapIconRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -534,13 +567,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#f5f5f7',
-    paddingVertical: 4,
-    paddingHorizontal: 2,
-    borderRadius: 4, // Fyrkantig ruta
-    flex: 1,
-    aspectRatio: 1,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+    minWidth: 54,
+    height: 54,
     borderWidth: 1.5,
     borderColor: '#e2e4e8',
+  },
+  pinIconImage: {
+    width: 24,
+    height: 24,
+    marginBottom: 2,
   },
   mapIconBtnActive: {
     backgroundColor: '#eaf2ff',

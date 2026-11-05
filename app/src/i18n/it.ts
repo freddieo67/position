@@ -118,6 +118,7 @@ export const it = {
   signal_great: "Grande",
   signal_angry: "Arrabbiato",
   signal_happy: "Felice",
+  icon_pin: "Position",
   icon_pig: "Maiale",
   icon_alien: "Alieno",
   icon_clown: "Clown",

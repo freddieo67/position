@@ -122,6 +122,7 @@ export const bn = {
   signal_great: "দারুণ",
   signal_angry: "রাগান্বিত",
   signal_happy: "খুশি",
+  icon_pin: "Position",
   icon_pig: "শূকর",
   icon_alien: "এলিয়েন",
   icon_clown: "ভাঁড়",

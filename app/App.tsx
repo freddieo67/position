@@ -777,7 +777,13 @@ export default function App() {
                       <Image source={{ uri: share.photo_thumb }} style={styles.cardThumb} />
                     ) : null}
                     <Text style={styles.shareTitle} numberOfLines={1}>
-                      {!share.photo_thumb && <Text style={{ fontSize: 16 }}>{share.icon || myMapIcon} </Text>}
+                      {!share.photo_thumb && (
+                        (share.icon === 'pin' || (!share.icon && myMapIcon === 'pin')) ? (
+                          <Image source={require('./assets/pin-icon.png')} style={styles.cardPinThumb} />
+                        ) : (
+                          <Text style={{ fontSize: 16 }}>{share.icon || myMapIcon || '🐷'} </Text>
+                        )
+                      )}
                       <Text style={styles.shareMeta}>{i18n.t('you_share_with')} </Text>
                       <Text style={styles.shareName}>{share.receiver_name}</Text>
                     </Text>
@@ -802,7 +808,13 @@ export default function App() {
                       <Image source={{ uri: pos.photo_thumb }} style={styles.cardThumb} />
                     ) : null}
                     <Text style={styles.shareTitle} numberOfLines={1}>
-                      {!pos.photo_thumb && <Text style={{ fontSize: 16 }}>{pos.icon || '🐷'} </Text>}
+                      {!pos.photo_thumb && (
+                        (pos.icon === 'pin' || pos.icon === '📍') ? (
+                          <Image source={require('./assets/pin-icon.png')} style={styles.cardPinThumb} />
+                        ) : (
+                          <Text style={{ fontSize: 16 }}>{pos.icon || '🐷'} </Text>
+                        )
+                      )}
                       <Text style={styles.shareName}>{pos.sender_name}</Text>
                       <Text style={styles.shareMeta}>
                         {pos.photo_thumb || pos.has_photo ? ` ${i18n.t('shared_photo')}` : ` ${i18n.t('shares_position')}`}
@@ -1238,6 +1250,12 @@ const styles = StyleSheet.create({
     marginRight: 6,
     borderWidth: 1,
     borderColor: '#ddd',
+  },
+  cardPinThumb: {
+    width: 18,
+    height: 18,
+    resizeMode: 'contain',
+    marginRight: 4,
   },
   photoModalOverlay: {
     flex: 1,

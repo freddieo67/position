@@ -122,6 +122,7 @@ export const no = {
   signal_great: "Flott",
   signal_angry: "Sint",
   signal_happy: "Glad",
+  icon_pin: "Position",
   icon_pig: "Gris",
   icon_alien: "Alien",
   icon_clown: "Klovn",

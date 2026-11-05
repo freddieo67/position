@@ -122,6 +122,7 @@ export const fr = {
   signal_great: "Génial",
   signal_angry: "En colère",
   signal_happy: "Heureux",
+  icon_pin: "Position",
   icon_pig: "Cochon",
   icon_alien: "Alien",
   icon_clown: "Clown",

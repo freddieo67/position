@@ -122,6 +122,7 @@ export const nl = {
   signal_great: "Top",
   signal_angry: "Boos",
   signal_happy: "Blij",
+  icon_pin: "Position",
   icon_pig: "Varken",
   icon_alien: "Alien",
   icon_clown: "Clown",

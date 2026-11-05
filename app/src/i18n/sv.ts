@@ -127,6 +127,7 @@ export const sv = {
   signal_great: "Great",
   signal_angry: "Arg",
   signal_happy: "Glad",
+  icon_pin: "Position",
   icon_pig: "Gris",
   icon_alien: "Alien",
   icon_clown: "Clown",

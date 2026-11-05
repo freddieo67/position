@@ -118,6 +118,7 @@ export const fi = {
   signal_great: "Mahtava",
   signal_angry: "Vihainen",
   signal_happy: "Iloinen",
+  icon_pin: "Position",
   icon_pig: "Possu",
   icon_alien: "Alien",
   icon_clown: "Klovni",

@@ -118,6 +118,7 @@ export const pl = {
   signal_great: "Super",
   signal_angry: "Zły",
   signal_happy: "Szczęśliwy",
+  icon_pin: "Position",
   icon_pig: "Świnka",
   icon_alien: "Kosmita",
   icon_clown: "Klaun",

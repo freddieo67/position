@@ -122,6 +122,7 @@ export const id = {
   signal_great: "Hebat",
   signal_angry: "Marah",
   signal_happy: "Senang",
+  icon_pin: "Position",
   icon_pig: "Babi",
   icon_alien: "Alien",
   icon_clown: "Badut",

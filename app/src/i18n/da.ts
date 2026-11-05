@@ -118,6 +118,7 @@ export const da = {
   signal_great: "Super",
   signal_angry: "Vred",
   signal_happy: "Glad",
+  icon_pin: "Position",
   icon_pig: "Gris",
   icon_alien: "Alien",
   icon_clown: "Klovn",

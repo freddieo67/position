@@ -122,6 +122,7 @@ export const ko = {
   signal_great: "최고",
   signal_angry: "화남",
   signal_happy: "행복",
+  icon_pin: "Position",
   icon_pig: "돼지",
   icon_alien: "외계인",
   icon_clown: "광대",

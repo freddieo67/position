@@ -122,6 +122,7 @@ export const el = {
   signal_great: "Τέλειο",
   signal_angry: "Θυμωμένος",
   signal_happy: "Χαρούμενος",
+  icon_pin: "Position",
   icon_pig: "Γουρούνι",
   icon_alien: "Εξωγήινος",
   icon_clown: "Κλόουν",

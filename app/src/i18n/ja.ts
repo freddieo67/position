@@ -122,6 +122,7 @@ export const ja = {
   signal_great: "いいね",
   signal_angry: "怒り",
   signal_happy: "うれしい",
+  icon_pin: "Position",
   icon_pig: "ブタ",
   icon_alien: "宇宙人",
   icon_clown: "ピエロ",
