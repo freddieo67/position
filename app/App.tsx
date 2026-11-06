@@ -8,6 +8,8 @@ import LeafletMap, { MapMarkerData, LeafletMapRef } from './src/components/Leafl
 import ContactsModal, { AppContact } from './src/components/ContactsModal';
 import RegisterScreen from './src/components/RegisterScreen';
 import PingModal from './src/components/PingModal';
+import FlashMessModal from './src/components/FlashMessModal';
+import ShareBackModal from './src/components/ShareBackModal';
 import ReceivedPingModal, { ReceivedPingData } from './src/components/ReceivedPingModal';
 import IncomingRequestModal from './src/components/IncomingRequestModal';
 import { api, Inbox, IncomingPosition, IncomingRequest, User, ActiveShare } from './src/api';
@@ -38,9 +40,12 @@ export default function App() {
   const [location, setLocation] = useState<Location.LocationObject | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
-  const [modalMode, setModalMode] = useState<'send' | 'request' | 'signal' | 'ping' | null>(null);
+  const [modalMode, setModalMode] = useState<'send' | 'request' | 'signal' | 'ping' | 'flash' | null>(null);
   const [pingModalVisible, setPingModalVisible] = useState(false);
   const [pingTarget, setPingTarget] = useState<AppContact[] | null>(null);
+  const [flashModalVisible, setFlashModalVisible] = useState(false);
+  const [flashTarget, setFlashTarget] = useState<AppContact[] | null>(null);
+  const [shareBackTargetPos, setShareBackTargetPos] = useState<IncomingPosition | null>(null);
   const [receivedPing, setReceivedPing] = useState<ReceivedPingData | null>(null);
   const [inbox, setInbox] = useState<Inbox>(EMPTY_INBOX);
   const [pendingRequest, setPendingRequest] = useState<IncomingRequest | null>(null);
@@ -463,7 +468,7 @@ export default function App() {
     setTimeout(() => mapRef.current?.focusOn(pos.latitude, pos.longitude), 0);
   }, [inbox, location]);
 
-  const openModal = (mode: 'send' | 'request' | 'signal' | 'ping') => {
+  const openModal = (mode: 'send' | 'request' | 'signal' | 'ping' | 'flash') => {
     setModalMode(mode);
     setModalVisible(true);
   };
@@ -491,6 +496,12 @@ export default function App() {
     if (modalMode === 'ping') {
       setPingTarget(contacts);
       setPingModalVisible(true);
+      return;
+    }
+
+    if (modalMode === 'flash') {
+      setFlashTarget(contacts);
+      setFlashModalVisible(true);
       return;
     }
 
@@ -775,13 +786,11 @@ export default function App() {
                   <View style={styles.shareHeader}>
                     {share.photo_thumb ? (
                       <Image source={{ uri: share.photo_thumb }} style={styles.cardThumb} />
-                    ) : null}
-                    <Text style={styles.shareTitle} numberOfLines={1}>
-                      {!share.photo_thumb && (
-                        <Text style={{ fontSize: 16 }}>{share.icon || myMapIcon || '🐷'} </Text>
-                      )}
-                      <Text style={styles.shareMeta}>{i18n.t('you_share_with')} </Text>
-                      <Text style={styles.shareName}>{share.receiver_name}</Text>
+                    ) : (
+                      <Text style={{ fontSize: 16 }}>{share.icon || myMapIcon || '🐷'} </Text>
+                    )}
+                    <Text style={styles.shareName} numberOfLines={1} ellipsizeMode="tail">
+                      {share.receiver_name}
                     </Text>
                     <Text style={styles.shareBadge}>{minutesLeft(share.expires_at)}{i18n.t('min_short')} ✕</Text>
                   </View>
@@ -802,15 +811,11 @@ export default function App() {
                   <View style={styles.shareHeader}>
                     {pos.photo_thumb ? (
                       <Image source={{ uri: pos.photo_thumb }} style={styles.cardThumb} />
-                    ) : null}
-                    <Text style={styles.shareTitle} numberOfLines={1}>
-                      {!pos.photo_thumb && (
-                        <Text style={{ fontSize: 16 }}>{pos.icon || '🐷'} </Text>
-                      )}
-                      <Text style={styles.shareName}>{pos.sender_name}</Text>
-                      <Text style={styles.shareMeta}>
-                        {pos.photo_thumb || pos.has_photo ? ` ${i18n.t('shared_photo')}` : ` ${i18n.t('shares_position')}`}
-                      </Text>
+                    ) : (
+                      <Text style={{ fontSize: 16 }}>{pos.icon || '🐷'} </Text>
+                    )}
+                    <Text style={styles.shareName} numberOfLines={1} ellipsizeMode="tail">
+                      {pos.sender_name}
                     </Text>
                     <Text style={styles.shareBadge}>{minutesLeft(pos.expires_at)}{i18n.t('min_short')}</Text>
                   </View>
@@ -823,7 +828,7 @@ export default function App() {
                 {!inbox.sharing?.includes(pos.sender_id) && (
                   <TouchableOpacity
                     style={[styles.smallButton, sendingBackIds.has(pos.sender_id) && { opacity: 0.7 }]}
-                    onPress={() => sendBack(pos)}
+                    onPress={() => setShareBackTargetPos(pos)}
                     disabled={sendingBackIds.has(pos.sender_id)}
                     hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                   >
@@ -862,7 +867,7 @@ export default function App() {
             }}
             activeOpacity={0.8}
           >
-            <FontAwesome6 name="location-crosshairs" size={20} color="#007AFF" />
+            <FontAwesome6 name="location-crosshairs" size={20} color="#0F4C5C" />
           </TouchableOpacity>
         )}
 
@@ -872,21 +877,36 @@ export default function App() {
             style={[styles.actionButton, styles.requestButton]} 
             onPress={() => openModal('request')}
           >
-            <Text style={[styles.buttonText, styles.requestButtonText]}>{i18n.t('request')}</Text>
+            <Text style={[styles.buttonText, styles.requestButtonText]} numberOfLines={1} adjustsFontSizeToFit>
+              {i18n.t('request')}
+            </Text>
           </TouchableOpacity>
           
           <TouchableOpacity 
             style={[styles.actionButton, styles.pingButton]} 
             onPress={() => openModal('ping')}
           >
-            <Text style={[styles.buttonText, styles.pingButtonText]}>Phing</Text>
+            <Text style={[styles.buttonText, styles.pingButtonText]} numberOfLines={1} adjustsFontSizeToFit>
+              Phing
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={[styles.actionButton, styles.flashButton]} 
+            onPress={() => openModal('flash')}
+          >
+            <Text style={[styles.buttonText, styles.flashButtonText]} numberOfLines={2} adjustsFontSizeToFit>
+              {'FLASH\nMESS'}
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity 
             style={[styles.actionButton, styles.sendButton]} 
             onPress={() => openModal('send')}
           >
-            <Text style={[styles.buttonText, styles.sendButtonText]}>{i18n.t('share')}</Text>
+            <Text style={[styles.buttonText, styles.sendButtonText]} numberOfLines={1} adjustsFontSizeToFit>
+              {i18n.t('share')}
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -933,6 +953,53 @@ export default function App() {
           const names = targets.map(t => t.name).join(', ');
           Alert.alert(i18n.t('sent'), i18n.t('shared_photo_for_mins', { names, mins: durationMinutes, emoji: '📷' }));
           refreshRef.current();
+        }}
+      />
+
+      <FlashMessModal
+        visible={flashModalVisible}
+        currentUserId={user.id}
+        targets={flashTarget}
+        onClose={() => setFlashModalVisible(false)}
+        onSuccess={() => {
+          setFlashModalVisible(false);
+          refreshRef.current();
+        }}
+      />
+
+      <ShareBackModal
+        visible={shareBackTargetPos !== null}
+        position={shareBackTargetPos}
+        onClose={() => setShareBackTargetPos(null)}
+        onSelectPosition={() => {
+          if (!shareBackTargetPos) return;
+          const target = shareBackTargetPos;
+          setShareBackTargetPos(null);
+          sendBack(target);
+        }}
+        onSelectFlashMess={() => {
+          if (!shareBackTargetPos) return;
+          const target = shareBackTargetPos;
+          setShareBackTargetPos(null);
+          setFlashTarget([{
+            id: String(target.sender_id),
+            name: target.sender_name,
+            phoneNumber: '',
+            userId: target.sender_id,
+          }]);
+          setFlashModalVisible(true);
+        }}
+        onSelectPhing={() => {
+          if (!shareBackTargetPos) return;
+          const target = shareBackTargetPos;
+          setShareBackTargetPos(null);
+          setPingTarget([{
+            id: String(target.sender_id),
+            name: target.sender_name,
+            phoneNumber: '',
+            userId: target.sender_id,
+          }]);
+          setPingModalVisible(true);
         }}
       />
 
@@ -1067,15 +1134,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.94)',
     paddingVertical: 9,
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
     borderRadius: 14,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.18,
     shadowRadius: 4,
     elevation: 4,
-    minWidth: 240,
-    maxWidth: 320,
+    minWidth: 260,
+    maxWidth: 380,
     borderWidth: 1,
     borderColor: '#e8ecef',
   },
@@ -1083,7 +1150,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 8,
+    gap: 6,
   },
   shareTitle: {
     flex: 1,
@@ -1092,6 +1159,8 @@ const styles = StyleSheet.create({
     fontSize: 14.5,
     fontWeight: 'bold',
     color: '#222',
+    flex: 1,
+    marginRight: 6,
   },
   shareMeta: {
     fontSize: 13,
@@ -1114,21 +1183,21 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   smallButton: {
-    backgroundColor: '#805d73', // Din snygga lila färg
-    paddingVertical: 7,
-    paddingHorizontal: 10,
+    backgroundColor: '#0F4C5C',
+    paddingVertical: 6,
+    paddingHorizontal: 9,
     borderRadius: 8,
     marginLeft: 8,
   },
   smallButtonText: {
     color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 12,
+    fontWeight: '700',
+    fontSize: 11.5,
   },
   pendingChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#805d73',
+    backgroundColor: '#0F4C5C',
     paddingVertical: 10,
     paddingHorizontal: 14,
     borderRadius: 14,
@@ -1146,7 +1215,7 @@ const styles = StyleSheet.create({
   },
   myLocationButton: {
     position: 'absolute',
-    bottom: 105,
+    bottom: 96,
     right: 18,
     width: 44,
     height: 44,
@@ -1168,15 +1237,15 @@ const styles = StyleSheet.create({
     right: 0,
     flexDirection: 'row',
     justifyContent: 'space-evenly',
-    paddingHorizontal: 10,
+    paddingHorizontal: 6,
     zIndex: 10, // Viktigt för att synas över kartan
     elevation: 10, // Extra viktigt för Android
   },
   actionButton: {
-    width: 83,
-    height: 83,
-    borderRadius: 41.5,
-    backgroundColor: 'rgba(255, 255, 255, 0.72)',
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.18,
@@ -1184,33 +1253,42 @@ const styles = StyleSheet.create({
     elevation: 5,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1.5,
+    borderWidth: 2,
+    borderColor: '#0F4C5C',
   },
   requestButton: {
-    borderColor: 'rgba(126, 137, 93, 0.35)',
+    borderColor: '#0F4C5C',
   },
   pingButton: {
-    borderColor: 'rgba(128, 80, 114, 0.35)',
+    borderColor: '#0F4C5C',
+  },
+  flashButton: {
+    borderColor: '#0F4C5C',
   },
   sendButton: {
-    borderColor: 'rgba(93, 126, 128, 0.35)',
+    borderColor: '#0F4C5C',
   },
   buttonText: {
-    fontSize: 14.5,
+    fontSize: 12,
     fontWeight: 'bold',
     textAlign: 'center',
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    color: '#ff3131',
+    letterSpacing: 0.3,
+    color: '#0F4C5C',
   },
   requestButtonText: {
-    color: '#ff3131',
+    color: '#0F4C5C',
   },
   pingButtonText: {
-    color: '#ff3131',
+    color: '#0F4C5C',
+  },
+  flashButtonText: {
+    fontSize: 10,
+    lineHeight: 12,
+    color: '#0F4C5C',
   },
   sendButtonText: {
-    color: '#ff3131',
+    color: '#0F4C5C',
   },
   adContainer: {
     minHeight: 60,

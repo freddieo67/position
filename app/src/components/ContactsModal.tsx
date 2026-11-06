@@ -17,7 +17,7 @@ export interface AppContact {
 
 interface ContactsModalProps {
   visible: boolean;
-  mode: 'send' | 'request' | 'signal' | 'ping' | null;
+  mode: 'send' | 'request' | 'signal' | 'ping' | 'flash' | null;
   currentUserId: number;
   onClose: () => void;
   onSelect: (
@@ -268,6 +268,8 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
                   ? i18n.t('send_signal_to')
                   : mode === 'ping'
                   ? i18n.t('phing_to_title')
+                  : mode === 'flash'
+                  ? i18n.t('flash_to_title')
                   : i18n.t('request_from_title')}
               </Text>
               {mode !== 'send' && (
@@ -276,6 +278,8 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
                     ? i18n.t('signal_hint')
                     : mode === 'ping'
                     ? i18n.t('phing_hint')
+                    : mode === 'flash'
+                    ? i18n.t('flash_hint')
                     : i18n.t('request_hint')}
                 </Text>
               )}
@@ -335,7 +339,7 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
                 <TouchableOpacity
                   style={[styles.closeButton, { backgroundColor: '#34C759', marginBottom: 10 }]}
                   onPress={() => {
-                    if (mode === 'request' || mode === 'ping') {
+                    if (mode === 'request' || mode === 'ping' || mode === 'flash') {
                       onSelect(checkedContacts);
                     } else {
                       setChosenContacts(checkedContacts);

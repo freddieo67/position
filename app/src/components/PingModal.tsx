@@ -4,7 +4,6 @@ import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { api } from '../api';
 import { ApiError } from '../config';
-import { SIGNALS } from '../signals';
 import i18n from '../i18n';
 
 import { AppContact } from './ContactsModal';
@@ -122,52 +121,7 @@ export default function PingModal({
     }
   };
 
-  const sendPing = async (type: string, message?: string) => {
-    if (!targets || targets.length === 0) return;
-    // Om användaren valt ett foto och trycker på en signal: skicka foto-ping + signal!
-    if (photoThumb && photoData && onSendPhotoPing) {
-      setLoading(true);
-      try {
-        await onSendPhotoPing(
-          targets,
-          photoThumb,
-          photoData,
-          customText.trim() || undefined,
-          selectedDuration
-        );
-        await Promise.all(
-          targets.map(target => api.sendSignal(currentUserId, target.userId, type, message))
-        ).catch(() => {});
-        setCustomText('');
-        setPhotoThumb(null);
-        setPhotoData(null);
-      } catch (error: any) {
-        const msg = error instanceof ApiError && error.serverMessage
-          ? error.serverMessage
-          : (error?.serverMessage || error?.message || i18n.t('phing_send_failed'));
-        Alert.alert('Phing', msg);
-      } finally {
-        setLoading(false);
-      }
-      return;
-    }
 
-    setLoading(true);
-    try {
-      await Promise.all(
-        targets.map(target => api.sendSignal(currentUserId, target.userId, type, message))
-      );
-      setCustomText('');
-      onSuccess();
-    } catch (error: any) {
-      const msg = error instanceof ApiError && error.serverMessage 
-        ? error.serverMessage 
-        : (error?.serverMessage || error?.message || i18n.t('phing_send_failed'));
-      Alert.alert('Phing', msg);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   if (!visible) return null;
 
@@ -182,7 +136,9 @@ export default function PingModal({
 
             {/* Foto-sektion överst */}
             {!photoThumb ? (
-              <View style={styles.photoPickerRow}>
+              <View style={styles.cameraSection}>
+                <Text style={styles.cameraHeading}>{i18n.t('take_photo_heading')}</Text>
+
                 <TouchableOpacity
                   style={styles.photoOptionBtn}
                   onPress={pickFromCamera}
@@ -191,6 +147,10 @@ export default function PingModal({
                 >
                   <Text style={styles.photoOptionEmoji}>📷</Text>
                 </TouchableOpacity>
+
+                <Text style={styles.photoExplanationText}>
+                  {i18n.t('phing_explanation')}
+                </Text>
               </View>
             ) : (
               <View style={styles.photoPreviewCard}>
@@ -238,76 +198,35 @@ export default function PingModal({
                     </TouchableOpacity>
                   ))}
                 </View>
-              </>
-            )}
 
-            <View style={styles.divider} />
+                <View style={styles.divider} />
 
-            <Text style={styles.subtitle}>
-              {photoThumb ? i18n.t('ready_flash_mess_photo_label') : i18n.t('ready_flash_mess_label')}
-            </Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.quickButtonsScroll}
-            >
-              {SIGNALS.map(s => (
+                <Text style={styles.subtitle}>{i18n.t('photo_message_label')}</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder={i18n.t('caption_placeholder')}
+                  value={customText}
+                  onChangeText={setCustomText}
+                  maxLength={100}
+                />
+
                 <TouchableOpacity
-                  key={s.type}
-                  style={styles.quickBtn}
+                  style={[styles.sendPhotoBtn, (loading || processingPhoto) && styles.disabledBtn]}
                   disabled={loading || processingPhoto}
-                  onPress={() => sendPing(s.type)}
+                  onPress={handleSendPhoto}
                 >
-                  <Text style={styles.emoji}>{s.emoji}</Text>
-                  <Text style={styles.quickText}>{s.label}</Text>
+                  {loading ? (
+                    <ActivityIndicator color="#333" />
+                  ) : (
+                    <>
+                      <Text style={styles.sendPhotoEmoji}>📷</Text>
+                      <Text style={styles.sendPhotoBtnText}>
+                        {i18n.t('send_phing_btn', { mins: selectedDuration }).replace('📷 ', '')}
+                      </Text>
+                    </>
+                  )}
                 </TouchableOpacity>
-              ))}
-            </ScrollView>
-
-            <View style={styles.divider} />
-
-            <Text style={styles.subtitle}>
-              {photoThumb ? i18n.t('photo_message_label') : i18n.t('write_flash_mess_label')}
-            </Text>
-            <TextInput
-              style={styles.input}
-              placeholder={photoThumb ? i18n.t('caption_placeholder') : i18n.t('message_placeholder')}
-              value={customText}
-              onChangeText={setCustomText}
-              maxLength={100}
-            />
-
-            {photoThumb ? (
-              <TouchableOpacity
-                style={[styles.sendPhotoBtn, (loading || processingPhoto) && styles.disabledBtn]}
-                disabled={loading || processingPhoto}
-                onPress={handleSendPhoto}
-              >
-                {loading ? (
-                  <ActivityIndicator color="#333" />
-                ) : (
-                  <>
-                    <Text style={styles.sendPhotoEmoji}>📷</Text>
-                    <Text style={styles.sendPhotoBtnText}>
-                      {i18n.t('send_phing_btn', { mins: selectedDuration }).replace('📷 ', '')}
-                    </Text>
-                  </>
-                )}
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity 
-                style={[styles.sendBtn, (!customText.trim() || loading || processingPhoto) && styles.disabledBtn]} 
-                disabled={!customText.trim() || loading || processingPhoto}
-                onPress={() => sendPing('custom', customText.trim())}
-              >
-                {loading ? (
-                  <ActivityIndicator color="#333" />
-                ) : (
-                  <Text style={styles.sendBtnText}>
-                    {`${i18n.t('send_flash_mess_btn')} ⚡`}
-                  </Text>
-                )}
-              </TouchableOpacity>
+              </>
             )}
 
             <TouchableOpacity style={styles.closeBtn} onPress={onClose} disabled={loading}>
@@ -343,30 +262,49 @@ const styles = StyleSheet.create({
     marginBottom: 14,
     color: '#111',
   },
-  photoPickerRow: {
+  cameraSection: {
     alignItems: 'center',
     justifyContent: 'center',
     marginVertical: 10,
+    paddingHorizontal: 8,
+  },
+  cameraHeading: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#222',
+    marginBottom: 16,
+    textAlign: 'center',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   photoOptionBtn: {
-    width: 83,
-    height: 83,
-    borderRadius: 41.5,
-    backgroundColor: 'rgba(255, 255, 255, 0.72)',
+    width: 86,
+    height: 86,
+    borderRadius: 43,
+    backgroundColor: '#f5f5f7',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.18,
-    shadowRadius: 4,
-    elevation: 5,
+    shadowOpacity: 0.15,
+    shadowRadius: 5,
+    elevation: 4,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1.5,
-    borderColor: 'rgba(226, 228, 232, 0.9)',
+    borderColor: '#e1e4e8',
+    marginBottom: 16,
   },
   photoOptionEmoji: {
-    fontSize: 34,
+    fontSize: 40,
     textAlign: 'center',
-    lineHeight: 40,
+    lineHeight: 44,
+  },
+  photoExplanationText: {
+    fontSize: 13.5,
+    lineHeight: 19,
+    color: '#666',
+    textAlign: 'center',
+    paddingHorizontal: 12,
+    marginBottom: 8,
   },
   photoPreviewCard: {
     alignItems: 'center',
