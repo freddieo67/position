@@ -105,6 +105,7 @@ export const de = {
   send_flash_mess_btn: "Flash-mess senden",
   write_flash_mess_label: "Schreibe ein Flash-Mess:",
   photo_message_label: "Nachricht:",
+    ready_flash_mess_with_pos_label: "Fertige Flash-Mess mit Standort (sofort gesendet):",
   ready_flash_mess_label: "Fertige Flash-Mess (sofort gesendet):",
   ready_flash_mess_photo_label: "Fertige Flash-Mess + Bild (sofort gesendet):",
   signal_coffee: "Kaffee?",

@@ -119,7 +119,7 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
       <View style={styles.overlay}>
         <View style={styles.modalContent}>
           {chosenContacts.length > 0 ? (
-            <ScrollView showsVerticalScrollIndicator={false}>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 28 }}>
               <Text style={styles.title}>
                 {mode === 'send' ? i18n.t('share_with_names', { names: chosenContacts.map(c => c.name).join(', ') }) : `${i18n.t('send_to')} ${chosenContacts.map(c => c.name).join(', ')}`}
               </Text>
@@ -199,7 +199,9 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
               )}
 
               <Text style={styles.subtitle}>
-                {i18n.t('ready_flash_mess_label')}
+                {mode === 'send'
+                  ? i18n.t('ready_flash_mess_with_pos_label')
+                  : i18n.t('ready_flash_mess_label')}
               </Text>
 
               <ScrollView
@@ -374,7 +376,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 20,
-    height: '80%', // Tar upp 80% av skärmen
+    height: '88%',
   },
   title: {
     fontSize: 20,

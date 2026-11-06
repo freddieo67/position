@@ -105,6 +105,7 @@ export const hi = {
   send_flash_mess_btn: "flash-mess भेजें",
   write_flash_mess_label: "एक Flash-mess लिखें:",
   photo_message_label: "संदेश:",
+    ready_flash_mess_with_pos_label: "लोकेशन के साथ तैयार Flash-mess (तुरंत भेजा जाएगा):",
   ready_flash_mess_label: "तैयार Flash-mess (तुरंत भेजा जाएगा):",
   ready_flash_mess_photo_label: "तैयार Flash-mess + फ़ोटो (तुरंत भेजा जाएगा):",
   signal_coffee: "कॉफी?",

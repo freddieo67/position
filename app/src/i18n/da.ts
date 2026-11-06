@@ -101,6 +101,7 @@ export const da = {
   send_flash_mess_btn: "Send flash-mess",
   write_flash_mess_label: "Skriv et Flash-mess:",
   photo_message_label: "Besked:",
+    ready_flash_mess_with_pos_label: "Færdige Flash-mess med position (sendes direkte):",
   ready_flash_mess_label: "Færdige Flash-mess (sendes direkte):",
   ready_flash_mess_photo_label: "Færdige Flash-mess + billede (sendes direkte):",
   signal_coffee: "Kaffe?",

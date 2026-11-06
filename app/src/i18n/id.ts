@@ -105,6 +105,7 @@ export const id = {
   send_flash_mess_btn: "Kirim flash-mess",
   write_flash_mess_label: "Tulis Flash-mess:",
   photo_message_label: "Pesan:",
+    ready_flash_mess_with_pos_label: "Flash-mess siap dengan lokasi (kirim instan):",
   ready_flash_mess_label: "Flash-mess siap (kirim instan):",
   ready_flash_mess_photo_label: "Flash-mess siap + foto (kirim instan):",
   signal_coffee: "Ngopi?",

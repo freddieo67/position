@@ -105,6 +105,7 @@ export const nl = {
   send_flash_mess_btn: "Flash-mess versturen",
   write_flash_mess_label: "Schrijf een Flash-mess:",
   photo_message_label: "Bericht:",
+    ready_flash_mess_with_pos_label: "Kant-en-klare Flash-mess met locatie (direct verstuurd):",
   ready_flash_mess_label: "Kant-en-klare Flash-mess (direct verstuurd):",
   ready_flash_mess_photo_label: "Kant-en-klare Flash-mess + foto (direct verstuurd):",
   signal_coffee: "Koffie?",

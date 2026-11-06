@@ -105,6 +105,7 @@ export const bn = {
   send_flash_mess_btn: "flash-mess পাঠান",
   write_flash_mess_label: "একটি Flash-mess লিখুন:",
   photo_message_label: "বার্তা:",
+    ready_flash_mess_with_pos_label: "অবস্থানসহ তৈরি Flash-mess (সরাসরি পাঠানো হবে):",
   ready_flash_mess_label: "তৈরি Flash-mess (সরাসরি পাঠানো হবে):",
   ready_flash_mess_photo_label: "তৈরি Flash-mess + ছবি (সরাসরি পাঠানো হবে):",
   signal_coffee: "কফি?",

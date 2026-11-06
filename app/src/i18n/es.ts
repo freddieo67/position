@@ -105,6 +105,7 @@ export const es = {
   send_flash_mess_btn: "Enviar flash-mess",
   write_flash_mess_label: "Escribe un Flash-mess:",
   photo_message_label: "Mensaje:",
+    ready_flash_mess_with_pos_label: "Flash-mess listos con ubicación (se envían al instante):",
   ready_flash_mess_label: "Flash-mess listos (se envían al instante):",
   ready_flash_mess_photo_label: "Flash-mess listos + foto (se envían al instante):",
   signal_coffee: "¿Café?",

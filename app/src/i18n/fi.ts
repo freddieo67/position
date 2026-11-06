@@ -101,6 +101,7 @@ export const fi = {
   send_flash_mess_btn: "Lähetä flash-mess",
   write_flash_mess_label: "Kirjoita Flash-mess:",
   photo_message_label: "Viesti:",
+    ready_flash_mess_with_pos_label: "Valmiit Flash-mess sijainnilla (lähtee heti):",
   ready_flash_mess_label: "Valmiit Flash-mess (lähtee heti):",
   ready_flash_mess_photo_label: "Valmiit Flash-mess + kuva (lähtee heti):",
   signal_coffee: "Kahville?",

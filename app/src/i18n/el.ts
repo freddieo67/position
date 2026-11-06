@@ -105,6 +105,7 @@ export const el = {
   send_flash_mess_btn: "Αποστολή flash-mess",
   write_flash_mess_label: "Γράψτε ένα Flash-mess:",
   photo_message_label: "Μήνυμα:",
+    ready_flash_mess_with_pos_label: "Έτοιμα Flash-mess με τοποθεσία (αποστολή άμεσα):",
   ready_flash_mess_label: "Έτοιμα Flash-mess (αποστολή άμεσα):",
   ready_flash_mess_photo_label: "Έτοιμα Flash-mess + φωτογραφία (αποστολή άμεσα):",
   signal_coffee: "Καφέ;",

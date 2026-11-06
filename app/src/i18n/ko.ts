@@ -105,6 +105,7 @@ export const ko = {
   send_flash_mess_btn: "flash-mess 보내기",
   write_flash_mess_label: "Flash-mess 작성:",
   photo_message_label: "메시지:",
+    ready_flash_mess_with_pos_label: "위치 포함 준비된 Flash-mess (즉시 전송):",
   ready_flash_mess_label: "준비된 Flash-mess (즉시 전송):",
   ready_flash_mess_photo_label: "준비된 Flash-mess + 사진 (즉시 전송):",
   signal_coffee: "커피 한잔?",
