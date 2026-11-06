@@ -800,7 +800,7 @@ export default function App() {
             {inbox.positions.map(pos => (
               <View key={`card-${pos.sender_id}`} style={styles.shareCard}>
                 <TouchableOpacity
-                  style={{ flex: 1 }}
+                  style={styles.cardContent}
                   onPress={() => {
                     focusOn(pos);
                     if (pos.photo_thumb || pos.has_photo) {
@@ -1133,7 +1133,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.94)',
-    paddingVertical: 9,
+    paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 14,
     shadowColor: '#000',
@@ -1141,26 +1141,23 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.18,
     shadowRadius: 4,
     elevation: 4,
-    minWidth: 260,
-    maxWidth: 380,
+    maxWidth: 360,
     borderWidth: 1,
     borderColor: '#e8ecef',
+  },
+  cardContent: {
+    justifyContent: 'center',
   },
   shareHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     gap: 6,
-  },
-  shareTitle: {
-    flex: 1,
   },
   shareName: {
     fontSize: 14.5,
     fontWeight: 'bold',
     color: '#222',
-    flex: 1,
-    marginRight: 6,
+    maxWidth: 140,
   },
   shareMeta: {
     fontSize: 13,
