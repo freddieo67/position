@@ -199,14 +199,18 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
               )}
 
               <Text style={styles.subtitle}>
-                {mode === 'send' ? i18n.t('want_to_send_signal') : i18n.t('quick_message')}
+                {i18n.t('ready_flash_mess_label')}
               </Text>
 
-              <View style={styles.mapIconRow}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.signalsScroll}
+              >
                 {SIGNALS.map(s => (
                   <TouchableOpacity
                     key={s.type}
-                    style={styles.mapIconBtn}
+                    style={styles.readySignalBtn}
                     onPress={() =>
                       onSelect(
                         chosenContacts,
@@ -217,11 +221,11 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
                       )
                     }
                   >
-                    <Text style={styles.mapIconEmoji}>{s.emoji}</Text>
-                    <Text style={styles.mapIconLabel}>{s.label}</Text>
+                    <Text style={styles.readySignalEmoji}>{s.emoji}</Text>
+                    <Text style={styles.readySignalLabel}>{s.label}</Text>
                   </TouchableOpacity>
                 ))}
-              </View>
+              </ScrollView>
 
               <View style={styles.divider} />
 
@@ -532,6 +536,35 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
     color: '#333',
+  },
+  signalsScroll: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingVertical: 4,
+    paddingHorizontal: 2,
+    marginBottom: 10,
+  },
+  readySignalBtn: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f5f5f7',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    minWidth: 92,
+    height: 62,
+    borderWidth: 1.5,
+    borderColor: '#e2e4e8',
+  },
+  readySignalEmoji: {
+    fontSize: 22,
+    marginBottom: 3,
+  },
+  readySignalLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#333',
+    textAlign: 'center',
   },
   mapIconScroll: {
     flexDirection: 'row',

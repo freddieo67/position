@@ -150,8 +150,11 @@ app.put('/users/:id/push-token', async (req, res) => {
 
 // Signaler som bara visas som push-avisering (sparas inte). {name} byts mot avsändarens namn.
 const SIGNALS: Record<string, { title: string; body: string }> = {
-  beer: { title: '🍺 {name} bjuder dig på en öl', body: 'Hur säger du nej till det?' },
-  coffee: { title: '☕ {name} bjuder på kaffe', body: 'Sugen på en kaffe?' },
+  where: { title: '📍 {name} undrar: Var är du?', body: 'Var är du?' },
+  on_my_way: { title: '🚗 {name} är på väg!', body: 'På väg!' },
+  soon: { title: '⏳ {name} kommer snart!', body: 'Kommer snart' },
+  coffee: { title: '☕ {name} bjuder på kaffe', body: 'Sugen på en fika?' },
+  beer: { title: '🍺 {name} bjuder på öl!', body: 'Bjuder på öl!' },
   wave: { title: '👋 {name} vinkar', body: 'Var håller du hus?' },
   hug: { title: '🤗 {name} skickar en kram', body: 'Det behövs ibland.' },
   kiss: { title: '😘 {name} skickar en kyss', body: 'Mwah!' },

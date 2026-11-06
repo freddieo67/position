@@ -238,32 +238,19 @@ export default function PingModal({
                     </TouchableOpacity>
                   ))}
                 </View>
-
-                <TouchableOpacity
-                  style={[styles.sendPhotoBtn, (loading || processingPhoto) && styles.disabledBtn]}
-                  disabled={loading || processingPhoto}
-                  onPress={handleSendPhoto}
-                >
-                  {loading ? (
-                    <ActivityIndicator color="#333" />
-                  ) : (
-                    <>
-                      <Text style={styles.sendPhotoEmoji}>📷</Text>
-                      <Text style={styles.sendPhotoBtnText}>
-                        {i18n.t('send_phing_btn', { mins: selectedDuration }).replace('📷 ', '')}
-                      </Text>
-                    </>
-                  )}
-                </TouchableOpacity>
               </>
             )}
 
             <View style={styles.divider} />
 
             <Text style={styles.subtitle}>
-              {photoThumb ? i18n.t('or_send_photo_signal') : i18n.t('quick_ping_no_photo')}
+              {i18n.t('ready_flash_mess_label')}
             </Text>
-            <View style={styles.quickButtons}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.quickButtonsScroll}
+            >
               {SIGNALS.map(s => (
                 <TouchableOpacity
                   key={s.type}
@@ -275,11 +262,13 @@ export default function PingModal({
                   <Text style={styles.quickText}>{s.label}</Text>
                 </TouchableOpacity>
               ))}
-            </View>
+            </ScrollView>
 
             <View style={styles.divider} />
 
-            <Text style={styles.subtitle}>{i18n.t('optional_message_label')}</Text>
+            <Text style={styles.subtitle}>
+              {photoThumb ? i18n.t('photo_message_label') : i18n.t('write_flash_mess_label')}
+            </Text>
             <TextInput
               style={styles.input}
               placeholder={photoThumb ? i18n.t('caption_placeholder') : i18n.t('message_placeholder')}
@@ -288,21 +277,38 @@ export default function PingModal({
               maxLength={100}
             />
 
-            <TouchableOpacity 
-              style={[styles.sendBtn, (!customText.trim() || loading || processingPhoto) && styles.disabledBtn]} 
-              disabled={!customText.trim() || loading || processingPhoto}
-              onPress={() => photoThumb ? handleSendPhoto() : sendPing('custom', customText.trim())}
-            >
-              {loading ? (
-                <ActivityIndicator color="#333" />
-              ) : (
-                <Text style={styles.sendBtnText}>
-                  {photoThumb
-                    ? `${i18n.t('send_flash_mess_btn')} (${selectedDuration} ${i18n.t('min_short')}) 💬`
-                    : `${i18n.t('send_flash_mess_btn')} ⚡`}
-                </Text>
-              )}
-            </TouchableOpacity>
+            {photoThumb ? (
+              <TouchableOpacity
+                style={[styles.sendPhotoBtn, (loading || processingPhoto) && styles.disabledBtn]}
+                disabled={loading || processingPhoto}
+                onPress={handleSendPhoto}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#333" />
+                ) : (
+                  <>
+                    <Text style={styles.sendPhotoEmoji}>📷</Text>
+                    <Text style={styles.sendPhotoBtnText}>
+                      {i18n.t('send_phing_btn', { mins: selectedDuration }).replace('📷 ', '')}
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity 
+                style={[styles.sendBtn, (!customText.trim() || loading || processingPhoto) && styles.disabledBtn]} 
+                disabled={!customText.trim() || loading || processingPhoto}
+                onPress={() => sendPing('custom', customText.trim())}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#333" />
+                ) : (
+                  <Text style={styles.sendBtnText}>
+                    {`${i18n.t('send_flash_mess_btn')} ⚡`}
+                  </Text>
+                )}
+              </TouchableOpacity>
+            )}
 
             <TouchableOpacity style={styles.closeBtn} onPress={onClose} disabled={loading}>
               <Text style={styles.closeBtnText}>{i18n.t('cancel')}</Text>
@@ -442,32 +448,33 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#333',
   },
-  quickButtons: {
+  quickButtonsScroll: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    gap: 8,
+    paddingVertical: 4,
+    paddingHorizontal: 2,
     marginBottom: 10,
-    gap: 6,
   },
   quickBtn: {
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#f5f5f7',
-    paddingVertical: 6,
-    paddingHorizontal: 4,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
     borderRadius: 8,
-    flex: 1,
-    height: 54,
+    minWidth: 92,
+    height: 62,
     borderWidth: 1.5,
     borderColor: '#e2e4e8',
   },
   emoji: {
-    fontSize: 24,
-    marginBottom: 1,
+    fontSize: 22,
+    marginBottom: 3,
   },
   quickText: {
-    fontSize: 10.5,
+    fontSize: 12,
     fontWeight: '600',
-    color: '#555',
+    color: '#333',
     textAlign: 'center',
   },
   divider: {

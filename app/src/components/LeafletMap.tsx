@@ -100,18 +100,19 @@ const LeafletMap = React.forwardRef<LeafletMapRef, Props>(({ centerLat, centerLn
                 var thumbHtml = '<svg width="46" height="54" viewBox="0 0 46 54" style="filter:drop-shadow(0 2px 5px rgba(0,0,0,0.55));display:block;">' +
                   '<defs>' +
                     '<clipPath id="' + clipId + '">' +
-                      '<circle cx="23" cy="20.5" r="17.5" />' +
+                      '<circle cx="23" cy="20" r="15.5" />' +
                     '</clipPath>' +
                   '</defs>' +
-                  '<path d="M 23 53 C 12 39 3 30 3 20.5 A 20 20 0 1 1 43 20.5 C 43 30 34 39 23 53 Z" fill="#000" />' +
-                  '<image href="' + m.photoThumb + '" x="5.5" y="3" width="35" height="35" preserveAspectRatio="xMidYMid slice" clip-path="url(#' + clipId + ')" />' +
+                  '<path d="M 23 52 L 8.1 30.1 A 18 18 0 1 1 37.9 30.1 Z" fill="#000" />' +
+                  '<circle cx="23" cy="20" r="16" fill="#fff" />' +
+                  '<image href="' + m.photoThumb + '" x="7.5" y="4.5" width="31" height="31" preserveAspectRatio="xMidYMid slice" clip-path="url(#' + clipId + ')" />' +
                 '</svg>';
                 marker = L.marker([m.lat, m.lng], {
                   icon: L.divIcon({
                     className: '',
                     html: '<div style="display:flex;flex-direction:column;align-items:center;width:80px;justify-content:center;">' + thumbHtml + nameHtml + '</div>',
                     iconSize: [80, 80],
-                    iconAnchor: [40, 54],
+                    iconAnchor: [40, 52],
                     popupAnchor: [0, -52],
                   }),
                 });

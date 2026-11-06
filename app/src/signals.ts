@@ -19,9 +19,9 @@ function signal(type: string, emoji: string): SignalType {
 }
 
 export const SIGNALS: SignalType[] = [
+  signal('where', '📍'),
+  signal('on_my_way', '🚗'),
+  signal('soon', '⏳'),
+  signal('coffee', '☕'),
   signal('beer', '🍺'),
-  signal('hug', '🤗'),
-  signal('great', '👍'),
-  signal('angry', '😠'),
-  signal('happy', '😊'),
 ];
