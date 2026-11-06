@@ -9,7 +9,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.xspecio.position",
-      "buildNumber": "14",
+      "buildNumber": "15",
       "infoPlist": {
         "GADApplicationIdentifier": "ca-app-pub-3940256099942544~1458002511",
         "SKAdNetworkItems": [
