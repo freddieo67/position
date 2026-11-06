@@ -96,6 +96,7 @@ export const de = {
   write_flash_mess_label: "Schreibe ein Flash-Mess:",
   photo_message_label: "Nachricht:",
   ready_flash_mess_label: "Fertige Flash-Mess (sofort gesendet):",
+  ready_flash_mess_photo_label: "Fertige Flash-Mess + Bild (sofort gesendet):",
   signal_coffee: "Kaffee?",
   signal_soon: "Komme gleich",
   signal_on_my_way: "Auf dem Weg!",

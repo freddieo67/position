@@ -92,6 +92,7 @@ export const da = {
   write_flash_mess_label: "Skriv et Flash-mess:",
   photo_message_label: "Besked:",
   ready_flash_mess_label: "Færdige Flash-mess (sendes direkte):",
+  ready_flash_mess_photo_label: "Færdige Flash-mess + billede (sendes direkte):",
   signal_coffee: "Kaffe?",
   signal_soon: "Kommer snart",
   signal_on_my_way: "På vej!",

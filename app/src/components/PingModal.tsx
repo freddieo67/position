@@ -244,7 +244,7 @@ export default function PingModal({
             <View style={styles.divider} />
 
             <Text style={styles.subtitle}>
-              {i18n.t('ready_flash_mess_label')}
+              {photoThumb ? i18n.t('ready_flash_mess_photo_label') : i18n.t('ready_flash_mess_label')}
             </Text>
             <ScrollView
               horizontal

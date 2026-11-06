@@ -96,6 +96,7 @@ export const bn = {
   write_flash_mess_label: "একটি Flash-mess লিখুন:",
   photo_message_label: "বার্তা:",
   ready_flash_mess_label: "তৈরি Flash-mess (সরাসরি পাঠানো হবে):",
+  ready_flash_mess_photo_label: "তৈরি Flash-mess + ছবি (সরাসরি পাঠানো হবে):",
   signal_coffee: "কফি?",
   signal_soon: "শীঘ্রই আসছি",
   signal_on_my_way: "আসছি!",

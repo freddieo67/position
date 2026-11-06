@@ -96,6 +96,7 @@ export const id = {
   write_flash_mess_label: "Tulis Flash-mess:",
   photo_message_label: "Pesan:",
   ready_flash_mess_label: "Flash-mess siap (kirim instan):",
+  ready_flash_mess_photo_label: "Flash-mess siap + foto (kirim instan):",
   signal_coffee: "Ngopi?",
   signal_soon: "Segera sampai",
   signal_on_my_way: "Sedang jalan!",

@@ -101,6 +101,7 @@ export const sv = {
   write_flash_mess_label: "Skriv ett Flash-mess:",
   photo_message_label: "Meddelande:",
   ready_flash_mess_label: "Färdiga Flash-mess (skickas direkt):",
+  ready_flash_mess_photo_label: "Färdiga Flash-mess + bild (skickas direkt):",
   signal_coffee: "Fika?",
   signal_soon: "Kommer snart",
   signal_on_my_way: "På väg!",

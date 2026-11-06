@@ -92,6 +92,7 @@ export const pl = {
   write_flash_mess_label: "Napisz Flash-mess:",
   photo_message_label: "Wiadomość:",
   ready_flash_mess_label: "Gotowe Flash-mess (wysyłane od razu):",
+  ready_flash_mess_photo_label: "Gotowe Flash-mess + zdjęcie (wysyłane od razu):",
   signal_coffee: "Kawa?",
   signal_soon: "Zaraz będę",
   signal_on_my_way: "W drodze!",

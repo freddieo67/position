@@ -96,6 +96,7 @@ export const hi = {
   write_flash_mess_label: "एक Flash-mess लिखें:",
   photo_message_label: "संदेश:",
   ready_flash_mess_label: "तैयार Flash-mess (तुरंत भेजा जाएगा):",
+  ready_flash_mess_photo_label: "तैयार Flash-mess + फ़ोटो (तुरंत भेजा जाएगा):",
   signal_coffee: "कॉफी?",
   signal_soon: "जल्द आ रहा हूँ",
   signal_on_my_way: "रास्ते में हूँ!",

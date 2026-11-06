@@ -96,6 +96,7 @@ export const ja = {
   write_flash_mess_label: "Flash-mess を入力:",
   photo_message_label: "メッセージ:",
   ready_flash_mess_label: "定型 Flash-mess（すぐ送信）:",
+  ready_flash_mess_photo_label: "定型 Flash-mess + 写真（すぐ送信）:",
   signal_coffee: "お茶する？",
   signal_soon: "もうすぐ着くよ",
   signal_on_my_way: "向かってます！",

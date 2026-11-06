@@ -96,6 +96,7 @@ export const ko = {
   write_flash_mess_label: "Flash-mess 작성:",
   photo_message_label: "메시지:",
   ready_flash_mess_label: "준비된 Flash-mess (즉시 전송):",
+  ready_flash_mess_photo_label: "준비된 Flash-mess + 사진 (즉시 전송):",
   signal_coffee: "커피 한잔?",
   signal_soon: "곧 도착해",
   signal_on_my_way: "가는 중!",
