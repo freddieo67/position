@@ -92,7 +92,7 @@ export const fr = {
   phing_to_title: "Phing à... 📷",
   request_from_title: "Demander la position de...",
   signal_hint: "Offrez une bière, envoyez un câlin ou un bisou.",
-  phing_hint: "Envoyez une photo et votre position (max. 60 min) ou un Phing rapide à...",
+  phing_hint: "Prenez une photo comme icône de carte et partagez votre position avec...",
   request_hint: "S'ils acceptent, vous verrez la position de l'autre.",
   share_with_names: "Partager avec %{names}",
   how_long_share: "Combien de temps voulez-vous partager ?",

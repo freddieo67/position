@@ -92,7 +92,7 @@ export const no = {
   phing_to_title: "Phing... 📷",
   request_from_title: "Be om posisjon fra...",
   signal_hint: "Spander en øl, send en klem eller et kyss.",
-  phing_hint: "Send et bilde og posisjon (maks. 60 min) eller en rask Phing til...",
+  phing_hint: "Ta et bilde som kartikonet ditt og del posisjon med...",
   request_hint: "Hvis de sier ja, ser dere hverandres posisjon.",
   share_with_names: "Del med %{names}",
   how_long_share: "Hvor lenge vil du dele?",

@@ -88,7 +88,7 @@ export const pl = {
   phing_to_title: "Phing do... 📷",
   request_from_title: "Poproś o lokalizację...",
   signal_hint: "Zaproś na piwo, wyślij uścisk lub buziaka.",
-  phing_hint: "Wyślij zdjęcie i lokalizację (maks. 60 min) lub szybki Phing do...",
+  phing_hint: "Zrób zdjęcie jako ikonę mapy i udostępnij lokalizację do...",
   request_hint: "Jeśli się zgodzą, zobaczycie swoje lokalizacje.",
   share_with_names: "Udostępnij: %{names}",
   how_long_share: "Jak długo chcesz udostępniać?",

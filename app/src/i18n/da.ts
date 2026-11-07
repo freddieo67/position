@@ -88,7 +88,7 @@ export const da = {
   phing_to_title: "Phing... 📷",
   request_from_title: "Anmod om position fra...",
   signal_hint: "Giv en øl, send et kram eller et kys.",
-  phing_hint: "Send et billede & position (maks. 60 min) eller en hurtig Phing til...",
+  phing_hint: "Tag et billede som dit kortikon og del position med...",
   request_hint: "Hvis de siger ja, ser I hinandens position.",
   share_with_names: "Del med %{names}",
   how_long_share: "Hvor længe vil du dele?",

@@ -97,7 +97,7 @@ export const sv = {
   phing_to_title: "Phinga... 📷",
   request_from_title: "Begär position från...",
   signal_hint: "Bjud på en öl, skicka en kram eller en kyss.",
-  phing_hint: "Skicka en bild & position (max 60 min) eller en snabb-phing till...",
+  phing_hint: "Ta en bild som din kartikon och dela position till...",
   request_hint: "När de tackar ja ser ni varandras position.",
   share_with_names: "Dela med %{names}",
   how_long_share: "Hur länge vill du dela?",

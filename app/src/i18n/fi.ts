@@ -88,7 +88,7 @@ export const fi = {
   phing_to_title: "Phing... 📷",
   request_from_title: "Pyydä sijaintia...",
   signal_hint: "Tarjoa olut, lähetä halaus tai suukko.",
-  phing_hint: "Lähetä kuva ja sijainti (enint. 60 min) tai pikaphingi...",
+  phing_hint: "Ota kuva karttakuvakkeeksi ja jaa sijainti...",
   request_hint: "Jos hyväksyvät, näette toistenne sijainnin.",
   share_with_names: "Jaa: %{names}",
   how_long_share: "Kuinka kauan haluat jakaa?",

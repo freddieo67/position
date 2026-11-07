@@ -92,7 +92,7 @@ export const nl = {
   phing_to_title: "Phing naar... 📷",
   request_from_title: "Locatie vragen aan...",
   signal_hint: "Trakteer op een biertje, stuur een knuffel of een kus.",
-  phing_hint: "Stuur een foto & locatie (max 60 min) of een snelle Phing naar...",
+  phing_hint: "Maak een foto als je kaarticoon en deel je locatie met...",
   request_hint: "Als ze akkoord gaan, zien jullie elkaars locatie.",
   share_with_names: "Delen met %{names}",
   how_long_share: "Hoe lang wil je delen?",
