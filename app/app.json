@@ -22,6 +22,7 @@
         "NSLocationAlwaysUsageDescription": "Position behöver din plats i bakgrunden för att kunna uppdatera positionen i 10 minuter.",
         "NSContactsUsageDescription": "Position behöver tillgång till dina kontakter så att du kan hitta vänner och dela position.",
         "NSCameraUsageDescription": "Position behöver tillgång till kameran så att du kan ta en bild när du delar din position.",
+        "NSPhotoLibraryUsageDescription": "Position behöver tillgång till ditt galleri så att du kan välja en bild när du delar din position.",
         "UIBackgroundModes": [
           "location",
           "fetch",
@@ -50,7 +51,8 @@
       [
         "expo-image-picker",
         {
-          "cameraPermission": "Position behöver tillgång till kameran så att du kan ta en bild när du delar din position."
+          "cameraPermission": "Position behöver tillgång till kameran så att du kan ta en bild när du delar din position.",
+          "photosPermission": "Position behöver tillgång till ditt galleri så att du kan välja en bild när du delar din position."
         }
       ],
       [

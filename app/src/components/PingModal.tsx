@@ -97,6 +97,26 @@ export default function PingModal({
     }
   };
 
+  const pickFromGallery = async () => {
+    try {
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perm.granted) {
+        Alert.alert(i18n.t('permission_missing_title'), i18n.t('gallery_permission_needed'));
+        return;
+      }
+      const res = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        quality: 0.8,
+      });
+      if (!res.canceled && res.assets?.[0]?.uri) {
+        await processSelectedAsset(res.assets[0].uri);
+      }
+    } catch (e) {
+      console.warn('Gallerifel:', e);
+      Alert.alert(i18n.t('error'), i18n.t('gallery_error'));
+    }
+  };
+
   const handleSendPhoto = async () => {
     if (!targets || targets.length === 0 || !photoThumb || !photoData || !onSendPhotoPing) return;
     setLoading(true);
@@ -139,14 +159,31 @@ export default function PingModal({
               <View style={styles.cameraSection}>
                 <Text style={styles.cameraHeading}>{i18n.t('take_photo_heading')}</Text>
 
-                <TouchableOpacity
-                  style={styles.photoOptionBtn}
-                  onPress={pickFromCamera}
-                  disabled={loading || processingPhoto}
-                  activeOpacity={0.8}
-                >
-                  <Text style={styles.photoOptionEmoji}>📷</Text>
-                </TouchableOpacity>
+                <View style={styles.photoOptionsRow}>
+                  <TouchableOpacity
+                    style={styles.photoOptionWrapper}
+                    onPress={pickFromCamera}
+                    disabled={loading || processingPhoto}
+                    activeOpacity={0.8}
+                  >
+                    <View style={styles.photoOptionBtn}>
+                      <Text style={styles.photoOptionEmoji}>📷</Text>
+                    </View>
+                    <Text style={styles.photoOptionLabel}>{i18n.t('take_photo_camera')}</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.photoOptionWrapper}
+                    onPress={pickFromGallery}
+                    disabled={loading || processingPhoto}
+                    activeOpacity={0.8}
+                  >
+                    <View style={styles.photoOptionBtn}>
+                      <Text style={styles.photoOptionEmoji}>🖼️</Text>
+                    </View>
+                    <Text style={styles.photoOptionLabel}>{i18n.t('choose_from_gallery')}</Text>
+                  </TouchableOpacity>
+                </View>
 
                 <Text style={styles.photoExplanationText}>
                   {i18n.t('phing_explanation')}
@@ -277,10 +314,19 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
+  photoOptionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 36,
+    marginBottom: 16,
+  },
+  photoOptionWrapper: {
+    alignItems: 'center',
+  },
   photoOptionBtn: {
-    width: 86,
-    height: 86,
-    borderRadius: 43,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     backgroundColor: '#f5f5f7',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 3 },
@@ -291,12 +337,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1.5,
     borderColor: '#e1e4e8',
-    marginBottom: 16,
   },
   photoOptionEmoji: {
-    fontSize: 40,
+    fontSize: 36,
     textAlign: 'center',
-    lineHeight: 44,
+    lineHeight: 40,
+  },
+  photoOptionLabel: {
+    marginTop: 8,
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#333',
+    textAlign: 'center',
   },
   photoExplanationText: {
     fontSize: 13.5,
