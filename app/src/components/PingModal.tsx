@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, Modal, TouchableOpacity, TextInput, ActivityIndicator, Alert, Image, ScrollView } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { StyleSheet, Text, View, Modal, TouchableOpacity, TextInput, ActivityIndicator, Alert, Image, ScrollView, KeyboardAvoidingView } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { api } from '../api';
@@ -37,6 +37,7 @@ export default function PingModal({
   const [photoData, setPhotoData] = useState<string | null>(null);
   const [processingPhoto, setProcessingPhoto] = useState(false);
   const [selectedDuration, setSelectedDuration] = useState<15 | 30 | 60>(15);
+  const scrollViewRef = useRef<ScrollView>(null);
 
   useEffect(() => {
     if (visible) {
@@ -149,9 +150,9 @@ export default function PingModal({
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <View style={styles.overlay}>
+      <KeyboardAvoidingView style={styles.overlay} behavior="padding">
         <View style={styles.modalContainer}>
-          <ScrollView showsVerticalScrollIndicator={false}>
+          <ScrollView ref={scrollViewRef} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
             <Text style={styles.title}>{i18n.t('phing_target_title', { names: targetNames })}</Text>
 
             {/* Foto-sektion överst */}
@@ -245,6 +246,9 @@ export default function PingModal({
                   value={customText}
                   onChangeText={setCustomText}
                   maxLength={100}
+                  onFocus={() => {
+                    setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 150);
+                  }}
                 />
 
                 <TouchableOpacity
@@ -271,7 +275,7 @@ export default function PingModal({
             </TouchableOpacity>
           </ScrollView>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

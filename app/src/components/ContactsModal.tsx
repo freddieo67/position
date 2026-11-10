@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Modal, View, Text, StyleSheet, TouchableOpacity, FlatList, TextInput, ActivityIndicator, ScrollView, Alert, Image } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { Modal, View, Text, StyleSheet, TouchableOpacity, FlatList, TextInput, ActivityIndicator, ScrollView, Alert, Image, KeyboardAvoidingView, Keyboard, Platform } from 'react-native';
 import * as Contacts from 'expo-contacts/legacy';
 import { normalizePhone } from '../config';
 import { api } from '../api';
@@ -44,6 +44,16 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
   const [customMessageText, setCustomMessageText] = useState('');
   const [selectedDuration, setSelectedDuration] = useState<15 | 30 | 60>(15);
   const [selectedIcon, setSelectedIcon] = useState<MapIconEmoji>(DEFAULT_MAP_ICON);
+  const scrollViewRef = useRef<ScrollView>(null);
+
+  useEffect(() => {
+    if (!visible || chosenContacts.length === 0) return;
+    const event = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const sub = Keyboard.addListener(event, () => {
+      setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 120);
+    });
+    return () => sub.remove();
+  }, [visible, chosenContacts.length]);
   useEffect(() => {
     if (visible) {
       setSearchQuery('');
@@ -116,10 +126,18 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
 
   return (
     <Modal visible={visible} animationType="slide" transparent={true} onRequestClose={onClose}>
-      <View style={styles.overlay}>
+      <KeyboardAvoidingView
+        style={styles.overlay}
+        behavior="padding"
+      >
         <View style={styles.modalContent}>
           {chosenContacts.length > 0 ? (
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 28 }}>
+            <ScrollView
+              ref={scrollViewRef}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={{ paddingBottom: 28 }}
+            >
               <Text style={styles.title}>
                 {mode === 'send' ? i18n.t('share_with_names', { names: chosenContacts.map(c => c.name).join(', ') }) : `${i18n.t('send_to')} ${chosenContacts.map(c => c.name).join(', ')}`}
               </Text>
@@ -238,6 +256,9 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
                 value={customMessageText}
                 onChangeText={setCustomMessageText}
                 maxLength={100}
+                onFocus={() => {
+                  setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 150);
+                }}
               />
               <TouchableOpacity
                 style={[styles.sendBtn, !customMessageText.trim() && styles.disabledBtn]}
@@ -302,6 +323,7 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
                 <FlatList
                   data={filteredContacts}
                   keyExtractor={(item) => item.id}
+                  keyboardShouldPersistTaps="handled"
                   renderItem={({ item }) => (
                     <TouchableOpacity
                       style={[styles.contactRow, checkedContacts.some(c => c.id === item.id) && { backgroundColor: '#f0f8ff' }]}
@@ -360,7 +382,7 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
             </TouchableOpacity>
           )}
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
