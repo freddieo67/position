@@ -6,10 +6,10 @@ export const sv = {
   continue: 'Fortsätt',
   invalid_phone: 'Ogiltigt telefonnummer',
   invalid_name: 'Du måste ange ett namn',
-  
+
   // Search
   search_friends: 'Hitta vänner...',
-  
+
   // Contacts Modal
   send_to: 'Skicka till',
   want_to_send_signal: 'Vill du skicka med en signal?',
@@ -23,7 +23,7 @@ export const sv = {
   send_position_and_message: "Dela position och meddelande",
   back: 'Tillbaka',
   signal_kiss: 'Ge en puss',
-  
+
   // App Alerts
   sent: 'Skickat',
   position_shared_with_message: 'Position delad med meddelandet:',
@@ -38,7 +38,7 @@ export const sv = {
   shared: 'Delat',
   you_and_name_see_each_other_10m: 'Du och %{name} ser nu varandras position.',
   error: 'Något gick fel',
-  
+
   // Map / General
   ad_space: 'Reklam visas här',
   bg_notification_title: 'Position delar din plats',
@@ -59,7 +59,7 @@ export const sv = {
   you_share_with: "Du delar med",
   shares_position: "delar sin position",
   shared_photo: "delade en bild 📷",
-    share_back_to: "Dela tillbaka till %{name}",
+  share_back_to: "Dela tillbaka till %{name}",
   share_back_position: "Position",
   share_back_position_sub: "Dela din position på kartan",
   share_back_flash_sub: "Skicka ett snabbmeddelande",
@@ -90,7 +90,7 @@ export const sv = {
   ping_sent_to: "Du phingade %{names}.",
   share_position_with: "Dela position med...",
   send_signal_to: "Skicka signal till...",
-    flash_to_title: "Flash-mess ⚡",
+  flash_to_title: "Flash-mess ⚡",
   flash_hint: "Skicka ett snabbt Flash-mess till...",
   flash_target_title: "Flash-mess till %{names}",
   flash_mess_sent: "Ditt Flash-mess har skickats till %{names}!",
@@ -110,7 +110,7 @@ export const sv = {
   send_flash_mess_btn: "Skicka Flash-mess",
   write_flash_mess_label: "Skriv ett Flash-mess:",
   photo_message_label: "Meddelande:",
-    ready_flash_mess_with_pos_label: "Färdiga Flash-mess med position (skickas direkt):",
+  ready_flash_mess_with_pos_label: "Färdiga Flash-mess med position (skickas direkt):",
   ready_flash_mess_label: "Färdiga Flash-mess (skickas direkt):",
   ready_flash_mess_photo_label: "Färdiga Flash-mess + bild (skickas direkt):",
   signal_coffee: "Fika?",
@@ -128,7 +128,7 @@ export const sv = {
   camera_error: "Kunde inte öppna kameran.",
   gallery_permission_needed: "Appen behöver tillgång till dina bilder för att välja från galleriet.",
   gallery_error: "Kunde inte öppna galleriet.",
-    take_photo_heading: "Ta en bild",
+  take_photo_heading: "Ta en bild",
   take_photo_btn: "Ta ett foto",
   phing_explanation: "Bilden blir din kartikon. Mottagaren kan trycka på den för att förstora.",
   phing_target_title: "Phinga %{names}",
