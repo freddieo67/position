@@ -113,6 +113,8 @@ export const en = {
   signal_on_my_way: "On my way!",
   signal_where: "Where are you?",
   no_friends_found: "No friends with the app found.",
+  quick_contacts_label: "Favorites & recent",
+  all_friends_label: "All friends (%{count})",
   continue_selected: "Continue (%{count} selected)",
   contacts_permission_needed: "The app needs access to your contacts to find friends.",
   camera_permission_needed: "The app needs access to the camera to take a photo.",

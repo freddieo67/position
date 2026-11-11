@@ -19,6 +19,7 @@ import { getCurrentCoords } from './src/location';
 import { syncBackgroundLocation, addActiveShare } from './src/backgroundLocation';
 import { SIGNALS } from './src/signals';
 import { getSavedMapIcon, saveMapIcon, MapIconEmoji, DEFAULT_MAP_ICON } from './src/mapIcons';
+import { recordContactUsage } from './src/contactPrefs';
 import { registerForPushToken, getNotifications, refreshNotificationTexts } from './src/push';
 import type * as NotificationsType from 'expo-notifications';
 import i18n, { syncSystemLocale } from './src/i18n';
@@ -508,6 +509,7 @@ export default function App() {
     try {
       if (modalMode === 'signal' && signalType) {
         for (const contact of contacts) await api.sendSignal(user.id, contact.userId, signalType);
+        recordContactUsage(user.id, contacts.map(c => c.userId));
         const sent = SIGNALS.find(s => s.type === signalType);
         Alert.alert(i18n.t('sent'), i18n.t('signal_received', { emoji: sent?.emoji ?? '', names }).trim());
         return;
@@ -533,9 +535,11 @@ export default function App() {
 
         if (signalType === 'custom' && message) {
           for (const contact of contacts) await shareTo(contact.userId, null, message, durationMinutes, icon, photoThumb, photoData);
+          recordContactUsage(user.id, contacts.map(c => c.userId));
           Alert.alert(i18n.t('shared'), `${i18n.t('position_shared_with_message')} "${message}" (${durationMinutes} ${i18n.t('min_short')})`);
         } else {
           for (const contact of contacts) await shareTo(contact.userId, null, undefined, durationMinutes, icon, photoThumb, photoData);
+          recordContactUsage(user.id, contacts.map(c => c.userId));
           const sent = signalType && signalType !== 'none' ? SIGNALS.find(s => s.type === signalType) : undefined;
           if (signalType && signalType !== 'none') {
             for (const contact of contacts) await api.sendSignal(user.id, contact.userId, signalType);
@@ -547,6 +551,7 @@ export default function App() {
         }
       } else {
         for (const contact of contacts) await api.requestPosition(user.id, contact.userId);
+        recordContactUsage(user.id, contacts.map(c => c.userId));
         Alert.alert(
           i18n.t('request_sent'),
           i18n.t('when_accept_see_each_other_10m', { name: names })
@@ -567,6 +572,7 @@ export default function App() {
     setSendingBackIds(prev => new Set(prev).add(pos.sender_id));
     try {
       await shareTo(pos.sender_id);
+      if (user) recordContactUsage(user.id, [pos.sender_id]);
       Alert.alert(i18n.t('sent'), i18n.t('sees_your_position_10m', { name: pos.sender_name }));
       refreshRef.current();
     } catch (error) {
@@ -949,6 +955,7 @@ export default function App() {
           for (const target of targets) {
             await shareTo(target.userId, null, message, durationMinutes, '📷', photoThumb, photoData);
           }
+          recordContactUsage(user.id, targets.map(t => t.userId));
           setPingModalVisible(false);
           const names = targets.map(t => t.name).join(', ');
           Alert.alert(i18n.t('sent'), i18n.t('shared_photo_for_mins', { names, mins: durationMinutes, emoji: '📷' }));
@@ -962,6 +969,9 @@ export default function App() {
         targets={flashTarget}
         onClose={() => setFlashModalVisible(false)}
         onSuccess={() => {
+          if (flashTarget && flashTarget.length > 0) {
+            recordContactUsage(user.id, flashTarget.map(t => t.userId));
+          }
           setFlashModalVisible(false);
           refreshRef.current();
         }}

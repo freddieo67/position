@@ -1,10 +1,19 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Modal, View, Text, StyleSheet, TouchableOpacity, FlatList, TextInput, ActivityIndicator, ScrollView, Alert, Image, KeyboardAvoidingView, Keyboard, Platform } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Modal, View, Text, StyleSheet, TouchableOpacity, FlatList, TextInput, ActivityIndicator, ScrollView, Alert, Image, KeyboardAvoidingView, Keyboard, Platform, RefreshControl } from 'react-native';
 import * as Contacts from 'expo-contacts/legacy';
 import { normalizePhone } from '../config';
 import { api } from '../api';
 import { SIGNALS } from '../signals';
 import { MAP_ICONS, getSavedMapIcon, saveMapIcon, MapIconEmoji, DEFAULT_MAP_ICON } from '../mapIcons';
+import {
+  ContactUsageMap,
+  getCachedContacts,
+  getContactUsage,
+  getFavoriteIds,
+  getQuickContacts,
+  saveCachedContacts,
+  toggleFavoriteId,
+} from '../contactPrefs';
 import i18n from '../i18n';
 
 // En kontakt i telefonboken som också har appen
@@ -34,6 +43,7 @@ interface ContactsModalProps {
 export default function ContactsModal({ visible, mode, currentUserId, onClose, onSelect }: ContactsModalProps) {
   const [contacts, setContacts] = useState<AppContact[]>([]);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   // Array of contacts chosen for the final step (signal/message)
@@ -44,6 +54,8 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
   const [customMessageText, setCustomMessageText] = useState('');
   const [selectedDuration, setSelectedDuration] = useState<15 | 30 | 60>(15);
   const [selectedIcon, setSelectedIcon] = useState<MapIconEmoji>(DEFAULT_MAP_ICON);
+  const [favoriteIds, setFavoriteIds] = useState<number[]>([]);
+  const [usageMap, setUsageMap] = useState<ContactUsageMap>({});
   const scrollViewRef = useRef<ScrollView>(null);
 
   useEffect(() => {
@@ -54,37 +66,62 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
     });
     return () => sub.remove();
   }, [visible, chosenContacts.length]);
+
   useEffect(() => {
-    if (visible) {
-      setSearchQuery('');
-      setChosenContacts([]);
-      setMultiSelectMode(false);
-      setCheckedContacts([]);
-      setShowCustomMessageInput(false);
-      setCustomMessageText('');
-      setSelectedDuration(15);
-      getSavedMapIcon().then(setSelectedIcon);
-      loadContacts();
-    }
+    if (!visible) return;
+    setSearchQuery('');
+    setChosenContacts([]);
+    setMultiSelectMode(false);
+    setCheckedContacts([]);
+    setShowCustomMessageInput(false);
+    setCustomMessageText('');
+    setSelectedDuration(15);
+    getSavedMapIcon().then(setSelectedIcon);
+    initContacts();
   }, [visible]);
 
-  const loadContacts = async () => {
-    setLoading(true);
+  const sortAlphabetically = (list: AppContact[]) =>
+    [...list].sort((a, b) => a.name.localeCompare(b.name, 'sv'));
+
+  const initContacts = async () => {
+    setErrorMsg(null);
+    const [cached, favs, usage] = await Promise.all([
+      getCachedContacts(currentUserId),
+      getFavoriteIds(currentUserId),
+      getContactUsage(currentUserId),
+    ]);
+    setFavoriteIds(favs);
+    setUsageMap(usage);
+
+    if (cached.length > 0) {
+      setContacts(sortAlphabetically(cached));
+      setLoading(false);
+      // Tyst uppdatering i bakgrunden så nya vänner dyker upp automatiskt utan väntetid
+      loadContactsInner(true).catch(err => console.warn('Bakgrundssynk av kontakter misslyckades:', err));
+    } else {
+      await loadContacts(false);
+    }
+  };
+
+  const loadContacts = async (isPullRefresh: boolean = false) => {
+    if (isPullRefresh) setRefreshing(true);
+    else setLoading(true);
     setErrorMsg(null);
     try {
-      await loadContactsInner();
+      await loadContactsInner(false);
     } catch (error) {
       console.error('Kunde inte läsa kontakter:', error);
       setErrorMsg(error instanceof Error ? error.message : String(error));
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
-  const loadContactsInner = async () => {
+  const loadContactsInner = async (silent: boolean = false) => {
     const { status } = await Contacts.requestPermissionsAsync();
     if (status !== 'granted') {
-      setErrorMsg(i18n.t('contacts_permission_needed'));
+      if (!silent) setErrorMsg(i18n.t('contacts_permission_needed'));
       return;
     }
 
@@ -100,6 +137,7 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
     );
     if (entries.length === 0) {
       setContacts([]);
+      await saveCachedContacts(currentUserId, []);
       return;
     }
 
@@ -117,12 +155,47 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
       result.push({ id: `${entry.id}-${user.id}`, name: entry.name, phoneNumber: entry.phone, userId: user.id });
     }
 
-    setContacts(result);
+    const sorted = sortAlphabetically(result);
+    setContacts(sorted);
+    await saveCachedContacts(currentUserId, sorted);
   };
 
-  const filteredContacts = contacts.filter(c =>
-    c.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const handleToggleFavorite = async (targetUserId: number) => {
+    const next = await toggleFavoriteId(currentUserId, targetUserId);
+    setFavoriteIds(next);
+  };
+
+  const handleContactTap = (item: AppContact) => {
+    if (multiSelectMode) {
+      setCheckedContacts(prev =>
+        prev.some(c => c.id === item.id) ? prev.filter(c => c.id !== item.id) : [...prev, item]
+      );
+    } else if (mode === 'send' || mode === 'signal') {
+      setChosenContacts([item]);
+    } else {
+      onSelect([item]);
+    }
+  };
+
+  const handleContactLongPress = (item: AppContact) => {
+    if (!multiSelectMode) {
+      setMultiSelectMode(true);
+      setCheckedContacts([item]);
+    }
+  };
+
+  const favoriteSet = useMemo(() => new Set(favoriteIds), [favoriteIds]);
+
+  const quickContacts = useMemo(() => {
+    const { favorites, recent } = getQuickContacts(contacts, favoriteIds, usageMap, 8);
+    return [...favorites, ...recent];
+  }, [contacts, favoriteIds, usageMap]);
+
+  const filteredContacts = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return contacts;
+    return contacts.filter(c => c.name.toLowerCase().includes(q));
+  }, [contacts, searchQuery]);
 
   return (
     <Modal visible={visible} animationType="slide" transparent={true} onRequestClose={onClose}>
@@ -320,44 +393,107 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
               ) : errorMsg ? (
                 <Text style={styles.errorText}>{errorMsg}</Text>
               ) : (
-                <FlatList
-                  data={filteredContacts}
-                  keyExtractor={(item) => item.id}
-                  keyboardShouldPersistTaps="handled"
-                  renderItem={({ item }) => (
-                    <TouchableOpacity
-                      style={[styles.contactRow, checkedContacts.some(c => c.id === item.id) && { backgroundColor: '#f0f8ff' }]}
-                      onPress={() => {
-                        if (multiSelectMode) {
-                          setCheckedContacts(prev => prev.some(c => c.id === item.id) ? prev.filter(c => c.id !== item.id) : [...prev, item]);
-                        } else {
-                          if (mode === 'send' || mode === 'signal') {
-                            setChosenContacts([item]);
-                          } else {
-                            onSelect([item]);
-                          }
-                        }
-                      }}
-                      onLongPress={() => {
-                        if (!multiSelectMode) {
-                          setMultiSelectMode(true);
-                          setCheckedContacts([item]);
-                        }
-                      }}
-                    >
-                      <View style={styles.avatar}>
-                        <Text style={styles.avatarText}>{item.name.charAt(0)}</Text>
-                      </View>
-                      <Text style={styles.contactName}>{item.name}</Text>
-                      {multiSelectMode && (
-                        <View style={{ marginLeft: 'auto' }}>
-                          <Text style={{ fontSize: 24 }}>{checkedContacts.some(c => c.id === item.id) ? '✅' : '⚪'}</Text>
-                        </View>
-                      )}
-                    </TouchableOpacity>
+                <>
+                  {!searchQuery.trim() && quickContacts.length > 0 && (
+                    <View style={styles.quickSection}>
+                      <Text style={styles.sectionHeader}>{i18n.t('quick_contacts_label')}</Text>
+                      <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        keyboardShouldPersistTaps="handled"
+                        contentContainerStyle={styles.quickScroll}
+                      >
+                        {quickContacts.map(item => {
+                          const isFav = favoriteSet.has(item.userId);
+                          const isChecked = checkedContacts.some(c => c.id === item.id);
+                          const firstName = item.name.trim().split(/\s+/)[0] || item.name;
+                          return (
+                            <TouchableOpacity
+                              key={`quick-${item.id}`}
+                              style={styles.quickItem}
+                              onPress={() => handleContactTap(item)}
+                              onLongPress={() => handleContactLongPress(item)}
+                            >
+                              <View
+                                style={[
+                                  styles.quickAvatar,
+                                  isFav ? styles.quickAvatarFav : styles.quickAvatarRecent,
+                                  isChecked && styles.quickAvatarChecked,
+                                ]}
+                              >
+                                <Text style={styles.quickAvatarText}>{item.name.charAt(0).toUpperCase()}</Text>
+                                {isChecked ? (
+                                  <View style={styles.quickBadge}>
+                                    <Text style={styles.quickBadgeText}>✅</Text>
+                                  </View>
+                                ) : isFav ? (
+                                  <View style={styles.quickBadge}>
+                                    <Text style={styles.quickBadgeText}>⭐</Text>
+                                  </View>
+                                ) : null}
+                              </View>
+                              <Text style={styles.quickName} numberOfLines={1}>
+                                {firstName}
+                              </Text>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </ScrollView>
+                    </View>
                   )}
-                  ListEmptyComponent={<Text style={styles.emptyText}>{i18n.t('no_friends_found')}</Text>}
-                />
+
+                  {filteredContacts.length > 0 && (
+                    <Text style={styles.sectionHeader}>
+                      {i18n.t('all_friends_label', { count: filteredContacts.length })}
+                    </Text>
+                  )}
+
+                  <FlatList
+                    data={filteredContacts}
+                    keyExtractor={(item) => item.id}
+                    keyboardShouldPersistTaps="handled"
+                    initialNumToRender={20}
+                    maxToRenderPerBatch={20}
+                    windowSize={10}
+                    refreshControl={
+                      <RefreshControl refreshing={refreshing} onRefresh={() => loadContacts(true)} />
+                    }
+                    renderItem={({ item }) => {
+                      const isFav = favoriteSet.has(item.userId);
+                      const isChecked = checkedContacts.some(c => c.id === item.id);
+                      return (
+                        <TouchableOpacity
+                          style={[styles.contactRow, isChecked && { backgroundColor: '#f0f8ff' }]}
+                          onPress={() => handleContactTap(item)}
+                          onLongPress={() => handleContactLongPress(item)}
+                        >
+                          <View style={[styles.avatar, isFav && styles.avatarFavorite]}>
+                            <Text style={styles.avatarText}>{item.name.charAt(0).toUpperCase()}</Text>
+                          </View>
+                          <Text style={styles.contactName} numberOfLines={1}>
+                            {item.name}
+                          </Text>
+                          {multiSelectMode ? (
+                            <View style={{ marginLeft: 'auto' }}>
+                              <Text style={{ fontSize: 24 }}>{isChecked ? '✅' : '⚪'}</Text>
+                            </View>
+                          ) : (
+                            <TouchableOpacity
+                              style={styles.starBtn}
+                              onPress={() => handleToggleFavorite(item.userId)}
+                              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                            >
+                              <Text style={[styles.starText, isFav && styles.starTextActive]}>
+                                {isFav ? '⭐' : '☆'}
+                              </Text>
+                            </TouchableOpacity>
+                          )}
+                        </TouchableOpacity>
+                      );
+                    }}
+                    ListEmptyComponent={<Text style={styles.emptyText}>{i18n.t('no_friends_found')}</Text>}
+                  />
+                </>
               )}
               {multiSelectMode && checkedContacts.length > 0 && (
                 <TouchableOpacity
@@ -419,8 +555,76 @@ const styles = StyleSheet.create({
     backgroundColor: '#f0f0f0',
     padding: 12,
     borderRadius: 10,
-    marginBottom: 15,
+    marginBottom: 12,
     fontSize: 16,
+  },
+  quickSection: {
+    marginBottom: 10,
+  },
+  sectionHeader: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#666',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 6,
+  },
+  quickScroll: {
+    paddingVertical: 4,
+    gap: 12,
+  },
+  quickItem: {
+    width: 60,
+    alignItems: 'center',
+  },
+  quickAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  quickAvatarFav: {
+    backgroundColor: '#0F4C5C',
+  },
+  quickAvatarRecent: {
+    backgroundColor: '#007AFF',
+  },
+  quickAvatarChecked: {
+    borderWidth: 2.5,
+    borderColor: '#34C759',
+  },
+  quickAvatarText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 18,
+  },
+  quickBadge: {
+    position: 'absolute',
+    right: -3,
+    bottom: -3,
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    width: 19,
+    height: 19,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 1.5,
+    elevation: 2,
+  },
+  quickBadgeText: {
+    fontSize: 11,
+  },
+  quickName: {
+    marginTop: 4,
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#222',
+    textAlign: 'center',
   },
   contactRow: {
     flexDirection: 'row',
@@ -438,6 +642,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 15,
   },
+  avatarFavorite: {
+    backgroundColor: '#0F4C5C',
+  },
   avatarText: {
     color: '#fff',
     fontWeight: 'bold',
@@ -445,6 +652,20 @@ const styles = StyleSheet.create({
   },
   contactName: {
     fontSize: 16,
+    flex: 1,
+    marginRight: 8,
+  },
+  starBtn: {
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+    marginLeft: 'auto',
+  },
+  starText: {
+    fontSize: 22,
+    color: '#bbb',
+  },
+  starTextActive: {
+    color: '#f5a623',
   },
   signalEmoji: {
     fontSize: 28,

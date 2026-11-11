@@ -118,6 +118,8 @@ export const sv = {
   signal_on_my_way: "På väg!",
   signal_where: "Var är du?",
   no_friends_found: "Inga vänner med appen hittades.",
+  quick_contacts_label: "Favoriter & senaste",
+  all_friends_label: "Alla vänner (%{count})",
   continue_selected: "Gå vidare (%{count} valda)",
   contacts_permission_needed: "Appen behöver tillgång till dina kontakter för att hitta vänner.",
   camera_permission_needed: "Appen behöver tillgång till kameran för att ta en bild.",
