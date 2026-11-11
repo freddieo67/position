@@ -52,6 +52,8 @@ export const en = {
   map_disabled_web: "The map is disabled on web during testing.",
   request: "Request",
   you_share_with: "Sharing with",
+  sharing_with_name: "Sharing with %{name}",
+  name_shares: "%{name} shares",
   shares_position: "is sharing their location",
   shared_photo: "shared a photo 📷",
     share_back_to: "Share back with %{name}",

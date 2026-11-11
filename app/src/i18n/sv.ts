@@ -57,6 +57,8 @@ export const sv = {
   map_disabled_web: "Kartan är avstängd på webben under testning.",
   request: "Begär",
   you_share_with: "Du delar med",
+  sharing_with_name: "Delar med %{name}",
+  name_shares: "%{name} delar",
   shares_position: "delar sin position",
   shared_photo: "delade en bild 📷",
   share_back_to: "Dela tillbaka till %{name}",

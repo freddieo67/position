@@ -785,7 +785,7 @@ export default function App() {
               {activeShares.map(share => (
                 <TouchableOpacity
                   key={`my-share-${share.receiver_id}`}
-                  style={styles.shareCard}
+                  style={[styles.shareCard, styles.outgoingShareCard]}
                   activeOpacity={0.8}
                   onPress={() => handleStopSharePress(share)}
                 >
@@ -795,10 +795,12 @@ export default function App() {
                     ) : (
                       <Text style={{ fontSize: 16 }}>{share.icon || myMapIcon || '🐷'} </Text>
                     )}
-                    <Text style={styles.shareName} numberOfLines={1} ellipsizeMode="tail">
-                      {share.receiver_name}
+                    <Text style={[styles.shareName, styles.outgoingShareName]} numberOfLines={1} ellipsizeMode="tail">
+                      {i18n.t('sharing_with_name', { name: share.receiver_name })}
                     </Text>
-                    <Text style={styles.shareBadge}>{minutesLeft(share.expires_at)}{i18n.t('min_short')} ✕</Text>
+                    <Text style={[styles.shareBadge, styles.outgoingShareBadge]}>
+                      {minutesLeft(share.expires_at)}{i18n.t('min_short')} ✕
+                    </Text>
                   </View>
                 </TouchableOpacity>
               ))}
@@ -821,7 +823,7 @@ export default function App() {
                       <Text style={{ fontSize: 16 }}>{pos.icon || '🐷'} </Text>
                     )}
                     <Text style={styles.shareName} numberOfLines={1} ellipsizeMode="tail">
-                      {pos.sender_name}
+                      {i18n.t('name_shares', { name: pos.sender_name })}
                     </Text>
                     <Text style={styles.shareBadge}>{minutesLeft(pos.expires_at)}{i18n.t('min_short')}</Text>
                   </View>
@@ -1155,6 +1157,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e8ecef',
   },
+  outgoingShareCard: {
+    backgroundColor: '#0F4C5C',
+    borderColor: '#0F4C5C',
+  },
   cardContent: {
     justifyContent: 'center',
   },
@@ -1167,7 +1173,10 @@ const styles = StyleSheet.create({
     fontSize: 14.5,
     fontWeight: 'bold',
     color: '#222',
-    maxWidth: 140,
+    maxWidth: 185,
+  },
+  outgoingShareName: {
+    color: '#fff',
   },
   shareMeta: {
     fontSize: 13,
@@ -1182,6 +1191,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 8,
+    overflow: 'hidden',
+  },
+  outgoingShareBadge: {
+    color: '#fff',
+    backgroundColor: 'rgba(255, 255, 255, 0.22)',
   },
   shareMessage: {
     fontSize: 12,
