@@ -36,7 +36,8 @@ interface ContactsModalProps {
     durationMinutes?: number,
     icon?: string,
     photoThumb?: string | null,
-    photoData?: string | null
+    photoData?: string | null,
+    isMeetingPoint?: boolean
   ) => void;
 }
 
@@ -53,6 +54,8 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
   const [showCustomMessageInput, setShowCustomMessageInput] = useState(false);
   const [customMessageText, setCustomMessageText] = useState('');
   const [selectedDuration, setSelectedDuration] = useState<15 | 30 | 60>(15);
+  const [shareSubMode, setShareSubMode] = useState<'position' | 'meeting'>('position');
+  const [selectedMeetingDuration, setSelectedMeetingDuration] = useState<30 | 60 | 120>(60);
   const [selectedIcon, setSelectedIcon] = useState<MapIconEmoji>(DEFAULT_MAP_ICON);
   const [favoriteIds, setFavoriteIds] = useState<number[]>([]);
   const [usageMap, setUsageMap] = useState<ContactUsageMap>({});
@@ -76,6 +79,8 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
     setShowCustomMessageInput(false);
     setCustomMessageText('');
     setSelectedDuration(15);
+    setShareSubMode('position');
+    setSelectedMeetingDuration(60);
     getSavedMapIcon().then(setSelectedIcon);
     initContacts();
   }, [visible]);
@@ -216,6 +221,84 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
               </Text>
 
               {mode === 'send' && (
+                <View style={styles.subModeRow}>
+                  <TouchableOpacity
+                    style={[styles.subModeBtn, shareSubMode === 'position' && styles.subModeBtnActive]}
+                    onPress={() => setShareSubMode('position')}
+                  >
+                    <Text style={[styles.subModeText, shareSubMode === 'position' && styles.subModeTextActive]}>
+                      📍 {i18n.t('share_tab_my_position')}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.subModeBtn, shareSubMode === 'meeting' && styles.subModeBtnActive]}
+                    onPress={() => setShareSubMode('meeting')}
+                  >
+                    <Text style={[styles.subModeText, shareSubMode === 'meeting' && styles.subModeTextActive]}>
+                      📌 {i18n.t('share_tab_meeting_point')}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              {mode === 'send' && shareSubMode === 'meeting' ? (
+                <>
+                  <Text style={styles.subtitle}>{i18n.t('meeting_point_hint')}</Text>
+                  <View style={styles.durationRow}>
+                    {([30, 60, 120] as const).map(mins => (
+                      <TouchableOpacity
+                        key={mins}
+                        style={[
+                          styles.durationBtn,
+                          selectedMeetingDuration === mins && styles.durationBtnActive,
+                        ]}
+                        onPress={() => setSelectedMeetingDuration(mins)}
+                      >
+                        <Text
+                          style={[
+                            styles.durationText,
+                            selectedMeetingDuration === mins && styles.durationTextActive,
+                          ]}
+                        >
+                          {mins} {i18n.t('min_short')}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+
+                  <Text style={styles.subtitle}>{i18n.t('write_custom_message')}:</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder={i18n.t('meeting_point_msg_placeholder')}
+                    value={customMessageText}
+                    onChangeText={setCustomMessageText}
+                    maxLength={100}
+                    onFocus={() => {
+                      setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 150);
+                    }}
+                  />
+
+                  <TouchableOpacity
+                    style={styles.pickMapBtn}
+                    onPress={() =>
+                      onSelect(
+                        chosenContacts,
+                        'meeting_point',
+                        customMessageText.trim() || undefined,
+                        selectedMeetingDuration,
+                        '📍',
+                        null,
+                        null,
+                        true
+                      )
+                    }
+                  >
+                    <Text style={styles.pickMapBtnText}>{i18n.t('pick_on_map_btn')}</Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <>
+              {mode === 'send' && (
                 <>
                   <Text style={styles.subtitle}>{i18n.t('how_long_share')}</Text>
                   <View style={styles.durationRow}>
@@ -350,6 +433,8 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
                   {mode === 'send' ? `${i18n.t('send_position_and_message')} (${selectedDuration} ${i18n.t('min_short')})` : `${i18n.t('send_message_btn')} 💬`}
                 </Text>
               </TouchableOpacity>
+                </>
+              )}
 
               <TouchableOpacity style={styles.backButton} onPress={() => setChosenContacts([])}>
                 <Text style={styles.backButtonText}>{i18n.t('back')}</Text>
@@ -896,5 +981,45 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     color: '#333',
+  },
+  subModeRow: {
+    flexDirection: 'row',
+    backgroundColor: '#f0f2f5',
+    borderRadius: 10,
+    padding: 4,
+    marginTop: 8,
+    marginBottom: 14,
+    gap: 6,
+  },
+  subModeBtn: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  subModeBtnActive: {
+    backgroundColor: '#0F4C5C',
+  },
+  subModeText: {
+    fontSize: 13.5,
+    fontWeight: '700',
+    color: '#444',
+  },
+  subModeTextActive: {
+    color: '#fff',
+  },
+  pickMapBtn: {
+    backgroundColor: '#0F4C5C',
+    height: 48,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 4,
+  },
+  pickMapBtnText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700',
   },
 });

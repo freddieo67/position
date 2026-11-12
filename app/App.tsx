@@ -1,6 +1,6 @@
 import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { StyleSheet, Text, View, ActivityIndicator, TouchableOpacity, Platform, Alert, AppState, ScrollView, Image, Modal } from 'react-native';
+import { StyleSheet, Text, View, ActivityIndicator, TouchableOpacity, Platform, Alert, AppState, ScrollView, Image, Modal, Linking } from 'react-native';
 import * as Location from 'expo-location';
 import { FontAwesome6 } from '@expo/vector-icons';
 import LeafletMap, { MapMarkerData, LeafletMapRef } from './src/components/LeafletMap';
@@ -47,6 +47,13 @@ export default function App() {
   const [flashModalVisible, setFlashModalVisible] = useState(false);
   const [flashTarget, setFlashTarget] = useState<AppContact[] | null>(null);
   const [shareBackTargetPos, setShareBackTargetPos] = useState<IncomingPosition | null>(null);
+  const [meetingDraft, setMeetingDraft] = useState<{
+    contacts: AppContact[];
+    durationMinutes: number;
+    message?: string;
+  } | null>(null);
+  const [sendingMeeting, setSendingMeeting] = useState(false);
+  const mapCenterRef = useRef<{ lat: number; lng: number } | null>(null);
   const [receivedPing, setReceivedPing] = useState<ReceivedPingData | null>(null);
   const [inbox, setInbox] = useState<Inbox>(EMPTY_INBOX);
   const [pendingRequest, setPendingRequest] = useState<IncomingRequest | null>(null);
@@ -352,7 +359,8 @@ export default function App() {
     const sharing = inbox.sharing || [];
     sharingRef.current = sharing;
     if (user) {
-      syncBackgroundLocation(inbox.active_shares && inbox.active_shares.length > 0 ? inbox.active_shares : sharing);
+      const liveShares = (inbox.active_shares ?? []).filter(s => !s.is_meeting_point);
+      syncBackgroundLocation(liveShares.length > 0 ? liveShares : sharing);
     }
   }, [inbox.sharing, inbox.active_shares, user]);
 
@@ -481,18 +489,24 @@ export default function App() {
     durationMinutes: number = 15,
     icon?: string,
     photoThumb?: string | null,
-    photoData?: string | null
+    photoData?: string | null,
+    isMeetingPoint?: boolean
   ) => {
     setModalVisible(false);
     if (!user) return;
 
-    if (icon && icon !== '📷') {
+    if (icon && icon !== '📷' && !isMeetingPoint) {
       setMyMapIcon(icon as MapIconEmoji);
       saveMapIcon(icon as MapIconEmoji);
     }
 
     const contacts = Array.isArray(contactOrContacts) ? contactOrContacts : [contactOrContacts];
     const names = contacts.map(c => c.name).join(', ');
+
+    if (modalMode === 'send' && isMeetingPoint) {
+      setMeetingDraft({ contacts, durationMinutes, message });
+      return;
+    }
 
     if (modalMode === 'ping') {
       setPingTarget(contacts);
@@ -594,9 +608,70 @@ export default function App() {
     mapRef.current?.focusOn(pos.latitude, pos.longitude);
   };
 
+  const openMeetingPointDirections = (lat: number, lng: number, label: string) => {
+    const url = Platform.select({
+      ios: `http://maps.apple.com/?daddr=${lat},${lng}&q=${encodeURIComponent(label)}`,
+      default: `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`,
+    });
+    if (url) Linking.openURL(url).catch(() => {});
+  };
+
+  const openMeetingPointDetails = (pos: IncomingPosition) => {
+    const mins = minutesLeft(pos.expires_at);
+    const details = [
+      pos.message ? `"${pos.message}"` : null,
+      i18n.t('min_left', { mins }),
+    ].filter(Boolean).join('\n');
+    Alert.alert(
+      i18n.t('meeting_point_title', { name: pos.sender_name }),
+      details,
+      [
+        {
+          text: i18n.t('navigate_there'),
+          onPress: () => openMeetingPointDirections(pos.latitude, pos.longitude, pos.sender_name),
+        },
+        { text: i18n.t('close'), style: 'cancel' },
+      ]
+    );
+  };
+
+  const confirmSendMeetingPoint = async () => {
+    if (!user || !meetingDraft || sendingMeeting) return;
+    const center = mapCenterRef.current ?? (location ? { lat: location.coords.latitude, lng: location.coords.longitude } : null);
+    if (!center) return;
+    setSendingMeeting(true);
+    try {
+      await Promise.all(
+        meetingDraft.contacts.map(c =>
+          api.sharePosition({
+            sender_id: user.id,
+            receiver_id: c.userId,
+            latitude: center.lat,
+            longitude: center.lng,
+            accuracy_meters: null,
+            message: meetingDraft.message,
+            duration_minutes: meetingDraft.durationMinutes,
+            icon: '📍',
+            is_meeting_point: true,
+          })
+        )
+      );
+      recordContactUsage(user.id, meetingDraft.contacts.map(c => c.userId));
+      const names = meetingDraft.contacts.map(c => c.name).join(', ');
+      setMeetingDraft(null);
+      Alert.alert(i18n.t('sent'), i18n.t('meeting_point_sent', { names }));
+      refreshRef.current();
+    } catch (error) {
+      Alert.alert(i18n.t('error'), errorText(error));
+    } finally {
+      setSendingMeeting(false);
+    }
+  };
+
   const handleStopSharePress = (clickedShare: ActiveShare) => {
     if (!user) return;
     const allShares = inbox.active_shares ?? [];
+    const isMeeting = Boolean(clickedShare.is_meeting_point);
     const isMultiple = allShares.length > 1;
 
     const stopAll = async () => {
@@ -620,15 +695,18 @@ export default function App() {
       }
     };
 
-    const stopSingle = async (receiverId: number) => {
+    const stopSingle = async (shareToStop: ActiveShare) => {
       try {
-        await api.stopSharing(user.id, receiverId);
-        const remaining = allShares.filter(s => s.receiver_id !== receiverId);
-        await syncBackgroundLocation(remaining);
+        const flag = Boolean(shareToStop.is_meeting_point);
+        await api.stopSharing(user.id, shareToStop.receiver_id, flag);
+        const remaining = allShares.filter(
+          s => !(s.receiver_id === shareToStop.receiver_id && Boolean(s.is_meeting_point) === flag)
+        );
+        await syncBackgroundLocation(remaining.filter(s => !s.is_meeting_point));
         setInbox(prev => ({
           ...prev,
-          sharing: (prev.sharing ?? []).filter(id => id !== receiverId),
-          active_shares: (prev.active_shares ?? []).filter(s => s.receiver_id !== receiverId),
+          sharing: remaining.filter(s => !s.is_meeting_point).map(s => s.receiver_id),
+          active_shares: remaining,
         }));
         refreshRef.current();
       } catch (error) {
@@ -636,13 +714,15 @@ export default function App() {
       }
     };
 
-    if (!isMultiple) {
+    if (isMeeting || !isMultiple) {
       Alert.alert(
-        i18n.t('stop_sharing_title'),
-        i18n.t('stop_sharing_one', { name: clickedShare.receiver_name }),
+        isMeeting ? i18n.t('stop_meeting_title') : i18n.t('stop_sharing_title'),
+        isMeeting
+          ? i18n.t('stop_meeting_one', { name: clickedShare.receiver_name })
+          : i18n.t('stop_sharing_one', { name: clickedShare.receiver_name }),
         [
           { text: i18n.t('cancel'), style: 'cancel' },
-          { text: i18n.t('stop_sharing_btn'), style: 'destructive', onPress: stopAll },
+          { text: i18n.t('stop_sharing_btn'), style: 'destructive', onPress: () => stopSingle(clickedShare) },
         ]
       );
     } else {
@@ -650,7 +730,7 @@ export default function App() {
         i18n.t('stop_sharing_title'),
         i18n.t('stop_sharing_count', { count: allShares.length }),
         [
-          { text: i18n.t('stop_only_name', { name: clickedShare.receiver_name }), onPress: () => stopSingle(clickedShare.receiver_id) },
+          { text: i18n.t('stop_only_name', { name: clickedShare.receiver_name }), onPress: () => stopSingle(clickedShare) },
           { text: i18n.t('stop_with_all'), style: 'destructive', onPress: stopAll },
           { text: i18n.t('cancel'), style: 'cancel' },
         ]
@@ -711,6 +791,9 @@ export default function App() {
               ref={mapRef}
               centerLat={location.coords.latitude}
               centerLng={location.coords.longitude}
+              onCenterChange={(lat, lng) => {
+                mapCenterRef.current = { lat, lng };
+              }}
               markers={[
                 {
                   id: 'me',
@@ -722,15 +805,28 @@ export default function App() {
                   photoThumb: myActivePhotoShare?.photo_thumb ?? null,
                   shareId: myActivePhotoShare?.id,
                 },
+                ...activeShares
+                  .filter(s => s.is_meeting_point && s.latitude != null && s.longitude != null)
+                  .map(s => ({
+                    id: `my-meet-${s.receiver_id}`,
+                    lat: s.latitude!,
+                    lng: s.longitude!,
+                    title: s.message ? `${s.receiver_name}: "${s.message}"` : i18n.t('meeting_with_name', { name: s.receiver_name }),
+                    color: '#0F4C5C',
+                    emoji: '📍',
+                    shareId: s.id,
+                    isMeetingPoint: true,
+                  })),
                 ...inbox.positions.map(pos => ({
-                  id: String(pos.sender_id),
+                  id: pos.is_meeting_point ? `meet-${pos.sender_id}` : String(pos.sender_id),
                   lat: pos.latitude,
                   lng: pos.longitude,
                   title: pos.message ? `${pos.sender_name}: "${pos.message}"` : pos.sender_name,
                   color: '#FF3B30',
-                  emoji: pos.icon || '🐷',
+                  emoji: pos.is_meeting_point ? '📍' : (pos.icon || '🐷'),
                   photoThumb: pos.photo_thumb ?? null,
                   shareId: pos.id,
+                  isMeetingPoint: Boolean(pos.is_meeting_point),
                 }))
               ]}
               onMarkerPress={(marker) => {
@@ -745,8 +841,12 @@ export default function App() {
                   );
                   return;
                 }
-                const pos = inbox.positions.find(p => String(p.sender_id) === marker.id);
-                if (pos && (pos.photo_thumb || pos.has_photo || pos.icon === '📷')) {
+                const pos = inbox.positions.find(
+                  p => (p.is_meeting_point ? `meet-${p.sender_id}` : String(p.sender_id)) === marker.id
+                );
+                if (pos?.is_meeting_point) {
+                  openMeetingPointDetails(pos);
+                } else if (pos && (pos.photo_thumb || pos.has_photo || pos.icon === '📷')) {
                   openPhotoViewer(pos.id, pos.sender_name, pos.photo_thumb, pos.message, pos.expires_at);
                 }
               }}
@@ -784,7 +884,7 @@ export default function App() {
               {/* Mina aktiva utgående delningar */}
               {activeShares.map(share => (
                 <TouchableOpacity
-                  key={`my-share-${share.receiver_id}`}
+                  key={`my-${share.is_meeting_point ? 'meet' : 'share'}-${share.receiver_id}`}
                   style={[styles.shareCard, styles.outgoingShareCard]}
                   activeOpacity={0.8}
                   onPress={() => handleStopSharePress(share)}
@@ -793,10 +893,14 @@ export default function App() {
                     {share.photo_thumb ? (
                       <Image source={{ uri: share.photo_thumb }} style={styles.cardThumb} />
                     ) : (
-                      <Text style={{ fontSize: 16 }}>{share.icon || myMapIcon || '🐷'} </Text>
+                      <Text style={{ fontSize: 16 }}>
+                        {share.is_meeting_point ? '📍' : (share.icon || myMapIcon || '🐷')}{' '}
+                      </Text>
                     )}
                     <Text style={[styles.shareName, styles.outgoingShareName]} numberOfLines={1} ellipsizeMode="tail">
-                      {i18n.t('sharing_with_name', { name: share.receiver_name })}
+                      {share.is_meeting_point
+                        ? i18n.t('meeting_with_name', { name: share.receiver_name })
+                        : i18n.t('sharing_with_name', { name: share.receiver_name })}
                     </Text>
                     <Text style={[styles.shareBadge, styles.outgoingShareBadge]}>
                       {minutesLeft(share.expires_at)}{i18n.t('min_short')} ✕
@@ -806,12 +910,17 @@ export default function App() {
               ))}
 
             {inbox.positions.map(pos => (
-              <View key={`card-${pos.sender_id}`} style={styles.shareCard}>
+              <View
+                key={`card-${pos.is_meeting_point ? 'meet' : 'pos'}-${pos.sender_id}`}
+                style={styles.shareCard}
+              >
                 <TouchableOpacity
                   style={styles.cardContent}
                   onPress={() => {
                     focusOn(pos);
-                    if (pos.photo_thumb || pos.has_photo) {
+                    if (pos.is_meeting_point) {
+                      openMeetingPointDetails(pos);
+                    } else if (pos.photo_thumb || pos.has_photo) {
                       openPhotoViewer(pos.id, pos.sender_name, pos.photo_thumb, pos.message, pos.expires_at);
                     }
                   }}
@@ -820,10 +929,12 @@ export default function App() {
                     {pos.photo_thumb ? (
                       <Image source={{ uri: pos.photo_thumb }} style={styles.cardThumb} />
                     ) : (
-                      <Text style={{ fontSize: 16 }}>{pos.icon || '🐷'} </Text>
+                      <Text style={{ fontSize: 16 }}>{pos.is_meeting_point ? '📍' : (pos.icon || '🐷')} </Text>
                     )}
                     <Text style={styles.shareName} numberOfLines={1} ellipsizeMode="tail">
-                      {i18n.t('name_shares', { name: pos.sender_name })}
+                      {pos.is_meeting_point
+                        ? i18n.t('name_meeting_here', { name: pos.sender_name })
+                        : i18n.t('name_shares', { name: pos.sender_name })}
                     </Text>
                     <Text style={styles.shareBadge}>{minutesLeft(pos.expires_at)}{i18n.t('min_short')}</Text>
                   </View>
@@ -860,6 +971,13 @@ export default function App() {
         </View>
       )}
 
+        {meetingDraft && (
+          <View style={styles.meetingPinOverlay} pointerEvents="none">
+            <Text style={styles.meetingPinEmoji}>📍</Text>
+            <View style={styles.meetingPinShadow} />
+          </View>
+        )}
+
         {/* Centrera på min position (GPS-knapp) */}
         {location && (
           <TouchableOpacity
@@ -880,43 +998,69 @@ export default function App() {
         )}
 
         {/* Knappar som ligger ovanpå kartan i botten */}
-        <View style={styles.buttonRow}>
-          <TouchableOpacity 
-            style={[styles.actionButton, styles.requestButton]} 
-            onPress={() => openModal('request')}
-          >
-            <Text style={[styles.buttonText, styles.requestButtonText]} numberOfLines={1} adjustsFontSizeToFit>
-              {i18n.t('request')}
-            </Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={[styles.actionButton, styles.pingButton]} 
-            onPress={() => openModal('ping')}
-          >
-            <Text style={[styles.buttonText, styles.pingButtonText]} numberOfLines={1} adjustsFontSizeToFit>
-              Phing
-            </Text>
-          </TouchableOpacity>
+        {meetingDraft ? (
+          <View style={styles.meetingPickerBar}>
+            <Text style={styles.meetingPickerHint}>{i18n.t('move_map_instruction')}</Text>
+            <View style={styles.meetingPickerActions}>
+              <TouchableOpacity
+                style={styles.meetingCancelBtn}
+                onPress={() => setMeetingDraft(null)}
+                disabled={sendingMeeting}
+              >
+                <Text style={styles.meetingCancelText}>{i18n.t('cancel')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.meetingSendBtn, sendingMeeting && { opacity: 0.7 }]}
+                onPress={confirmSendMeetingPoint}
+                disabled={sendingMeeting}
+              >
+                {sendingMeeting ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.meetingSendText}>{i18n.t('send_meeting_point_btn')}</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        ) : (
+          <View style={styles.buttonRow}>
+            <TouchableOpacity 
+              style={[styles.actionButton, styles.requestButton]} 
+              onPress={() => openModal('request')}
+            >
+              <Text style={[styles.buttonText, styles.requestButtonText]} numberOfLines={1} adjustsFontSizeToFit>
+                {i18n.t('request')}
+              </Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={[styles.actionButton, styles.pingButton]} 
+              onPress={() => openModal('ping')}
+            >
+              <Text style={[styles.buttonText, styles.pingButtonText]} numberOfLines={1} adjustsFontSizeToFit>
+                Phing
+              </Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity 
-            style={[styles.actionButton, styles.flashButton]} 
-            onPress={() => openModal('flash')}
-          >
-            <Text style={[styles.buttonText, styles.flashButtonText]} numberOfLines={2} adjustsFontSizeToFit>
-              {'FLASH\nMESS'}
-            </Text>
-          </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.actionButton, styles.flashButton]} 
+              onPress={() => openModal('flash')}
+            >
+              <Text style={[styles.buttonText, styles.flashButtonText]} numberOfLines={2} adjustsFontSizeToFit>
+                {'FLASH\nMESS'}
+              </Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity 
-            style={[styles.actionButton, styles.sendButton]} 
-            onPress={() => openModal('send')}
-          >
-            <Text style={[styles.buttonText, styles.sendButtonText]} numberOfLines={1} adjustsFontSizeToFit>
-              {i18n.t('share')}
-            </Text>
-          </TouchableOpacity>
-        </View>
+            <TouchableOpacity 
+              style={[styles.actionButton, styles.sendButton]} 
+              onPress={() => openModal('send')}
+            >
+              <Text style={[styles.buttonText, styles.sendButtonText]} numberOfLines={1} adjustsFontSizeToFit>
+                {i18n.t('share')}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
       
       {/* Reklamyta: Visas först när annonsmotorn är helt initierad */}
@@ -1428,5 +1572,82 @@ const styles = StyleSheet.create({
     color: '#333',
     fontSize: 15,
     fontWeight: '700',
+  },
+  meetingPinOverlay: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    marginLeft: -22,
+    marginTop: -46,
+    width: 44,
+    height: 48,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    zIndex: 120,
+  },
+  meetingPinEmoji: {
+    fontSize: 42,
+    lineHeight: 44,
+  },
+  meetingPinShadow: {
+    width: 10,
+    height: 4,
+    borderRadius: 5,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    marginTop: -2,
+  },
+  meetingPickerBar: {
+    position: 'absolute',
+    bottom: 16,
+    left: 14,
+    right: 14,
+    backgroundColor: 'rgba(255,255,255,0.96)',
+    borderRadius: 16,
+    padding: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.22,
+    shadowRadius: 6,
+    elevation: 6,
+    borderWidth: 1.5,
+    borderColor: '#0F4C5C',
+    zIndex: 130,
+  },
+  meetingPickerHint: {
+    fontSize: 13.5,
+    fontWeight: '600',
+    color: '#222',
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  meetingPickerActions: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  meetingCancelBtn: {
+    flex: 1,
+    height: 44,
+    borderRadius: 10,
+    backgroundColor: '#f0f2f5',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  meetingCancelText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#444',
+  },
+  meetingSendBtn: {
+    flex: 2,
+    height: 44,
+    borderRadius: 10,
+    backgroundColor: '#0F4C5C',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  meetingSendText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#fff',
   },
 });

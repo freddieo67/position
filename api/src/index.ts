@@ -60,20 +60,21 @@ async function insertShare(
   durationMinutes: number = 15,
   icon: string = '🐷',
   photoThumb: string | null = null,
-  photoData: string | null = null
+  photoData: string | null = null,
+  isMeetingPoint: boolean = false
 ) {
-  const mins = [5, 15, 30, 60].includes(durationMinutes) ? durationMinutes : 15;
-  const safeIcon = photoThumb ? '📷' : (VALID_ICONS.includes(icon) ? icon : '🐷');
+  const mins = [5, 15, 30, 60, 120].includes(durationMinutes) ? durationMinutes : 15;
+  const safeIcon = isMeetingPoint ? '📍' : (photoThumb ? '📷' : (VALID_ICONS.includes(icon) ? icon : '🐷'));
   const safeThumb = typeof photoThumb === 'string' && photoThumb.startsWith('data:image/') && photoThumb.length <= 150000 ? photoThumb : null;
   const safePhoto = typeof photoData === 'string' && photoData.startsWith('data:image/') && photoData.length <= 2000000 ? photoData : safeThumb;
   await client.query('DELETE FROM public.position_requests WHERE expires_at <= NOW()');
   const result = await client.query(
     `INSERT INTO public.position_requests
-       (sender_id, receiver_id, location, accuracy_meters, expires_at, shared_at, status, request_id, message, icon, photo_thumb, photo_data)
+       (sender_id, receiver_id, location, accuracy_meters, expires_at, shared_at, status, request_id, message, icon, photo_thumb, photo_data, is_meeting_point)
      VALUES
-       ($1, $2, ST_SetSRID(ST_MakePoint($3, $4), 4326), $5, NOW() + make_interval(mins => $6::int), NOW(), 'shared', $7, $8, $9, $10, $11)
-     RETURNING id, expires_at, message, icon`,
-    [senderId, receiverId, coords.longitude, coords.latitude, coords.accuracy_meters, mins, requestId, message, safeIcon, safeThumb, safePhoto]
+       ($1, $2, ST_SetSRID(ST_MakePoint($3, $4), 4326), $5, NOW() + make_interval(mins => $6::int), NOW(), 'shared', $7, $8, $9, $10, $11, $12)
+     RETURNING id, expires_at, message, icon, is_meeting_point`,
+    [senderId, receiverId, coords.longitude, coords.latitude, coords.accuracy_meters, mins, requestId, message, safeIcon, safeThumb, safePhoto, isMeetingPoint]
   );
   return result.rows[0];
 }
@@ -306,18 +307,21 @@ app.post('/position/share', async (req, res) => {
       }
     }
 
-    // Kontrollera om det redan finns en aktiv delning från avsändaren till mottagaren
+    const isMeetingPoint = Boolean(req.body.is_meeting_point);
+    // Behandla även anrop utan duration_minutes (från äldre app-versioners bakgrundstjänst) som bakgrundsuppdatering
+    const isBackground = !isMeetingPoint && (Boolean(req.body.is_background) || (req.body.duration_minutes == null && requestId === null));
+
+    // Kontrollera om det redan finns en aktiv delning (separerat för live-position vs mötesplats)
     const activeShare = await client.query(
       `SELECT id, GREATEST(1, CEIL(EXTRACT(EPOCH FROM (expires_at - NOW())) / 60))::int AS minutes_left
          FROM public.position_requests
         WHERE sender_id = $1 AND receiver_id = $2 AND expires_at > NOW() AND location IS NOT NULL
+          AND COALESCE(is_meeting_point, FALSE) = $3
         ORDER BY expires_at DESC LIMIT 1`,
-      [senderId, receiverId]
+      [senderId, receiverId, isMeetingPoint]
     );
 
     const hasActiveShare = Boolean(activeShare.rows[0]);
-    // Behandla även anrop utan duration_minutes (från äldre app-versioners bakgrundstjänst) som bakgrundsuppdatering
-    const isBackground = Boolean(req.body.is_background) || (req.body.duration_minutes == null && requestId === null);
 
     // Automatisk bakgrundsuppdatering (från background-task eller live-timer):
     if (isBackground) {
@@ -349,12 +353,13 @@ app.post('/position/share', async (req, res) => {
     const photoThumb = typeof req.body.photo_thumb === 'string' ? req.body.photo_thumb : null;
     const photoData = typeof req.body.photo_data === 'string' ? req.body.photo_data : null;
 
-    // Manuell delning: neka om användaren redan delar med personen (om det inte är ett nytt Phing med foto som ersätter gamla bilden)
+    // Manuell delning: neka om användaren redan delar med personen (om det inte är ett nytt Phing med foto eller ny mötesplats som ersätter gamla)
     if (hasActiveShare && requestId === null) {
-      if (photoThumb) {
+      if (photoThumb || isMeetingPoint) {
         await client.query(
-          `DELETE FROM public.position_requests WHERE sender_id = $1 AND receiver_id = $2`,
-          [senderId, receiverId]
+          `DELETE FROM public.position_requests
+            WHERE sender_id = $1 AND receiver_id = $2 AND COALESCE(is_meeting_point, FALSE) = $3`,
+          [senderId, receiverId, isMeetingPoint]
         );
       } else {
         await client.query('ROLLBACK');
@@ -367,7 +372,7 @@ app.post('/position/share', async (req, res) => {
       }
     }
 
-    const share = await insertShare(client, senderId, receiverId, coords, requestId, customMsg, durationMinutes, icon, photoThumb, photoData);
+    const share = await insertShare(client, senderId, receiverId, coords, requestId, customMsg, durationMinutes, icon, photoThumb, photoData, isMeetingPoint);
 
     await client.query('COMMIT');
     res.json(share);
@@ -375,13 +380,19 @@ app.post('/position/share', async (req, res) => {
     // Skicka bara notis vid ny manuell delning (inte motdelning efter svar)
     if (requestId === null) {
       getDisplayName(senderId).then(name => {
-        const titleText = photoThumb ? `📷 ${name} delade en bild och position` : `${name} delade sin position`;
+        const titleText = isMeetingPoint
+          ? `📍 ${name}: Vi träffas här!`
+          : photoThumb
+            ? `📷 ${name} delade en bild och position`
+            : `${name} delade sin position`;
         const bodyText = customMsg
           ? `Meddelande: ${customMsg}`
-          : photoThumb
-            ? `Tryck för att se bilden och positionen (${durationMinutes} min).`
-            : `Delar sin position i ${durationMinutes} minuter.`;
-        sendPush(receiverId, titleText, bodyText, { type: 'share', sender_id: senderId });
+          : isMeetingPoint
+            ? `Tryck för att se mötesplatsen på kartan (${durationMinutes} min).`
+            : photoThumb
+              ? `Tryck för att se bilden och positionen (${durationMinutes} min).`
+              : `Delar sin position i ${durationMinutes} minuter.`;
+        sendPush(receiverId, titleText, bodyText, { type: 'share', sender_id: senderId, is_meeting_point: isMeetingPoint });
       });
     }
   } catch (error: any) {
@@ -531,17 +542,18 @@ app.get('/users/:id/inbox', async (req, res) => {
   try {
     const [positions, requests, outgoing, sharing] = await Promise.all([
       pool.query(
-        `SELECT DISTINCT ON (p.sender_id)
+        `SELECT DISTINCT ON (p.sender_id, COALESCE(p.is_meeting_point, FALSE))
                 p.id, p.sender_id, u.display_name AS sender_name,
                 ST_Y(p.location) AS latitude, ST_X(p.location) AS longitude,
                 p.accuracy_meters, p.shared_at, p.expires_at, p.message,
                 COALESCE(p.icon, '🐷') AS icon,
                 p.photo_thumb,
-                (p.photo_data IS NOT NULL OR p.photo_thumb IS NOT NULL) AS has_photo
+                (p.photo_data IS NOT NULL OR p.photo_thumb IS NOT NULL) AS has_photo,
+                COALESCE(p.is_meeting_point, FALSE) AS is_meeting_point
            FROM public.position_requests p
            JOIN public.users u ON u.id = p.sender_id
           WHERE p.receiver_id = $1 AND p.expires_at > NOW() AND p.location IS NOT NULL
-          ORDER BY p.sender_id, p.shared_at DESC`,
+          ORDER BY p.sender_id, COALESCE(p.is_meeting_point, FALSE), p.shared_at DESC`,
         [userId]
       ),
       pool.query(
@@ -562,16 +574,18 @@ app.get('/users/:id/inbox', async (req, res) => {
         [userId]
       ),
       pool.query(
-        `SELECT DISTINCT ON (p.receiver_id)
+        `SELECT DISTINCT ON (p.receiver_id, COALESCE(p.is_meeting_point, FALSE))
                 p.id, p.receiver_id, u.display_name AS receiver_name,
+                ST_Y(p.location) AS latitude, ST_X(p.location) AS longitude,
                 p.expires_at, p.message,
                 COALESCE(p.icon, '🐷') AS icon,
                 p.photo_thumb,
-                (p.photo_data IS NOT NULL OR p.photo_thumb IS NOT NULL) AS has_photo
+                (p.photo_data IS NOT NULL OR p.photo_thumb IS NOT NULL) AS has_photo,
+                COALESCE(p.is_meeting_point, FALSE) AS is_meeting_point
            FROM public.position_requests p
            JOIN public.users u ON u.id = p.receiver_id
           WHERE p.sender_id = $1 AND p.expires_at > NOW() AND p.location IS NOT NULL
-          ORDER BY p.receiver_id, p.expires_at DESC`,
+          ORDER BY p.receiver_id, COALESCE(p.is_meeting_point, FALSE), p.expires_at DESC`,
         [userId]
       ),
     ]);
@@ -583,7 +597,7 @@ app.get('/users/:id/inbox', async (req, res) => {
       positions: sortedPositions,
       requests: requests.rows,
       outgoing: outgoing.rows,
-      sharing: sortedSharing.map(r => r.receiver_id),
+      sharing: sortedSharing.filter(r => !r.is_meeting_point).map(r => r.receiver_id),
       active_shares: sortedSharing,
     });
   } catch (error) {
@@ -622,12 +636,19 @@ app.get('/position/photo/:id', async (req, res) => {
 app.post('/position/stop', async (req, res) => {
   const senderId = parseId(req.body.sender_id);
   const receiverId = req.body.receiver_id != null ? parseId(req.body.receiver_id) : null;
+  const hasMeetingPointFlag = typeof req.body.is_meeting_point === 'boolean';
   if (!senderId) {
     return res.status(400).json({ error: 'sender_id is required' });
   }
 
   try {
-    if (receiverId) {
+    if (receiverId && hasMeetingPointFlag) {
+      await pool.query(
+        `DELETE FROM public.position_requests
+          WHERE sender_id = $1 AND receiver_id = $2 AND COALESCE(is_meeting_point, FALSE) = $3`,
+        [senderId, receiverId, Boolean(req.body.is_meeting_point)]
+      );
+    } else if (receiverId) {
       await pool.query(
         `DELETE FROM public.position_requests
           WHERE sender_id = $1 AND receiver_id = $2`,

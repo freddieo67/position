@@ -170,4 +170,18 @@ export const en = {
   // Övriga texter i appen (genererade/kompletterade)
   pinged_you: "%{name} phinged you!",
   min_left: "%{mins} min left",
+  share_tab_my_position: "My location",
+  share_tab_meeting_point: "Meet here",
+  meeting_point_hint: "Choose how long the meeting spot is shown and pick it on the map.",
+  meeting_point_msg_placeholder: "E.g. Meet at the entrance at 6 PM...",
+  pick_on_map_btn: "Pick location on map 📍",
+  move_map_instruction: "Move the map so the pin points to the meeting spot",
+  send_meeting_point_btn: "Send meeting spot 📍",
+  meeting_point_sent: "Meeting spot sent to %{names}!",
+  meeting_with_name: "Meeting %{name}",
+  name_meeting_here: "%{name}: Meet here",
+  meeting_point_title: "📍 Meeting point • %{name}",
+  navigate_there: "Directions 🧭",
+  stop_meeting_title: "Remove meeting point?",
+  stop_meeting_one: "Do you want to remove the meeting point with %{name}?",
 };

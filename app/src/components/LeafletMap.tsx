@@ -11,6 +11,7 @@ export interface MapMarkerData {
   emoji?: string;
   photoThumb?: string | null;
   shareId?: number;
+  isMeetingPoint?: boolean;
 }
 
 interface Props {
@@ -18,13 +19,14 @@ interface Props {
   centerLng: number;
   markers: MapMarkerData[];
   onMarkerPress?: (marker: MapMarkerData) => void;
+  onCenterChange?: (lat: number, lng: number) => void;
 }
 
 export interface LeafletMapRef {
   focusOn: (lat: number, lng: number) => void;
 }
 
-const LeafletMap = React.forwardRef<LeafletMapRef, Props>(({ centerLat, centerLng, markers, onMarkerPress }, ref) => {
+const LeafletMap = React.forwardRef<LeafletMapRef, Props>(({ centerLat, centerLng, markers, onMarkerPress, onCenterChange }, ref) => {
   const webViewRef = useRef<WebView>(null);
   const readyRef = useRef(false);
   const pendingFocus = useRef<{ lat: number; lng: number } | null>(null);
@@ -68,6 +70,13 @@ const LeafletMap = React.forwardRef<LeafletMapRef, Props>(({ centerLat, centerLn
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           maxZoom: 19
         }).addTo(map);
+
+        map.on('moveend', function() {
+          var c = map.getCenter();
+          if (window.ReactNativeWebView) {
+            window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'centerChanged', lat: c.lat, lng: c.lng }));
+          }
+        });
 
         var markers = {};
 
@@ -134,7 +143,7 @@ const LeafletMap = React.forwardRef<LeafletMapRef, Props>(({ centerLat, centerLn
                     popupAnchor: [0, -30],
                   }),
                 });
-                if (m.shareId && m.emoji === '📷') {
+                if (m.shareId && (m.emoji === '📷' || m.isMeetingPoint)) {
                   marker.on('click', function() {
                     if (window.ReactNativeWebView) {
                       window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'markerPress', id: m.id, shareId: m.shareId }));
@@ -191,6 +200,8 @@ const LeafletMap = React.forwardRef<LeafletMapRef, Props>(({ centerLat, centerLn
             if (payload?.type === 'markerPress' && onMarkerPress) {
               const found = markers.find(m => m.id === String(payload.id));
               if (found) onMarkerPress(found);
+            } else if (payload?.type === 'centerChanged' && onCenterChange) {
+              onCenterChange(Number(payload.lat), Number(payload.lng));
             }
           } catch (_) {}
         }}

@@ -175,4 +175,18 @@ export const sv = {
   // Övriga texter i appen (genererade/kompletterade)
   pinged_you: "%{name} phingade dig!",
   min_left: "%{mins} min kvar",
+  share_tab_my_position: "Min position",
+  share_tab_meeting_point: "Vi träffas här",
+  meeting_point_hint: "Välj hur länge mötesplatsen visas och peka ut den på kartan.",
+  meeting_point_msg_placeholder: "T.ex. Ses vid entrén kl 18...",
+  pick_on_map_btn: "Välj plats på kartan 📍",
+  move_map_instruction: "Flytta kartan så nålen pekar på mötesplatsen",
+  send_meeting_point_btn: "Skicka mötesplats 📍",
+  meeting_point_sent: "Mötesplats skickad till %{names}!",
+  meeting_with_name: "Möte med %{name}",
+  name_meeting_here: "%{name}: Träffas här",
+  meeting_point_title: "📍 Mötesplats • %{name}",
+  navigate_there: "Hitta dit 🧭",
+  stop_meeting_title: "Ta bort mötesplats?",
+  stop_meeting_one: "Vill du ta bort mötesplatsen med %{name}?",
 };

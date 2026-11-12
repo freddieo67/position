@@ -26,6 +26,7 @@ export interface IncomingPosition {
   icon?: string | null;
   photo_thumb?: string | null;
   has_photo?: boolean;
+  is_meeting_point?: boolean;
 }
 
 // Någon vill se min position
@@ -54,11 +55,14 @@ export interface ActiveShare {
   id: number;
   receiver_id: number;
   receiver_name: string;
+  latitude?: number;
+  longitude?: number;
   expires_at: string;
   message?: string | null;
   icon?: string | null;
   photo_thumb?: string | null;
   has_photo?: boolean;
+  is_meeting_point?: boolean;
 }
 
 export interface SharePhotoResponse {
@@ -88,14 +92,21 @@ export const api = {
   matchContacts: (phone_numbers: string[]) =>
     apiPost<{ matches: User[] }>('/contacts/match', { phone_numbers }),
 
-  sharePosition: (body: Coords & { sender_id: number; receiver_id: number; request_id?: number | null; message?: string; duration_minutes?: number; is_background?: boolean; icon?: string; photo_thumb?: string | null; photo_data?: string | null }) =>
+  sharePosition: (body: Coords & { sender_id: number; receiver_id: number; request_id?: number | null; message?: string; duration_minutes?: number; is_background?: boolean; icon?: string; photo_thumb?: string | null; photo_data?: string | null; is_meeting_point?: boolean }) =>
     apiPost<{ id: number; expires_at: string }>('/position/share', body),
 
   getSharePhoto: (shareId: number) =>
     apiGet<SharePhotoResponse>(`/position/photo/${shareId}`),
 
-  stopSharing: (sender_id: number, receiver_id?: number) =>
-    apiPost<{ ok: boolean }>('/position/stop', receiver_id != null ? { sender_id, receiver_id } : { sender_id }),
+  stopSharing: (sender_id: number, receiver_id?: number, is_meeting_point?: boolean) =>
+    apiPost<{ ok: boolean }>(
+      '/position/stop',
+      receiver_id != null
+        ? is_meeting_point !== undefined
+          ? { sender_id, receiver_id, is_meeting_point }
+          : { sender_id, receiver_id }
+        : { sender_id }
+    ),
 
   requestPosition: (requester_id: number, target_id: number) =>
     apiPost<{ id: number; status: string; expires_at: string }>('/requests', { requester_id, target_id }),
