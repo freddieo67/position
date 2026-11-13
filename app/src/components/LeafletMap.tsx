@@ -132,15 +132,16 @@ const LeafletMap = React.forwardRef<LeafletMapRef, Props>(({ centerLat, centerLn
                 });
               } else if (m.emoji) {
                 var emojiNameHtml = !isUser && m.title ? '<div style="margin-top:-4px;font-size:11px;font-weight:600;color:#fff;background:rgba(0,0,0,0.6);padding:2px 6px;border-radius:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:70px;text-align:center;">' + m.title.split(':')[0].split(' ')[0] + '</div>' : '';
-                var iconInnerHtml = '<div style="font-size:44px;line-height:44px;text-align:center;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.45));">' + m.emoji + '</div>';
+                var isMeeting = Boolean(m.isMeetingPoint || m.emoji === '📍');
+                var iconInnerHtml = '<div style="font-size:44px;line-height:1.2;padding-top:6px;padding-bottom:2px;overflow:visible;text-align:center;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.45));">' + m.emoji + '</div>';
 
                 marker = L.marker([m.lat, m.lng], {
                   icon: L.divIcon({
                     className: '',
-                    html: '<div style="display:flex;flex-direction:column;align-items:center;width:80px;justify-content:center;">' + iconInnerHtml + emojiNameHtml + '</div>',
+                    html: '<div style="display:flex;flex-direction:column;align-items:center;width:80px;overflow:visible;">' + iconInnerHtml + emojiNameHtml + '</div>',
                     iconSize: [80, 80],
-                    iconAnchor: [40, 44],
-                    popupAnchor: [0, -30],
+                    iconAnchor: isMeeting ? [40, 52] : [40, 44],
+                    popupAnchor: isMeeting ? [0, -50] : [0, -30],
                   }),
                 });
                 if (m.shareId && (m.emoji === '📷' || m.isMeetingPoint)) {
