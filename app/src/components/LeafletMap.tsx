@@ -7,6 +7,7 @@ export interface MapMarkerData {
   lat: number;
   lng: number;
   title: string;
+  label?: string;
   color: string;
   emoji?: string;
   photoThumb?: string | null;
@@ -88,10 +89,12 @@ const LeafletMap = React.forwardRef<LeafletMapRef, Props>(({ centerLat, centerLn
             var existing = markers[m.id];
             var prevThumb = existing ? (existing._photoThumb || '') : '';
             var prevEmoji = existing ? (existing._emoji || '') : '';
+            var prevLabel = existing ? (existing._label || '') : '';
             var nextThumb = m.photoThumb || '';
             var nextEmoji = m.emoji || '';
+            var nextLabel = m.label || '';
 
-            if (existing && prevThumb === nextThumb && prevEmoji === nextEmoji) {
+            if (existing && prevThumb === nextThumb && prevEmoji === nextEmoji && prevLabel === nextLabel) {
               existing.setLatLng([m.lat, m.lng]);
               if (existing.getPopup()) {
                 existing.getPopup().setContent(m.title);
@@ -102,11 +105,11 @@ const LeafletMap = React.forwardRef<LeafletMapRef, Props>(({ centerLat, centerLn
                 delete markers[m.id];
               }
               var marker;
-              var nameHtml = !isUser && m.title ? '<div style="margin-top:2px;font-size:11px;font-weight:600;color:#fff;background:rgba(0,0,0,0.65);padding:2px 6px;border-radius:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:76px;text-align:center;">' + m.title.split(':')[0].split(' ')[0] + '</div>' : '';
 
               if (m.photoThumb) {
+                var photoBadgeText = m.label || (!isUser && m.title ? m.title.split(':')[0].split(' ')[0] : '');
                 var clipId = 'photoClip-' + String(m.id).replace(/[^a-zA-Z0-9]/g, '_');
-                var thumbHtml = '<svg width="46" height="54" viewBox="0 0 46 54" style="filter:drop-shadow(0 2px 5px rgba(0,0,0,0.55));display:block;">' +
+                var thumbHtml = '<svg width="46" height="54" viewBox="0 0 46 54" style="filter:drop-shadow(0 4px 6px rgba(0,0,0,0.4)) drop-shadow(0 1px 2px rgba(0,0,0,0.25));display:block;">' +
                   '<defs>' +
                     '<clipPath id="' + clipId + '">' +
                       '<circle cx="23" cy="20" r="15.5" />' +
@@ -116,12 +119,15 @@ const LeafletMap = React.forwardRef<LeafletMapRef, Props>(({ centerLat, centerLn
                   '<circle cx="23" cy="20" r="16" fill="#fff" />' +
                   '<image href="' + m.photoThumb + '" x="7.5" y="4.5" width="31" height="31" preserveAspectRatio="xMidYMid slice" clip-path="url(#' + clipId + ')" />' +
                 '</svg>';
+                var photoGroundShadow = '<div style="width:18px;height:5px;background:radial-gradient(ellipse at center,rgba(0,0,0,0.5) 0%,rgba(0,0,0,0) 75%);border-radius:50%;margin-top:-3px;margin-bottom:2px;"></div>';
+                var photoBadgeHtml = photoBadgeText ? '<div style="font-size:11px;font-weight:700;color:#fff;background:rgba(15,23,42,0.85);padding:2px 7px;border-radius:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:88px;text-align:center;box-shadow:0 2px 4px rgba(0,0,0,0.35);border:1px solid rgba(255,255,255,0.25);">' + photoBadgeText + '</div>' : '';
+
                 marker = L.marker([m.lat, m.lng], {
                   icon: L.divIcon({
                     className: '',
-                    html: '<div style="display:flex;flex-direction:column;align-items:center;width:80px;justify-content:center;">' + thumbHtml + nameHtml + '</div>',
-                    iconSize: [80, 80],
-                    iconAnchor: [40, 52],
+                    html: '<div style="display:flex;flex-direction:column;align-items:center;width:90px;overflow:visible;">' + thumbHtml + photoGroundShadow + photoBadgeHtml + '</div>',
+                    iconSize: [90, 80],
+                    iconAnchor: [45, 52],
                     popupAnchor: [0, -52],
                   }),
                 });
@@ -131,17 +137,21 @@ const LeafletMap = React.forwardRef<LeafletMapRef, Props>(({ centerLat, centerLn
                   }
                 });
               } else if (m.emoji) {
-                var emojiNameHtml = !isUser && m.title ? '<div style="margin-top:-4px;font-size:11px;font-weight:600;color:#fff;background:rgba(0,0,0,0.6);padding:2px 6px;border-radius:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:70px;text-align:center;">' + m.title.split(':')[0].split(' ')[0] + '</div>' : '';
                 var isMeeting = Boolean(m.isMeetingPoint || m.emoji === '📍');
-                var iconInnerHtml = '<div style="font-size:44px;line-height:1.2;padding-top:6px;padding-bottom:2px;overflow:visible;text-align:center;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.45));">' + m.emoji + '</div>';
+                var badgeText = m.label || (isMeeting ? 'Mötesplats' : (!isUser && m.title ? m.title.split(':')[0].split(' ')[0] : ''));
+                var emojiNameHtml = badgeText ? '<div style="margin-top:1px;font-size:11px;font-weight:700;color:#fff;background:' + (isMeeting ? 'rgba(15,76,92,0.92)' : 'rgba(15,23,42,0.85)') + ';padding:2px 7px;border-radius:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:96px;text-align:center;box-shadow:0 2px 4px rgba(0,0,0,0.35);border:1px solid rgba(255,255,255,0.25);">' + badgeText + '</div>' : '';
+                var iconInnerHtml = '<div style="font-size:46px;line-height:1.15;padding-top:4px;overflow:visible;text-align:center;filter:drop-shadow(0 6px 8px rgba(0,0,0,0.35)) drop-shadow(0 1px 2px rgba(0,0,0,0.25));">' + m.emoji + '</div>';
+                var groundShadowHtml = isMeeting
+                  ? '<div style="width:16px;height:5px;background:radial-gradient(ellipse at center,rgba(0,0,0,0.55) 0%,rgba(0,0,0,0) 75%);border-radius:50%;margin-top:-4px;margin-bottom:2px;"></div>'
+                  : '<div style="width:26px;height:7px;background:radial-gradient(ellipse at center,rgba(0,0,0,0.45) 0%,rgba(0,0,0,0) 75%);border-radius:50%;margin-top:-6px;margin-bottom:2px;"></div>';
 
                 marker = L.marker([m.lat, m.lng], {
                   icon: L.divIcon({
                     className: '',
-                    html: '<div style="display:flex;flex-direction:column;align-items:center;width:80px;overflow:visible;">' + iconInnerHtml + emojiNameHtml + '</div>',
-                    iconSize: [80, 80],
-                    iconAnchor: isMeeting ? [40, 52] : [40, 44],
-                    popupAnchor: isMeeting ? [0, -50] : [0, -30],
+                    html: '<div style="display:flex;flex-direction:column;align-items:center;width:100px;overflow:visible;">' + iconInnerHtml + groundShadowHtml + emojiNameHtml + '</div>',
+                    iconSize: [100, 80],
+                    iconAnchor: isMeeting ? [50, 52] : [50, 46],
+                    popupAnchor: isMeeting ? [0, -50] : [0, -32],
                   }),
                 });
                 if (m.shareId && (m.emoji === '📷' || m.isMeetingPoint)) {
@@ -165,6 +175,7 @@ const LeafletMap = React.forwardRef<LeafletMapRef, Props>(({ centerLat, centerLn
               }
               marker._photoThumb = nextThumb;
               marker._emoji = nextEmoji;
+              marker._label = nextLabel;
               marker.addTo(map);
               markers[m.id] = marker;
             }
