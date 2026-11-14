@@ -1,5 +1,19 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, Modal, TouchableOpacity, TextInput, ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform, TouchableWithoutFeedback } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  StyleSheet,
+  Text,
+  View,
+  Modal,
+  TouchableOpacity,
+  TextInput,
+  ActivityIndicator,
+  Alert,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  Keyboard,
+} from 'react-native';
 import { FontAwesome6 } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
@@ -36,6 +50,8 @@ export default function PingModal({
   const [photoData, setPhotoData] = useState<string | null>(null);
   const [processingPhoto, setProcessingPhoto] = useState(false);
   const [selectedDuration, setSelectedDuration] = useState<15 | 30 | 60>(15);
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+  const scrollRef = useRef<ScrollView>(null);
 
   useEffect(() => {
     if (visible) {
@@ -44,7 +60,29 @@ export default function PingModal({
       setPhotoData(null);
       setProcessingPhoto(false);
       setSelectedDuration(15);
+      setIsKeyboardOpen(false);
     }
+  }, [visible]);
+
+  useEffect(() => {
+    if (!visible) return;
+    const showEvt = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvt = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const showSub = Keyboard.addListener(showEvt, () => {
+      setIsKeyboardOpen(true);
+      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
+      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 300);
+    });
+
+    const hideSub = Keyboard.addListener(hideEvt, () => {
+      setIsKeyboardOpen(false);
+    });
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
   }, [visible]);
 
   const processSelectedAsset = async (uri: string) => {
@@ -146,143 +184,168 @@ export default function PingModal({
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <KeyboardAvoidingView 
-        style={styles.overlay} 
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      <KeyboardAvoidingView
+        style={styles.overlay}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <TouchableWithoutFeedback onPress={onClose}>
-          <View style={styles.backdrop} />
-        </TouchableWithoutFeedback>
+        <TouchableOpacity
+          style={styles.backdrop}
+          activeOpacity={1}
+          onPress={() => {
+            if (isKeyboardOpen) {
+              Keyboard.dismiss();
+            } else {
+              onClose();
+            }
+          }}
+        />
 
         <View style={styles.sheetContainer}>
-          <View style={styles.dragHandle} />
+          <ScrollView
+            ref={scrollRef}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            bounces={false}
+            contentContainerStyle={[
+              styles.scrollContent,
+              { paddingBottom: isKeyboardOpen ? 180 : Platform.OS === 'ios' ? 36 : 24 },
+            ]}
+          >
+            <View style={styles.dragHandle} />
 
-          {/* Steg 1: Välj bild (Ta bild / Välj ur galleriet) */}
-          {!photoThumb ? (
-            <>
-              <Text style={styles.title}>
-                Phinga {targetNames}
-              </Text>
-              <Text style={styles.subtitle}>
-                {i18n.t('phing_subtitle', { names: targetNames })}
-              </Text>
+            {/* Steg 1: Välj bild (Ta bild / Välj ur galleriet) */}
+            {!photoThumb ? (
+              <>
+                <Text style={styles.title}>Phinga {targetNames}</Text>
+                <Text style={styles.subtitle}>
+                  {i18n.t('phing_subtitle', { names: targetNames })}
+                </Text>
 
-              <View style={styles.actionCardsRow}>
+                <View style={styles.actionCardsRow}>
+                  <TouchableOpacity
+                    style={styles.actionCardTeal}
+                    onPress={pickFromCamera}
+                    disabled={loading || processingPhoto}
+                    activeOpacity={0.8}
+                  >
+                    {processingPhoto ? (
+                      <ActivityIndicator color="#fff" size="small" />
+                    ) : (
+                      <>
+                        <FontAwesome6 name="camera" size={26} color="#fff" />
+                        <Text style={styles.actionCardTealText}>{i18n.t('take_a_photo')}</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.actionCardGrey}
+                    onPress={pickFromGallery}
+                    disabled={loading || processingPhoto}
+                    activeOpacity={0.8}
+                  >
+                    <FontAwesome6 name="image" size={26} color="#0F4C5C" />
+                    <Text style={styles.actionCardGreyText}>
+                      {i18n.t('choose_from_gallery_btn')}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
                 <TouchableOpacity
-                  style={styles.actionCardTeal}
-                  onPress={pickFromCamera}
-                  disabled={loading || processingPhoto}
+                  style={styles.cancelBtn}
+                  onPress={onClose}
+                  disabled={loading}
+                  activeOpacity={0.6}
+                >
+                  <Text style={styles.cancelBtnText}>{i18n.t('cancel')}</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              /* Steg 2: Bild vald - förhandsgranska, tid, bildtext, skicka */
+              <>
+                <Text style={styles.title}>Phinga {targetNames}</Text>
+
+                <View style={styles.previewContainer}>
+                  <Image source={{ uri: photoThumb }} style={styles.previewImage} resizeMode="cover" />
+                  <TouchableOpacity
+                    style={styles.removeImageBtn}
+                    onPress={() => {
+                      setPhotoThumb(null);
+                      setPhotoData(null);
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <FontAwesome6 name="xmark" size={15} color="#fff" />
+                  </TouchableOpacity>
+                </View>
+
+                <Text style={styles.sectionHeader}>{i18n.t('shown_on_map_in')}</Text>
+
+                <View style={styles.durationRow}>
+                  {([15, 30, 60] as const).map(mins => (
+                    <TouchableOpacity
+                      key={mins}
+                      style={[
+                        styles.durationBtn,
+                        selectedDuration === mins ? styles.durationBtnActive : styles.durationBtnInactive,
+                      ]}
+                      onPress={() => setSelectedDuration(mins)}
+                      activeOpacity={0.8}
+                    >
+                      <Text
+                        style={[
+                          styles.durationBtnText,
+                          selectedDuration === mins ? styles.durationBtnTextActive : styles.durationBtnTextInactive,
+                        ]}
+                      >
+                        {mins} min
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                <TextInput
+                  style={styles.captionInput}
+                  placeholder={i18n.t('add_caption_placeholder')}
+                  placeholderTextColor="#94a3b8"
+                  value={customText}
+                  onChangeText={setCustomText}
+                  maxLength={80}
+                  onFocus={() => {
+                    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
+                    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 300);
+                  }}
+                />
+
+                <TouchableOpacity
+                  style={[styles.primarySendBtn, loading && { opacity: 0.6 }]}
+                  disabled={loading}
+                  onPress={handleSendPhoto}
                   activeOpacity={0.8}
                 >
-                  {processingPhoto ? (
-                    <ActivityIndicator color="#fff" size="small" />
+                  {loading ? (
+                    <ActivityIndicator color="#fff" />
                   ) : (
                     <>
-                      <FontAwesome6 name="camera" size={26} color="#fff" />
-                      <Text style={styles.actionCardTealText}>
-                        {i18n.t('take_a_photo')}
+                      <FontAwesome6 name="arrow-right" size={16} color="#fff" />
+                      <Text style={styles.primarySendBtnText}>
+                        {i18n.t('send_phing_btn_text')}
                       </Text>
                     </>
                   )}
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={styles.actionCardGrey}
-                  onPress={pickFromGallery}
-                  disabled={loading || processingPhoto}
-                  activeOpacity={0.8}
+                  style={styles.cancelBtn}
+                  onPress={onClose}
+                  disabled={loading}
+                  activeOpacity={0.6}
                 >
-                  <FontAwesome6 name="image" size={26} color="#0F4C5C" />
-                  <Text style={styles.actionCardGreyText}>
-                    {i18n.t('choose_from_gallery_btn')}
-                  </Text>
+                  <Text style={styles.cancelBtnText}>{i18n.t('cancel')}</Text>
                 </TouchableOpacity>
-              </View>
-
-              <TouchableOpacity style={styles.cancelBtn} onPress={onClose} disabled={loading} activeOpacity={0.6}>
-                <Text style={styles.cancelBtnText}>{i18n.t('cancel')}</Text>
-              </TouchableOpacity>
-            </>
-          ) : (
-            /* Steg 2: Bild vald - förhandsgranska, tid, bildtext, skicka */
-            <>
-              <Text style={styles.title}>
-                Phinga {targetNames}
-              </Text>
-
-              <View style={styles.previewContainer}>
-                <Image source={{ uri: photoThumb }} style={styles.previewImage} resizeMode="cover" />
-                <TouchableOpacity
-                  style={styles.removeImageBtn}
-                  onPress={() => {
-                    setPhotoThumb(null);
-                    setPhotoData(null);
-                  }}
-                  activeOpacity={0.8}
-                >
-                  <FontAwesome6 name="xmark" size={15} color="#fff" />
-                </TouchableOpacity>
-              </View>
-
-              <Text style={styles.sectionHeader}>
-                {i18n.t('shown_on_map_in')}
-              </Text>
-
-              <View style={styles.durationRow}>
-                {([15, 30, 60] as const).map(mins => (
-                  <TouchableOpacity
-                    key={mins}
-                    style={[
-                      styles.durationBtn,
-                      selectedDuration === mins ? styles.durationBtnActive : styles.durationBtnInactive,
-                    ]}
-                    onPress={() => setSelectedDuration(mins)}
-                    activeOpacity={0.8}
-                  >
-                    <Text
-                      style={[
-                        styles.durationBtnText,
-                        selectedDuration === mins ? styles.durationBtnTextActive : styles.durationBtnTextInactive,
-                      ]}
-                    >
-                      {mins} min
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-
-              <TextInput
-                style={styles.captionInput}
-                placeholder={i18n.t('add_caption_placeholder')}
-                placeholderTextColor="#94a3b8"
-                value={customText}
-                onChangeText={setCustomText}
-                maxLength={80}
-              />
-
-              <TouchableOpacity
-                style={[styles.primarySendBtn, loading && { opacity: 0.6 }]}
-                disabled={loading}
-                onPress={handleSendPhoto}
-                activeOpacity={0.8}
-              >
-                {loading ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <>
-                    <FontAwesome6 name="arrow-right" size={16} color="#fff" />
-                    <Text style={styles.primarySendBtnText}>
-                      {i18n.t('send_phing_btn_text')}
-                    </Text>
-                  </>
-                )}
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.cancelBtn} onPress={onClose} disabled={loading} activeOpacity={0.6}>
-                <Text style={styles.cancelBtnText}>{i18n.t('cancel')}</Text>
-              </TouchableOpacity>
-            </>
-          )}
+              </>
+            )}
+          </ScrollView>
         </View>
       </KeyboardAvoidingView>
     </Modal>
@@ -302,14 +365,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
-    paddingTop: 12,
-    paddingHorizontal: 22,
-    paddingBottom: Platform.OS === 'ios' ? 36 : 24,
+    maxHeight: '90%',
+    width: '100%',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.12,
     shadowRadius: 12,
     elevation: 10,
+  },
+  scrollContent: {
+    paddingTop: 12,
+    paddingHorizontal: 22,
   },
   dragHandle: {
     width: 44,

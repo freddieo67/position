@@ -89,15 +89,28 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
   const [favoriteIds, setFavoriteIds] = useState<number[]>([]);
   const [usageMap, setUsageMap] = useState<ContactUsageMap>({});
   const [isLimitedAccess, setIsLimitedAccess] = useState(false);
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
 
   useEffect(() => {
-    if (!visible || chosenContacts.length === 0) return;
-    const event = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
-    const sub = Keyboard.addListener(event, () => {
-      setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 120);
+    if (!visible) return;
+    const showEvt = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvt = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const showSub = Keyboard.addListener(showEvt, () => {
+      setIsKeyboardOpen(true);
+      setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
+      setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 300);
     });
-    return () => sub.remove();
+
+    const hideSub = Keyboard.addListener(hideEvt, () => {
+      setIsKeyboardOpen(false);
+    });
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
   }, [visible, chosenContacts.length]);
 
   useEffect(() => {
@@ -269,8 +282,27 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
 
   return (
     <Modal visible={visible} animationType="slide" transparent={true} onRequestClose={onClose}>
-      <KeyboardAvoidingView style={styles.overlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <View style={styles.modalContent}>
+      <KeyboardAvoidingView
+        style={styles.overlay}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <TouchableOpacity
+          style={styles.backdrop}
+          activeOpacity={1}
+          onPress={() => {
+            if (isKeyboardOpen) {
+              Keyboard.dismiss();
+            } else if (chosenContacts.length === 0) {
+              onClose();
+            }
+          }}
+        />
+        <View
+          style={[
+            styles.modalContent,
+            chosenContacts.length === 0 && { height: '88%' },
+          ]}
+        >
           <View style={styles.dragHandle} />
 
           {chosenContacts.length > 0 ? (
@@ -279,7 +311,7 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
               ref={scrollViewRef}
               showsVerticalScrollIndicator={false}
               keyboardShouldPersistTaps="handled"
-              contentContainerStyle={{ paddingBottom: 24 }}
+              contentContainerStyle={{ paddingBottom: isKeyboardOpen ? 180 : 28 }}
             >
               <Text style={styles.title}>
                 {i18n.t('share_with_name_title', { names: chosenNames })}
@@ -346,7 +378,8 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
                     onChangeText={setCustomMessageText}
                     maxLength={100}
                     onFocus={() => {
-                      setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 150);
+                      setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
+                      setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 300);
                     }}
                   />
 
@@ -467,7 +500,8 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
                         }
                       }}
                       onFocus={() => {
-                        setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 150);
+                        setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
+                        setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 300);
                       }}
                     />
                     <TouchableOpacity
@@ -805,6 +839,13 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.45)',
     justifyContent: 'flex-end',
   },
+  backdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
   modalContent: {
     backgroundColor: '#ffffff',
     borderTopLeftRadius: 28,
@@ -812,7 +853,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 10,
     paddingBottom: Platform.OS === 'ios' ? 34 : 20,
-    height: '88%',
+    maxHeight: '92%',
   },
   dragHandle: {
     width: 38,

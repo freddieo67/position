@@ -15,7 +15,7 @@ import IncomingRequestModal from './src/components/IncomingRequestModal';
 import { api, Inbox, IncomingPosition, IncomingRequest, User, ActiveShare } from './src/api';
 import { ApiError } from './src/config';
 import { clearUser, loadUser } from './src/session';
-import { getCurrentCoords } from './src/location';
+import { getCurrentCoords, getSavedLocation, saveLocationCache, withTimeout } from './src/location';
 import { syncBackgroundLocation, addActiveShare } from './src/backgroundLocation';
 import { SIGNALS } from './src/signals';
 import { getSavedMapIcon, saveMapIcon, MapIconEmoji, DEFAULT_MAP_ICON } from './src/mapIcons';
@@ -155,72 +155,117 @@ export default function App() {
     let subscription: Location.LocationSubscription | null = null;
     let active = true;
 
+    const updateLocation = (newLoc: Location.LocationObject) => {
+      if (!active) return;
+      locationRef.current = newLoc;
+      setLocation(newLoc);
+      saveLocationCache(newLoc).catch(() => {});
+    };
+
+    const startWatching = async () => {
+      try {
+        if (subscription) {
+          subscription.remove();
+          subscription = null;
+        }
+        subscription = await Location.watchPositionAsync(
+          {
+            accuracy: Location.Accuracy.High,
+            timeInterval: 10000,
+            distanceInterval: 10,
+          },
+          updateLocation
+        );
+      } catch (e) {
+        console.warn('Kunde inte starta watchPositionAsync:', e);
+      }
+    };
+
     (async () => {
-      let { status } = await Location.requestForegroundPermissionsAsync();
+      // 1. Läs från disk omedelbart (0 ms delay) så kartan visas direkt utan att tugga
+      try {
+        const saved = await getSavedLocation();
+        if (active && saved && !locationRef.current) {
+          updateLocation(saved);
+        }
+      } catch (_) {}
+
+      // 2. Kontrollera behörighet
+      const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
         setErrorMsg(i18n.t('location_permission_denied'));
         return;
       }
 
-      // 1. Visa senast kända position omedelbart om den finns så kartan dyker upp direkt
+      // 3. Hämta systemets senast kända position (blixtsnabbt, normalt < 50ms)
       try {
-        const lastKnown = await Location.getLastKnownPositionAsync();
+        const lastKnown = await withTimeout(Location.getLastKnownPositionAsync(), 2000, null);
         if (active && lastKnown) {
-          locationRef.current = lastKnown;
-          setLocation(lastKnown);
+          updateLocation(lastKnown);
         }
       } catch (_) {}
 
-      // 2. Hämta färsk position med timeout (High accuracy för skarp GPS på iOS och Android)
+      // 4. Starta watchPositionAsync omedelbart i bakgrunden så vi inte blockeras
+      startWatching();
+
+      // 5. Hämta färsk position med High accuracy och strikt timeout
       try {
         const posPromise = Location.getCurrentPositionAsync({
           accuracy: Location.Accuracy.High,
         });
-        const timeoutPromise = new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('Initial location timeout')), 6000)
-        );
-        const currentLocation = await Promise.race([posPromise, timeoutPromise]);
-        if (active) {
-          locationRef.current = currentLocation;
-          setLocation(currentLocation);
+        const fresh = await withTimeout(posPromise, 5000);
+        if (active && fresh) {
+          updateLocation(fresh);
         }
       } catch (e) {
-        console.warn('Kunde inte hämta initial position (High), provar Balanced:', e);
+        // Om High timeoutar eller misslyckas, prova Balanced med strikt timeout
         try {
-          const balLocation = await Location.getCurrentPositionAsync({
+          const balPromise = Location.getCurrentPositionAsync({
             accuracy: Location.Accuracy.Balanced,
           });
-          if (active) {
-            locationRef.current = balLocation;
-            setLocation(balLocation);
+          const bal = await withTimeout(balPromise, 4000);
+          if (active && bal) {
+            updateLocation(bal);
           }
-        } catch (err) {
-          console.warn('Kunde inte hämta initial position:', err);
-        }
+        } catch (_) {}
       }
 
-      try {
-        subscription = await Location.watchPositionAsync(
-          {
-            accuracy: Location.Accuracy.High,
-            timeInterval: 15000, // Var 15:e sekund
-            distanceInterval: 10, // Minst 10 meter förflyttning
+      // 6. Säkerhetsventil: om ingen position alls kommit efter 7s,
+      // sätt en rimlig standardkoordinat så kartan visas och appen aldrig fastnar i ett evigt laddläge
+      if (active && !locationRef.current) {
+        const fallbackDefault: Location.LocationObject = {
+          coords: {
+            latitude: 59.3293,
+            longitude: 18.0686,
+            altitude: null,
+            accuracy: 100,
+            altitudeAccuracy: null,
+            heading: null,
+            speed: null,
           },
-          (newLocation) => {
-            if (active) {
-              locationRef.current = newLocation;
-              setLocation(newLocation);
-            }
-          }
-        );
-      } catch (e) {
-        console.warn('Kunde inte starta watchPositionAsync:', e);
+          timestamp: Date.now(),
+        };
+        updateLocation(fallbackDefault);
       }
     })();
+
+    // Lyssna på när appen återaktiveras från bakgrunden eller låst skärm
+    const appStateSub = AppState.addEventListener('change', async state => {
+      if (state === 'active') {
+        try {
+          const last = await withTimeout(Location.getLastKnownPositionAsync(), 1500, null);
+          if (active && last) {
+            updateLocation(last);
+          }
+        } catch (_) {}
+        startWatching();
+      }
+    });
 
     return () => {
       active = false;
       subscription?.remove();
+      appStateSub.remove();
     };
   }, []);
 

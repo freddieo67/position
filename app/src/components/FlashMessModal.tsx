@@ -1,5 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, Modal, TouchableOpacity, TextInput, ActivityIndicator, Alert, ScrollView, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  StyleSheet,
+  Text,
+  View,
+  Modal,
+  TouchableOpacity,
+  TextInput,
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+  Keyboard,
+} from 'react-native';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { api } from '../api';
 import { ApiError } from '../config';
@@ -24,12 +37,36 @@ export default function FlashMessModal({
 }: FlashMessModalProps) {
   const [customText, setCustomText] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+  const scrollRef = useRef<ScrollView>(null);
 
   useEffect(() => {
     if (visible) {
       setCustomText('');
       setLoading(false);
+      setIsKeyboardOpen(false);
     }
+  }, [visible]);
+
+  useEffect(() => {
+    if (!visible) return;
+    const showEvt = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvt = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const showSub = Keyboard.addListener(showEvt, () => {
+      setIsKeyboardOpen(true);
+      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
+      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 300);
+    });
+
+    const hideSub = Keyboard.addListener(hideEvt, () => {
+      setIsKeyboardOpen(false);
+    });
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
   }, [visible]);
 
   const sendFlash = async (type: string, message?: string) => {
@@ -41,15 +78,13 @@ export default function FlashMessModal({
         targets.map(target => api.sendSignal(currentUserId, target.userId, type, message))
       );
       setCustomText('');
-      Alert.alert(
-        'Flash-mess',
-        i18n.t('flash_mess_sent', { names: targetNames })
-      );
+      Alert.alert('Flash-mess', i18n.t('flash_mess_sent', { names: targetNames }));
       onSuccess();
     } catch (error: any) {
-      const msg = error instanceof ApiError && error.serverMessage 
-        ? error.serverMessage 
-        : (error?.serverMessage || error?.message || i18n.t('phing_send_failed'));
+      const msg =
+        error instanceof ApiError && error.serverMessage
+          ? error.serverMessage
+          : error?.serverMessage || error?.message || i18n.t('phing_send_failed');
       Alert.alert('Flash-mess', msg);
     } finally {
       setLoading(false);
@@ -62,74 +97,99 @@ export default function FlashMessModal({
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <KeyboardAvoidingView 
-        style={styles.overlay} 
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      <KeyboardAvoidingView
+        style={styles.overlay}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <TouchableWithoutFeedback onPress={onClose}>
-          <View style={styles.backdrop} />
-        </TouchableWithoutFeedback>
+        <TouchableOpacity
+          style={styles.backdrop}
+          activeOpacity={1}
+          onPress={() => {
+            if (isKeyboardOpen) {
+              Keyboard.dismiss();
+            } else {
+              onClose();
+            }
+          }}
+        />
 
         <View style={styles.sheetContainer}>
-          <View style={styles.dragHandle} />
+          <ScrollView
+            ref={scrollRef}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            bounces={false}
+            contentContainerStyle={[
+              styles.scrollContent,
+              { paddingBottom: isKeyboardOpen ? 180 : Platform.OS === 'ios' ? 36 : 24 },
+            ]}
+          >
+            <View style={styles.dragHandle} />
 
-          <Text style={styles.title}>
-            Flash-mess till {targetNames} ⚡
-          </Text>
-          <Text style={styles.subtitle}>
-            {i18n.t('flash_mess_subtitle', { names: targetNames })}
-          </Text>
+            <Text style={styles.title}>Flash-mess till {targetNames} ⚡</Text>
+            <Text style={styles.subtitle}>
+              {i18n.t('flash_mess_subtitle', { names: targetNames })}
+            </Text>
 
-          <Text style={styles.sectionHeader}>
-            {i18n.t('quick_replies_label')}
-          </Text>
+            <Text style={styles.sectionHeader}>{i18n.t('quick_replies_label')}</Text>
 
-          <View style={styles.chipsContainer}>
-            {SIGNALS.slice(0, 4).map(s => (
+            <View style={styles.chipsContainer}>
+              {SIGNALS.slice(0, 4).map(s => (
+                <TouchableOpacity
+                  key={s.type}
+                  style={styles.chipBtn}
+                  disabled={loading}
+                  onPress={() => sendFlash(s.type)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.chipText}>{s.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <Text style={styles.sectionHeader}>{i18n.t('or_write_yourself_label')}</Text>
+
+            <View style={styles.inputRow}>
+              <TextInput
+                style={styles.inputField}
+                placeholder={i18n.t('write_message_placeholder')}
+                placeholderTextColor="#94a3b8"
+                value={customText}
+                onChangeText={setCustomText}
+                maxLength={100}
+                returnKeyType="send"
+                onSubmitEditing={() => customText.trim() && sendFlash('custom', customText.trim())}
+                onFocus={() => {
+                  setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
+                  setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 300);
+                }}
+              />
               <TouchableOpacity
-                key={s.type}
-                style={styles.chipBtn}
-                disabled={loading}
-                onPress={() => sendFlash(s.type)}
-                activeOpacity={0.7}
+                style={[
+                  styles.arrowSendBtn,
+                  (!customText.trim() || loading) && styles.arrowSendBtnDisabled,
+                ]}
+                disabled={!customText.trim() || loading}
+                onPress={() => sendFlash('custom', customText.trim())}
+                activeOpacity={0.8}
               >
-                <Text style={styles.chipText}>{s.label}</Text>
+                {loading ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <FontAwesome6 name="arrow-right" size={15} color="#fff" />
+                )}
               </TouchableOpacity>
-            ))}
-          </View>
+            </View>
 
-          <Text style={styles.sectionHeader}>
-            {i18n.t('or_write_yourself_label')}
-          </Text>
-
-          <View style={styles.inputRow}>
-            <TextInput
-              style={styles.inputField}
-              placeholder={i18n.t('write_message_placeholder')}
-              placeholderTextColor="#94a3b8"
-              value={customText}
-              onChangeText={setCustomText}
-              maxLength={100}
-              returnKeyType="send"
-              onSubmitEditing={() => customText.trim() && sendFlash('custom', customText.trim())}
-            />
             <TouchableOpacity
-              style={[styles.arrowSendBtn, (!customText.trim() || loading) && styles.arrowSendBtnDisabled]}
-              disabled={!customText.trim() || loading}
-              onPress={() => sendFlash('custom', customText.trim())}
-              activeOpacity={0.8}
+              style={styles.cancelBtn}
+              onPress={onClose}
+              disabled={loading}
+              activeOpacity={0.6}
             >
-              {loading ? (
-                <ActivityIndicator color="#fff" size="small" />
-              ) : (
-                <FontAwesome6 name="arrow-right" size={15} color="#fff" />
-              )}
+              <Text style={styles.cancelBtnText}>{i18n.t('cancel')}</Text>
             </TouchableOpacity>
-          </View>
-
-          <TouchableOpacity style={styles.cancelBtn} onPress={onClose} disabled={loading} activeOpacity={0.6}>
-            <Text style={styles.cancelBtnText}>{i18n.t('cancel')}</Text>
-          </TouchableOpacity>
+          </ScrollView>
         </View>
       </KeyboardAvoidingView>
     </Modal>
@@ -149,14 +209,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
-    paddingTop: 12,
-    paddingHorizontal: 22,
-    paddingBottom: Platform.OS === 'ios' ? 36 : 24,
+    maxHeight: '90%',
+    width: '100%',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.12,
     shadowRadius: 12,
     elevation: 10,
+  },
+  scrollContent: {
+    paddingTop: 12,
+    paddingHorizontal: 22,
   },
   dragHandle: {
     width: 44,
@@ -179,7 +242,7 @@ const styles = StyleSheet.create({
     lineHeight: 19,
   },
   sectionHeader: {
-    fontSize: 11.5,
+    fontSize: 12,
     fontWeight: '700',
     color: '#64748b',
     letterSpacing: 0.5,
@@ -188,19 +251,19 @@ const styles = StyleSheet.create({
   chipsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 22,
+    gap: 10,
+    marginBottom: 24,
   },
   chipBtn: {
-    borderWidth: 1,
-    borderColor: '#cbd5e1',
-    borderRadius: 22,
-    paddingHorizontal: 16,
+    paddingHorizontal: 18,
     paddingVertical: 10,
+    borderRadius: 22,
+    borderWidth: 1.5,
+    borderColor: '#cbd5e1',
     backgroundColor: '#fff',
   },
   chipText: {
-    fontSize: 14,
+    fontSize: 14.5,
     fontWeight: '500',
     color: '#0f172a',
   },
@@ -209,36 +272,35 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#f1f5f9',
     borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    marginBottom: 26,
+    paddingLeft: 14,
+    paddingRight: 6,
+    height: 52,
+    marginBottom: 24,
   },
   inputField: {
     flex: 1,
     fontSize: 15,
     color: '#0f172a',
-    paddingVertical: 8,
   },
   arrowSendBtn: {
-    width: 38,
-    height: 38,
+    width: 40,
+    height: 40,
     borderRadius: 10,
-    backgroundColor: '#0F4C5C',
-    alignItems: 'center',
+    backgroundColor: '#134e5e',
     justifyContent: 'center',
-    marginLeft: 8,
+    alignItems: 'center',
   },
   arrowSendBtnDisabled: {
-    opacity: 0.45,
+    opacity: 0.4,
   },
   cancelBtn: {
     alignSelf: 'center',
-    paddingVertical: 10,
+    paddingVertical: 12,
     paddingHorizontal: 20,
   },
   cancelBtnText: {
-    fontSize: 15,
-    fontWeight: '700',
     color: '#475569',
+    fontSize: 15,
+    fontWeight: '600',
   },
 });
