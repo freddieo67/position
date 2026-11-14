@@ -146,8 +146,8 @@ export async function startBackgroundLocation(): Promise<void> {
     if (running) return;
 
     await Location.startLocationUpdatesAsync(BACKGROUND_LOCATION_TASK, {
-      accuracy: Location.Accuracy.Balanced,
-      timeInterval: 30000, // var 30:e sekund
+      accuracy: Location.Accuracy.High,
+      timeInterval: 20000, // var 20:e sekund
       distanceInterval: 10, // eller minst 10 meters förflyttning
       foregroundService: {
         notificationTitle: i18n.t('bg_notification_title'),

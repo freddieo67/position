@@ -171,13 +171,13 @@ export default function App() {
         }
       } catch (_) {}
 
-      // 2. Hämta färsk position med timeout så att appen inte står och snurrar inomhus
+      // 2. Hämta färsk position med timeout (High accuracy för skarp GPS på iOS och Android)
       try {
         const posPromise = Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.Balanced,
+          accuracy: Location.Accuracy.High,
         });
         const timeoutPromise = new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('Initial location timeout')), 5000)
+          setTimeout(() => reject(new Error('Initial location timeout')), 6000)
         );
         const currentLocation = await Promise.race([posPromise, timeoutPromise]);
         if (active) {
@@ -185,14 +185,14 @@ export default function App() {
           setLocation(currentLocation);
         }
       } catch (e) {
-        console.warn('Kunde inte hämta initial position (Balanced), provar lägre noggrannhet:', e);
+        console.warn('Kunde inte hämta initial position (High), provar Balanced:', e);
         try {
-          const lowLocation = await Location.getCurrentPositionAsync({
-            accuracy: Location.Accuracy.Low,
+          const balLocation = await Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.Balanced,
           });
           if (active) {
-            locationRef.current = lowLocation;
-            setLocation(lowLocation);
+            locationRef.current = balLocation;
+            setLocation(balLocation);
           }
         } catch (err) {
           console.warn('Kunde inte hämta initial position:', err);
@@ -202,9 +202,9 @@ export default function App() {
       try {
         subscription = await Location.watchPositionAsync(
           {
-            accuracy: Location.Accuracy.Balanced,
-            timeInterval: 180000, // Var 3:e minut
-            distanceInterval: 50, // Minst 50 meter förflyttning
+            accuracy: Location.Accuracy.High,
+            timeInterval: 10000, // Var 10:e sekund
+            distanceInterval: 10, // Minst 10 meter förflyttning
           },
           (newLocation) => {
             if (active) {
@@ -989,7 +989,7 @@ export default function App() {
             onPress={async () => {
               mapRef.current?.focusOn(location.coords.latitude, location.coords.longitude);
               try {
-                const fresh = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+                const fresh = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
                 locationRef.current = fresh;
                 setLocation(fresh);
                 mapRef.current?.focusOn(fresh.coords.latitude, fresh.coords.longitude);
