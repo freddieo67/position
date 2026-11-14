@@ -53,6 +53,7 @@ export default function RegisterScreen({ onRegistered }: RegisterScreenProps) {
         onChangeText={setName}
         autoCapitalize="words"
       />
+      <Text style={styles.nameHint}>{i18n.t('name_initial_hint')}</Text>
       <TextInput
         style={styles.input}
         placeholder={i18n.t('enter_phone')}
@@ -93,6 +94,14 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginBottom: 12,
     fontSize: 16,
+  },
+  nameHint: {
+    fontSize: 12.5,
+    color: '#666',
+    marginTop: -4,
+    marginBottom: 14,
+    paddingHorizontal: 4,
+    lineHeight: 17,
   },
   error: {
     color: '#ff3b30',

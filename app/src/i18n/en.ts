@@ -1,6 +1,7 @@
 export const en = {
   enter_phone: 'Enter your phone number',
-  enter_name: 'Your name',
+  enter_name: 'Your name (e.g. John S)',
+  name_initial_hint: '💡 Tip: Feel free to add your last name initial (e.g. John S) so friends easily recognize you.',
   privacy_policy_agree: 'By continuing, you agree to our Privacy Policy',
   continue: 'Continue',
   invalid_phone: 'Invalid phone number',

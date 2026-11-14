@@ -1,7 +1,8 @@
 export const sv = {
   // Login
   enter_phone: 'Skriv in ditt telefonnummer',
-  enter_name: 'Ditt namn',
+  enter_name: 'Ditt namn (t.ex. Johan S)',
+  name_initial_hint: '💡 Tips: Lägg gärna till initialen för efternamnet (t.ex. Johan S) så känner dina vänner lätt igen dig.',
   privacy_policy_agree: 'Genom att fortsätta godkänner du vår Integritetspolicy',
   continue: 'Fortsätt',
   invalid_phone: 'Ogiltigt telefonnummer',
