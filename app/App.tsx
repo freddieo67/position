@@ -477,9 +477,9 @@ export default function App() {
           };
 
           if (response.actionIdentifier === 'reply_ping') {
-            // Användaren tryckte på "Pinga tillbaka" direkt i notisen
-            setPingTarget([senderContact]);
-            setPingModalVisible(true);
+            // Användaren tryckte på "Svara" direkt i notisen
+            setFlashTarget([senderContact]);
+            setFlashModalVisible(true);
           } else {
             // Användaren tryckte på själva notisen: visa vad personen skickade så det inte missas
             const title: string = payload.title || (response.notification.request.content.title ?? undefined) || i18n.t('pinged_you', { name: senderContact.name });
@@ -1214,8 +1214,8 @@ export default function App() {
         onClose={() => setReceivedPing(null)}
         onReply={(sender) => {
           setReceivedPing(null);
-          setPingTarget([sender]);
-          setPingModalVisible(true);
+          setFlashTarget([sender]);
+          setFlashModalVisible(true);
         }}
       />
 

@@ -209,10 +209,10 @@ app.post('/signals', async (req, res) => {
     let pushBody = '';
 
     if (type === 'custom') {
-      pushTitle = `⚡ ${name} phingade dig!`;
+      pushTitle = `⚡ ${name} skickade ett flashmess`;
       pushBody = customMessage || 'Ingen text angavs...';
     } else if (signal) {
-      pushTitle = signal.title.replace('{name}', name);
+      pushTitle = `⚡ ${name} skickade ett flashmess`;
       pushBody = customMessage || signal.body;
     }
 

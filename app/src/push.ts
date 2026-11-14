@@ -43,7 +43,7 @@ function registerPingCategory(Notifications: typeof NotificationsType) {
   Notifications.setNotificationCategoryAsync('ping_category', [
     {
       identifier: 'reply_ping',
-      buttonTitle: i18n.t('ping_back'),
+      buttonTitle: i18n.t('reply'),
       options: {
         opensAppToForeground: true,
       },
