@@ -203,7 +203,7 @@ export default function App() {
         subscription = await Location.watchPositionAsync(
           {
             accuracy: Location.Accuracy.High,
-            timeInterval: 10000, // Var 10:e sekund
+            timeInterval: 15000, // Var 15:e sekund
             distanceInterval: 10, // Minst 10 meter förflyttning
           },
           (newLocation) => {

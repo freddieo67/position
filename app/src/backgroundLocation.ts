@@ -147,8 +147,8 @@ export async function startBackgroundLocation(): Promise<void> {
 
     await Location.startLocationUpdatesAsync(BACKGROUND_LOCATION_TASK, {
       accuracy: Location.Accuracy.High,
-      timeInterval: 20000, // var 20:e sekund
-      distanceInterval: 10, // eller minst 10 meters förflyttning
+      timeInterval: 45000, // var 45:e sekund vid förflyttning
+      distanceInterval: 15, // minst 15 meters förflyttning för att spara batteri
       foregroundService: {
         notificationTitle: i18n.t('bg_notification_title'),
         notificationBody: i18n.t('bg_notification_body'),
@@ -156,7 +156,7 @@ export async function startBackgroundLocation(): Promise<void> {
         killServiceOnDestroy: true,
       },
       showsBackgroundLocationIndicator: true,
-      pausesUpdatesAutomatically: false,
+      pausesUpdatesAutomatically: true, // Sparar batteri genom att pausa GPS automatiskt när användaren är stilla
     });
     console.log('Bakgrundsplatstjänst med Foreground Service startad');
   } catch (e) {
