@@ -22,6 +22,7 @@ export const SIGNALS: SignalType[] = [
   signal('where', '📍'),
   signal('on_my_way', '🚗'),
   signal('soon', '⏳'),
+  signal('here', '📍'),
   signal('coffee', '☕'),
   signal('beer', '🍺'),
 ];

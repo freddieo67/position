@@ -1,11 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, Text, View, Modal, TouchableOpacity, TextInput, ActivityIndicator, Alert, Image, ScrollView, KeyboardAvoidingView } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, Text, View, Modal, TouchableOpacity, TextInput, ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform, TouchableWithoutFeedback } from 'react-native';
+import { FontAwesome6 } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
-import { api } from '../api';
 import { ApiError } from '../config';
 import i18n from '../i18n';
-
 import { AppContact } from './ContactsModal';
 
 interface PingModalProps {
@@ -37,7 +36,6 @@ export default function PingModal({
   const [photoData, setPhotoData] = useState<string | null>(null);
   const [processingPhoto, setProcessingPhoto] = useState(false);
   const [selectedDuration, setSelectedDuration] = useState<15 | 30 | 60>(15);
-  const scrollViewRef = useRef<ScrollView>(null);
 
   useEffect(() => {
     if (visible) {
@@ -142,138 +140,149 @@ export default function PingModal({
     }
   };
 
-
-
   if (!visible) return null;
 
   const targetNames = targets?.map(t => t.name).join(', ') ?? '';
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <KeyboardAvoidingView style={styles.overlay} behavior="padding">
-        <View style={styles.modalContainer}>
-          <ScrollView ref={scrollViewRef} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-            <Text style={styles.title}>{i18n.t('phing_target_title', { names: targetNames })}</Text>
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <KeyboardAvoidingView 
+        style={styles.overlay} 
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <TouchableWithoutFeedback onPress={onClose}>
+          <View style={styles.backdrop} />
+        </TouchableWithoutFeedback>
 
-            {/* Foto-sektion överst */}
-            {!photoThumb ? (
-              <View style={styles.cameraSection}>
-                <Text style={styles.cameraHeading}>{i18n.t('take_photo_heading')}</Text>
+        <View style={styles.sheetContainer}>
+          <View style={styles.dragHandle} />
 
-                <View style={styles.photoOptionsRow}>
-                  <TouchableOpacity
-                    style={styles.photoOptionWrapper}
-                    onPress={pickFromCamera}
-                    disabled={loading || processingPhoto}
-                    activeOpacity={0.8}
-                  >
-                    <View style={styles.photoOptionBtn}>
-                      <Text style={styles.photoOptionEmoji}>📷</Text>
-                    </View>
-                    <Text style={styles.photoOptionLabel}>{i18n.t('take_photo_camera')}</Text>
-                  </TouchableOpacity>
+          {/* Steg 1: Välj bild (Ta bild / Välj ur galleriet) */}
+          {!photoThumb ? (
+            <>
+              <Text style={styles.title}>
+                Phinga {targetNames}
+              </Text>
+              <Text style={styles.subtitle}>
+                {i18n.t('phing_subtitle', { names: targetNames })}
+              </Text>
 
-                  <TouchableOpacity
-                    style={styles.photoOptionWrapper}
-                    onPress={pickFromGallery}
-                    disabled={loading || processingPhoto}
-                    activeOpacity={0.8}
-                  >
-                    <View style={styles.photoOptionBtn}>
-                      <Text style={styles.photoOptionEmoji}>🖼️</Text>
-                    </View>
-                    <Text style={styles.photoOptionLabel}>{i18n.t('choose_from_gallery')}</Text>
-                  </TouchableOpacity>
-                </View>
-
-                <Text style={styles.photoExplanationText}>
-                  {i18n.t('phing_explanation')}
-                </Text>
-              </View>
-            ) : (
-              <View style={styles.photoPreviewCard}>
-                <Image source={{ uri: photoThumb }} style={styles.previewImage} resizeMode="cover" />
+              <View style={styles.actionCardsRow}>
                 <TouchableOpacity
-                  style={styles.removePhotoBtn}
-                  onPress={() => {
-                    setPhotoThumb(null);
-                    setPhotoData(null);
-                  }}
-                >
-                  <Text style={styles.removePhotoText}>{i18n.t('remove_photo')}</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-
-            {processingPhoto && (
-              <View style={{ paddingVertical: 12, alignItems: 'center' }}>
-                <ActivityIndicator size="small" color="#ff3131" />
-                <Text style={{ fontSize: 12, color: '#666', marginTop: 4 }}>{i18n.t('preparing_photo')}</Text>
-              </View>
-            )}
-
-            {photoThumb && (
-              <>
-                <Text style={styles.subtitle}>{i18n.t('shown_on_map_for')}</Text>
-                <View style={styles.durationRow}>
-                  {([15, 30, 60] as const).map(mins => (
-                    <TouchableOpacity
-                      key={mins}
-                      style={[
-                        styles.durationBtn,
-                        selectedDuration === mins && styles.durationBtnActive,
-                      ]}
-                      onPress={() => setSelectedDuration(mins)}
-                    >
-                      <Text
-                        style={[
-                          styles.durationText,
-                          selectedDuration === mins && styles.durationTextActive,
-                        ]}
-                      >
-                        {mins} {i18n.t('min_short')}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-
-                <View style={styles.divider} />
-
-                <Text style={styles.subtitle}>{i18n.t('photo_message_label')}</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder={i18n.t('caption_placeholder')}
-                  value={customText}
-                  onChangeText={setCustomText}
-                  maxLength={100}
-                  onFocus={() => {
-                    setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 150);
-                  }}
-                />
-
-                <TouchableOpacity
-                  style={[styles.sendPhotoBtn, (loading || processingPhoto) && styles.disabledBtn]}
+                  style={styles.actionCardTeal}
+                  onPress={pickFromCamera}
                   disabled={loading || processingPhoto}
-                  onPress={handleSendPhoto}
+                  activeOpacity={0.8}
                 >
-                  {loading ? (
-                    <ActivityIndicator color="#333" />
+                  {processingPhoto ? (
+                    <ActivityIndicator color="#fff" size="small" />
                   ) : (
                     <>
-                      <Text style={styles.sendPhotoEmoji}>📷</Text>
-                      <Text style={styles.sendPhotoBtnText}>
-                        {i18n.t('send_phing_btn', { mins: selectedDuration }).replace('📷 ', '')}
+                      <FontAwesome6 name="camera" size={26} color="#fff" />
+                      <Text style={styles.actionCardTealText}>
+                        {i18n.t('take_a_photo')}
                       </Text>
                     </>
                   )}
                 </TouchableOpacity>
-              </>
-            )}
 
-            <TouchableOpacity style={styles.closeBtn} onPress={onClose} disabled={loading}>
-              <Text style={styles.closeBtnText}>{i18n.t('cancel')}</Text>
-            </TouchableOpacity>
-          </ScrollView>
+                <TouchableOpacity
+                  style={styles.actionCardGrey}
+                  onPress={pickFromGallery}
+                  disabled={loading || processingPhoto}
+                  activeOpacity={0.8}
+                >
+                  <FontAwesome6 name="image" size={26} color="#0F4C5C" />
+                  <Text style={styles.actionCardGreyText}>
+                    {i18n.t('choose_from_gallery_btn')}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              <TouchableOpacity style={styles.cancelBtn} onPress={onClose} disabled={loading} activeOpacity={0.6}>
+                <Text style={styles.cancelBtnText}>{i18n.t('cancel')}</Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            /* Steg 2: Bild vald - förhandsgranska, tid, bildtext, skicka */
+            <>
+              <Text style={styles.title}>
+                Phinga {targetNames}
+              </Text>
+
+              <View style={styles.previewContainer}>
+                <Image source={{ uri: photoThumb }} style={styles.previewImage} resizeMode="cover" />
+                <TouchableOpacity
+                  style={styles.removeImageBtn}
+                  onPress={() => {
+                    setPhotoThumb(null);
+                    setPhotoData(null);
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <FontAwesome6 name="xmark" size={15} color="#fff" />
+                </TouchableOpacity>
+              </View>
+
+              <Text style={styles.sectionHeader}>
+                {i18n.t('shown_on_map_in')}
+              </Text>
+
+              <View style={styles.durationRow}>
+                {([15, 30, 60] as const).map(mins => (
+                  <TouchableOpacity
+                    key={mins}
+                    style={[
+                      styles.durationBtn,
+                      selectedDuration === mins ? styles.durationBtnActive : styles.durationBtnInactive,
+                    ]}
+                    onPress={() => setSelectedDuration(mins)}
+                    activeOpacity={0.8}
+                  >
+                    <Text
+                      style={[
+                        styles.durationBtnText,
+                        selectedDuration === mins ? styles.durationBtnTextActive : styles.durationBtnTextInactive,
+                      ]}
+                    >
+                      {mins} min
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <TextInput
+                style={styles.captionInput}
+                placeholder={i18n.t('add_caption_placeholder')}
+                placeholderTextColor="#94a3b8"
+                value={customText}
+                onChangeText={setCustomText}
+                maxLength={80}
+              />
+
+              <TouchableOpacity
+                style={[styles.primarySendBtn, loading && { opacity: 0.6 }]}
+                disabled={loading}
+                onPress={handleSendPhoto}
+                activeOpacity={0.8}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <>
+                    <FontAwesome6 name="arrow-right" size={16} color="#fff" />
+                    <Text style={styles.primarySendBtnText}>
+                      {i18n.t('send_phing_btn_text')}
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.cancelBtn} onPress={onClose} disabled={loading} activeOpacity={0.6}>
+                <Text style={styles.cancelBtnText}>{i18n.t('cancel')}</Text>
+              </TouchableOpacity>
+            </>
+          )}
         </View>
       </KeyboardAvoidingView>
     </Modal>
@@ -283,236 +292,170 @@ export default function PingModal({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    justifyContent: 'flex-end',
   },
-  modalContainer: {
+  backdrop: {
+    flex: 1,
+  },
+  sheetContainer: {
     backgroundColor: '#fff',
-    width: '94%',
-    maxHeight: '90%',
-    borderRadius: 20,
-    padding: 16,
-    alignItems: 'stretch',
-    elevation: 5,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingTop: 12,
+    paddingHorizontal: 22,
+    paddingBottom: Platform.OS === 'ios' ? 36 : 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 10,
+  },
+  dragHandle: {
+    width: 44,
+    height: 4.5,
+    borderRadius: 3,
+    backgroundColor: '#cbd5e1',
+    alignSelf: 'center',
+    marginBottom: 18,
   },
   title: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '700',
-    textAlign: 'center',
-    marginBottom: 14,
-    color: '#111',
-  },
-  cameraSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginVertical: 10,
-    paddingHorizontal: 8,
-  },
-  cameraHeading: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#222',
-    marginBottom: 16,
-    textAlign: 'center',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  photoOptionsRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 36,
-    marginBottom: 16,
-  },
-  photoOptionWrapper: {
-    alignItems: 'center',
-  },
-  photoOptionBtn: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#f5f5f7',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.15,
-    shadowRadius: 5,
-    elevation: 4,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1.5,
-    borderColor: '#e1e4e8',
-  },
-  photoOptionEmoji: {
-    fontSize: 36,
-    textAlign: 'center',
-    lineHeight: 40,
-  },
-  photoOptionLabel: {
-    marginTop: 8,
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#333',
-    textAlign: 'center',
-  },
-  photoExplanationText: {
-    fontSize: 13.5,
-    lineHeight: 19,
-    color: '#666',
-    textAlign: 'center',
-    paddingHorizontal: 12,
-    marginBottom: 8,
-  },
-  photoPreviewCard: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginVertical: 8,
-  },
-  previewImage: {
-    width: 120,
-    height: 120,
-    borderRadius: 12,
-    backgroundColor: '#222',
-  },
-  removePhotoBtn: {
-    marginTop: 8,
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-  },
-  removePhotoText: {
-    fontSize: 13,
-    color: '#ff3b30',
-    fontWeight: '600',
+    color: '#0f172a',
+    marginBottom: 4,
   },
   subtitle: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#666',
-    marginBottom: 8,
-    marginTop: 2,
+    color: '#64748b',
+    marginBottom: 22,
+    lineHeight: 19,
+  },
+  actionCardsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 26,
+  },
+  actionCardTeal: {
+    flex: 1,
+    height: 115,
+    borderRadius: 16,
+    backgroundColor: '#0F4C5C',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+  },
+  actionCardTealText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  actionCardGrey: {
+    flex: 1,
+    height: 115,
+    borderRadius: 16,
+    backgroundColor: '#f1f5f9',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+  },
+  actionCardGreyText: {
+    color: '#0f172a',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  previewContainer: {
+    width: '100%',
+    height: 185,
+    borderRadius: 16,
+    backgroundColor: '#e2e8f0',
+    overflow: 'hidden',
+    position: 'relative',
+    marginBottom: 18,
+  },
+  previewImage: {
+    width: '100%',
+    height: '100%',
+  },
+  removeImageBtn: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: 'rgba(15, 23, 42, 0.85)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sectionHeader: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#64748b',
+    letterSpacing: 0.5,
+    marginBottom: 10,
   },
   durationRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-    marginTop: 4,
+    gap: 10,
+    marginBottom: 16,
   },
   durationBtn: {
     flex: 1,
-    height: 46,
-    marginHorizontal: 3,
-    backgroundColor: '#f4f5f7',
-    borderRadius: 8,
+    height: 44,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1.5,
-    borderColor: '#e1e4e8',
   },
   durationBtnActive: {
-    backgroundColor: '#fff',
-    borderColor: '#ff3131',
+    backgroundColor: '#0F4C5C',
   },
-  durationText: {
+  durationBtnInactive: {
+    backgroundColor: '#f1f5f9',
+  },
+  durationBtnText: {
     fontSize: 14,
+  },
+  durationBtnTextActive: {
+    color: '#fff',
     fontWeight: '700',
-    color: '#555',
   },
-  durationTextActive: {
-    color: '#000',
-    fontWeight: 'bold',
-  },
-  sendPhotoBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#f4f5f7',
-    borderWidth: 1.5,
-    borderColor: '#e1e4e8',
-    height: 46,
-    paddingHorizontal: 14,
-    borderRadius: 8,
-    marginBottom: 14,
-    marginTop: 4,
-  },
-  sendPhotoEmoji: {
-    fontSize: 18,
-    marginRight: 8,
-  },
-  sendPhotoBtnText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#333',
-  },
-  quickButtonsScroll: {
-    flexDirection: 'row',
-    gap: 8,
-    paddingVertical: 4,
-    paddingHorizontal: 2,
-    marginBottom: 10,
-  },
-  quickBtn: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#f5f5f7',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    minWidth: 92,
-    height: 62,
-    borderWidth: 1.5,
-    borderColor: '#e2e4e8',
-  },
-  emoji: {
-    fontSize: 22,
-    marginBottom: 3,
-  },
-  quickText: {
-    fontSize: 12,
+  durationBtnTextInactive: {
+    color: '#0f172a',
     fontWeight: '600',
-    color: '#333',
-    textAlign: 'center',
   },
-  divider: {
-    height: 1,
-    backgroundColor: '#e1e1e1',
-    marginVertical: 14,
-  },
-  input: {
-    backgroundColor: '#f8f9fa',
-    borderWidth: 1,
-    borderColor: '#e1e1e1',
+  captionInput: {
+    backgroundColor: '#f1f5f9',
     borderRadius: 12,
-    padding: 12,
-    fontSize: 16,
-    marginBottom: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 14.5,
+    color: '#0f172a',
+    marginBottom: 16,
   },
-  sendBtn: {
+  primarySendBtn: {
+    height: 50,
+    borderRadius: 12,
+    backgroundColor: '#0F4C5C',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#f4f5f7',
-    borderWidth: 1.5,
-    borderColor: '#e1e4e8',
-    height: 46,
-    paddingHorizontal: 14,
-    borderRadius: 8,
-    marginBottom: 8,
+    gap: 10,
+    marginBottom: 18,
   },
-  disabledBtn: {
-    opacity: 0.5,
+  primarySendBtnText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#fff',
   },
-  sendBtnText: {
+  cancelBtn: {
+    alignSelf: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+  },
+  cancelBtnText: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#333',
-  },
-  closeBtn: {
-    marginTop: 6,
-    padding: 12,
-    alignItems: 'center',
-  },
-  closeBtnText: {
-    color: '#666',
-    fontWeight: 'bold',
-    fontSize: 16,
+    color: '#475569',
   },
 });

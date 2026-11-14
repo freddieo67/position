@@ -154,6 +154,7 @@ const SIGNALS: Record<string, { title: string; body: string }> = {
   where: { title: '📍 {name} undrar: Var är du?', body: 'Var är du?' },
   on_my_way: { title: '🚗 {name} är på väg!', body: 'På väg!' },
   soon: { title: '⏳ {name} kommer snart!', body: 'Kommer snart' },
+  here: { title: '📍 {name} är här!', body: 'Jag är här' },
   coffee: { title: '☕ {name} bjuder på kaffe', body: 'Sugen på en fika?' },
   beer: { title: '🍺 {name} bjuder på öl!', body: 'Bjuder på öl!' },
   wave: { title: '👋 {name} vinkar', body: 'Var håller du hus?' },
@@ -210,7 +211,7 @@ app.post('/signals', async (req, res) => {
     if (type === 'custom') {
       pushTitle = `⚡ ${name} phingade dig!`;
       pushBody = customMessage || 'Ingen text angavs...';
-    } else {
+    } else if (signal) {
       pushTitle = signal.title.replace('{name}', name);
       pushBody = customMessage || signal.body;
     }
