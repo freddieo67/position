@@ -185,4 +185,8 @@ export const en = {
   navigate_there: "Directions 🧭",
   stop_meeting_title: "Remove meeting point?",
   stop_meeting_one: "Do you want to remove the meeting point with %{name}?",
+  limited_contacts_title: "Limited contact access",
+  limited_contacts_text: "You chose to share only selected contacts with Position. Missing a friend?",
+  limited_contacts_btn: "Manage contacts ⚙️",
+  limited_empty_settings_btn: "Missing a contact? Change here ⚙️",
 };

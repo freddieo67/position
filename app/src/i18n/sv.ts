@@ -190,4 +190,8 @@ export const sv = {
   navigate_there: "Hitta dit 🧭",
   stop_meeting_title: "Ta bort mötesplats?",
   stop_meeting_one: "Vill du ta bort mötesplatsen med %{name}?",
+  limited_contacts_title: "Begränsad kontaktåtkomst",
+  limited_contacts_text: "Du har valt att bara dela vissa kontakter med appen. Saknar du en vän?",
+  limited_contacts_btn: "Hantera kontakter ⚙️",
+  limited_empty_settings_btn: "Saknar du en kontakt? Ändra här ⚙️",
 };

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Modal, View, Text, StyleSheet, TouchableOpacity, FlatList, TextInput, ActivityIndicator, ScrollView, Alert, Image, KeyboardAvoidingView, Keyboard, Platform, RefreshControl } from 'react-native';
+import { Modal, View, Text, StyleSheet, TouchableOpacity, FlatList, TextInput, ActivityIndicator, ScrollView, Alert, Image, KeyboardAvoidingView, Keyboard, Platform, RefreshControl, AppState, Linking } from 'react-native';
 import * as Contacts from 'expo-contacts/legacy';
 import { normalizePhone } from '../config';
 import { api } from '../api';
@@ -59,6 +59,7 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
   const [selectedIcon, setSelectedIcon] = useState<MapIconEmoji>(DEFAULT_MAP_ICON);
   const [favoriteIds, setFavoriteIds] = useState<number[]>([]);
   const [usageMap, setUsageMap] = useState<ContactUsageMap>({});
+  const [isLimitedAccess, setIsLimitedAccess] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
 
   useEffect(() => {
@@ -83,13 +84,30 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
     setSelectedMeetingDuration(60);
     getSavedMapIcon().then(setSelectedIcon);
     initContacts();
+
+    // Lyssna på när användaren återvänder från inställningar så kontakterna uppdateras direkt
+    const appStateSub = AppState.addEventListener('change', state => {
+      if (state === 'active') {
+        loadContactsInner(true).catch(() => {});
+      }
+    });
+    return () => appStateSub.remove();
   }, [visible]);
 
   const sortAlphabetically = (list: AppContact[]) =>
     [...list].sort((a, b) => a.name.localeCompare(b.name, 'sv'));
 
+  const checkLimitedStatus = async () => {
+    try {
+      const perm = await Contacts.getPermissionsAsync();
+      const isLimited = Platform.OS === 'ios' && (perm as any).accessPrivileges === 'limited';
+      setIsLimitedAccess(isLimited);
+    } catch (_) {}
+  };
+
   const initContacts = async () => {
     setErrorMsg(null);
+    checkLimitedStatus();
     const [cached, favs, usage] = await Promise.all([
       getCachedContacts(currentUserId),
       getFavoriteIds(currentUserId),
@@ -124,11 +142,13 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
   };
 
   const loadContactsInner = async (silent: boolean = false) => {
-    const { status } = await Contacts.requestPermissionsAsync();
-    if (status !== 'granted') {
+    const perm = await Contacts.requestPermissionsAsync();
+    if (perm.status !== 'granted') {
       if (!silent) setErrorMsg(i18n.t('contacts_permission_needed'));
       return;
     }
+    const isLimited = Platform.OS === 'ios' && (perm as any).accessPrivileges === 'limited';
+    setIsLimitedAccess(isLimited);
 
     const { data } = await Contacts.getContactsAsync({
       fields: [Contacts.Fields.PhoneNumbers],
@@ -473,6 +493,28 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
                 onChangeText={setSearchQuery}
               />
 
+              {isLimitedAccess && (
+                <View style={styles.limitedBanner}>
+                  <View style={styles.limitedBannerTextCol}>
+                    <Text style={styles.limitedBannerTitle}>
+                      🔒 {i18n.t('limited_contacts_title')}
+                    </Text>
+                    <Text style={styles.limitedBannerText}>
+                      {i18n.t('limited_contacts_text')}
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.limitedBannerBtn}
+                    onPress={() => Linking.openSettings()}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.limitedBannerBtnText}>
+                      {i18n.t('limited_contacts_btn')}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+
               {loading ? (
                 <ActivityIndicator style={{ marginTop: 20 }} />
               ) : errorMsg ? (
@@ -576,7 +618,22 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
                         </TouchableOpacity>
                       );
                     }}
-                    ListEmptyComponent={<Text style={styles.emptyText}>{i18n.t('no_friends_found')}</Text>}
+                    ListEmptyComponent={
+                      <View style={styles.emptyContainer}>
+                        <Text style={styles.emptyText}>{i18n.t('no_friends_found')}</Text>
+                        {isLimitedAccess && (
+                          <TouchableOpacity
+                            style={styles.emptySettingsBtn}
+                            onPress={() => Linking.openSettings()}
+                            activeOpacity={0.8}
+                          >
+                            <Text style={styles.emptySettingsBtnText}>
+                              {i18n.t('limited_empty_settings_btn')}
+                            </Text>
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    }
                   />
                 </>
               )}
@@ -1020,6 +1077,57 @@ const styles = StyleSheet.create({
   pickMapBtnText: {
     color: '#fff',
     fontSize: 16,
+    fontWeight: '700',
+  },
+  limitedBanner: {
+    backgroundColor: '#eff6ff',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#bfdbfe',
+    padding: 12,
+    marginBottom: 12,
+  },
+  limitedBannerTextCol: {
+    marginBottom: 8,
+  },
+  limitedBannerTitle: {
+    fontSize: 13.5,
+    fontWeight: '700',
+    color: '#1e40af',
+    marginBottom: 3,
+  },
+  limitedBannerText: {
+    fontSize: 12,
+    color: '#2563eb',
+    lineHeight: 16,
+  },
+  limitedBannerBtn: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#0F4C5C',
+    paddingVertical: 7,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+  },
+  limitedBannerBtnText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+  },
+  emptySettingsBtn: {
+    marginTop: 10,
+    backgroundColor: '#0F4C5C',
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+  },
+  emptySettingsBtnText: {
+    color: '#fff',
+    fontSize: 12.5,
     fontWeight: '700',
   },
 });
