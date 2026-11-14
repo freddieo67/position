@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useMemo } from 'react';
 import { WebView } from 'react-native-webview';
 import { StyleSheet, View } from 'react-native';
 
@@ -24,33 +24,39 @@ interface Props {
 }
 
 export interface LeafletMapRef {
-  focusOn: (lat: number, lng: number) => void;
+  focusOn: (lat: number, lng: number, targetZoom?: number) => void;
 }
 
-const LeafletMap = React.forwardRef<LeafletMapRef, Props>(({ centerLat, centerLng, markers, onMarkerPress, onCenterChange }, ref) => {
-  const webViewRef = useRef<WebView>(null);
-  const readyRef = useRef(false);
-  const pendingFocus = useRef<{ lat: number; lng: number } | null>(null);
+const LeafletMap = React.forwardRef<LeafletMapRef, Props>(
+  ({ centerLat, centerLng, markers, onMarkerPress, onCenterChange }, ref) => {
+    const webViewRef = useRef<WebView>(null);
+    const readyRef = useRef(false);
+    const pendingFocus = useRef<{ lat: number; lng: number; targetZoom?: number } | null>(null);
+    const initialCenterRef = useRef({ lat: centerLat, lng: centerLng });
 
-  const flyTo = (lat: number, lng: number) => {
-    // Säg åt Leaflet att flyga till den nya positionen med en snygg animering
-    const js = `if (typeof map !== 'undefined') { map.flyTo([${lat}, ${lng}], 16, { animate: true, duration: 1 }); }; true;`;
-    webViewRef.current?.injectJavaScript(js);
-  };
+    const flyTo = (lat: number, lng: number, targetZoom?: number) => {
+      // Behåll alltid användarens nuvarande zoomnivå så att den aldrig återställs vid uppdateringar!
+      const js = `if (typeof map !== 'undefined') {
+        var z = ${targetZoom !== undefined ? targetZoom : 'map.getZoom()'};
+        map.flyTo([${lat}, ${lng}], z, { animate: true, duration: 0.8 });
+      }; true;`;
+      webViewRef.current?.injectJavaScript(js);
+    };
 
-  React.useImperativeHandle(ref, () => ({
-    focusOn: (lat: number, lng: number) => {
-      // Kartan är inte klar än (t.ex. vid kallstart från en avisering): vänta tills den laddats
-      if (!readyRef.current) {
-        pendingFocus.current = { lat, lng };
-        return;
-      }
-      flyTo(lat, lng);
-    }
-  }));
+    React.useImperativeHandle(ref, () => ({
+      focusOn: (lat: number, lng: number, targetZoom?: number) => {
+        if (!readyRef.current) {
+          pendingFocus.current = { lat, lng, targetZoom };
+          return;
+        }
+        flyTo(lat, lng, targetZoom);
+      },
+    }));
 
-
-  const html = `
+    // htmlSource memoiseras så att WebView ALDRIG laddar om sidan och återställer kartzoomen
+    const htmlSource = useMemo(
+      () => ({
+        html: `
     <!DOCTYPE html>
     <html>
     <head>
@@ -60,14 +66,13 @@ const LeafletMap = React.forwardRef<LeafletMapRef, Props>(({ centerLat, centerLn
       <style>
         body { padding: 0; margin: 0; }
         html, body, #map { height: 100vh; width: 100vw; }
-        /* Lätt dämpad färg-karta så att markörerna fortfarande syns tydligt, men med färg. */
         .leaflet-tile-pane { filter: grayscale(0.35) sepia(0.22) contrast(0.96) brightness(1.02); }
       </style>
     </head>
     <body>
       <div id="map"></div>
       <script>
-        var map = L.map('map', { zoomControl: false }).setView([${centerLat}, ${centerLng}], 12);
+        var map = L.map('map', { zoomControl: false }).setView([${initialCenterRef.current.lat}, ${initialCenterRef.current.lng}], 13);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           maxZoom: 19
         }).addTo(map);
@@ -191,45 +196,49 @@ const LeafletMap = React.forwardRef<LeafletMapRef, Props>(({ centerLat, centerLn
       </script>
     </body>
     </html>
-  `;
+  `,
+      }),
+      []
+    );
 
-  // Skicka in nya markörer via JS när React-staten ändras
-  useEffect(() => {
-    const js = `updateMarkers(${JSON.stringify(markers)}); true;`;
-    webViewRef.current?.injectJavaScript(js);
-  }, [markers]);
+    // Skicka in nya markörer via JS när React-staten ändras utan att påverka kartans zoom eller vy
+    useEffect(() => {
+      const js = `updateMarkers(${JSON.stringify(markers)}); true;`;
+      webViewRef.current?.injectJavaScript(js);
+    }, [markers]);
 
-  return (
-    <View style={styles.container}>
-      <WebView
-        ref={webViewRef}
-        source={{ html }}
-        style={styles.map}
-        scrollEnabled={false}
-        onMessage={(event) => {
-          try {
-            const payload = JSON.parse(event.nativeEvent.data);
-            if (payload?.type === 'markerPress' && onMarkerPress) {
-              const found = markers.find(m => m.id === String(payload.id));
-              if (found) onMarkerPress(found);
-            } else if (payload?.type === 'centerChanged' && onCenterChange) {
-              onCenterChange(Number(payload.lat), Number(payload.lng));
+    return (
+      <View style={styles.container}>
+        <WebView
+          ref={webViewRef}
+          source={htmlSource}
+          style={styles.map}
+          scrollEnabled={false}
+          onMessage={event => {
+            try {
+              const payload = JSON.parse(event.nativeEvent.data);
+              if (payload?.type === 'markerPress' && onMarkerPress) {
+                const found = markers.find(m => m.id === String(payload.id));
+                if (found) onMarkerPress(found);
+              } else if (payload?.type === 'centerChanged' && onCenterChange) {
+                onCenterChange(Number(payload.lat), Number(payload.lng));
+              }
+            } catch (_) {}
+          }}
+          onLoadEnd={() => {
+            readyRef.current = true;
+            webViewRef.current?.injectJavaScript(`updateMarkers(${JSON.stringify(markers)}); true;`);
+            if (pendingFocus.current) {
+              const { lat, lng, targetZoom } = pendingFocus.current;
+              pendingFocus.current = null;
+              flyTo(lat, lng, targetZoom);
             }
-          } catch (_) {}
-        }}
-        onLoadEnd={() => {
-          readyRef.current = true;
-          webViewRef.current?.injectJavaScript(`updateMarkers(${JSON.stringify(markers)}); true;`);
-          if (pendingFocus.current) {
-            const { lat, lng } = pendingFocus.current;
-            pendingFocus.current = null;
-            flyTo(lat, lng);
-          }
-        }}
-      />
-    </View>
-  );
-});
+          }}
+        />
+      </View>
+    );
+  }
+);
 
 export default LeafletMap;
 
@@ -240,5 +249,5 @@ const styles = StyleSheet.create({
   },
   map: {
     flex: 1,
-  }
+  },
 });
