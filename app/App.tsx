@@ -61,6 +61,7 @@ export default function App() {
   const [myMapIcon, setMyMapIcon] = useState<MapIconEmoji>(DEFAULT_MAP_ICON);
   const [photoViewer, setPhotoViewer] = useState<{
     shareId: number;
+    senderId?: number;
     senderName: string;
     message?: string | null;
     expiresAt?: string;
@@ -87,10 +88,12 @@ export default function App() {
     senderName: string,
     thumbUri?: string | null,
     message?: string | null,
-    expiresAt?: string
+    expiresAt?: string,
+    senderId?: number
   ) => {
     setPhotoViewer({
       shareId,
+      senderId,
       senderName,
       message,
       expiresAt,
@@ -886,7 +889,8 @@ export default function App() {
                     user.display_name,
                     myActivePhotoShare.photo_thumb,
                     myActivePhotoShare.message,
-                    myActivePhotoShare.expires_at
+                    myActivePhotoShare.expires_at,
+                    user.id
                   );
                   return;
                 }
@@ -896,7 +900,7 @@ export default function App() {
                 if (pos?.is_meeting_point) {
                   openMeetingPointDetails(pos);
                 } else if (pos && (pos.photo_thumb || pos.has_photo || pos.icon === '📷')) {
-                  openPhotoViewer(pos.id, pos.sender_name, pos.photo_thumb, pos.message, pos.expires_at);
+                  openPhotoViewer(pos.id, pos.sender_name, pos.photo_thumb, pos.message, pos.expires_at, pos.sender_id);
                 }
               }}
             />
@@ -970,7 +974,7 @@ export default function App() {
                     if (pos.is_meeting_point) {
                       openMeetingPointDetails(pos);
                     } else if (pos.photo_thumb || pos.has_photo) {
-                      openPhotoViewer(pos.id, pos.sender_name, pos.photo_thumb, pos.message, pos.expires_at);
+                      openPhotoViewer(pos.id, pos.sender_name, pos.photo_thumb, pos.message, pos.expires_at, pos.sender_id);
                     }
                   }}
                 >
@@ -1266,6 +1270,30 @@ export default function App() {
 
             {Boolean(photoViewer?.message) && (
               <Text style={styles.photoModalMessage}>💬 "{photoViewer?.message}"</Text>
+            )}
+
+            {Boolean(photoViewer?.senderId && photoViewer.senderId !== user?.id) && (
+              <TouchableOpacity
+                style={styles.photoModalReplyBtn}
+                activeOpacity={0.85}
+                onPress={() => {
+                  if (!photoViewer?.senderId) return;
+                  const target: AppContact = {
+                    id: String(photoViewer.senderId),
+                    userId: photoViewer.senderId,
+                    name: photoViewer.senderName,
+                    phoneNumber: '',
+                  };
+                  setPhotoViewer(null);
+                  setPingTarget([target]);
+                  setPingModalVisible(true);
+                }}
+              >
+                <FontAwesome6 name="camera" size={16} color="#fff" style={{ marginRight: 8 }} />
+                <Text style={styles.photoModalReplyText}>
+                  {i18n.t('phing_back_btn')}
+                </Text>
+              </TouchableOpacity>
             )}
 
             <TouchableOpacity
@@ -1606,8 +1634,23 @@ const styles = StyleSheet.create({
     marginTop: 10,
     textAlign: 'center',
   },
-  photoModalCloseBtn: {
+  photoModalReplyBtn: {
     marginTop: 14,
+    width: '100%',
+    height: 50,
+    backgroundColor: '#134e5e',
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  photoModalReplyText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  photoModalCloseBtn: {
+    marginTop: 10,
     width: '100%',
     height: 46,
     backgroundColor: '#f4f5f7',

@@ -43,6 +43,7 @@ export const en = {
   long_press_hint: 'Long press name to select multiple',
   ping_back: "Reply",
   reply: "Reply",
+  phing_back_btn: "Phing back",
   close: 'Close',
   optional_message_placeholder: "Optional message (e.g. Sitting at the cafe...)",
   share_with_message: "Share with message",
