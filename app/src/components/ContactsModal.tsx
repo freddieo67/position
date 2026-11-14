@@ -142,6 +142,20 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
   };
 
   const loadContactsInner = async (silent: boolean = false) => {
+    try {
+      const currentPerm = await Contacts.getPermissionsAsync();
+      if (currentPerm.status === 'undetermined') {
+        await new Promise<void>(resolve => {
+          Alert.alert(
+            i18n.t('contacts_pre_perm_title'),
+            i18n.t('contacts_pre_perm_desc'),
+            [{ text: i18n.t('continue'), onPress: () => resolve() }],
+            { cancelable: false }
+          );
+        });
+      }
+    } catch (_) {}
+
     const perm = await Contacts.requestPermissionsAsync();
     if (perm.status !== 'granted') {
       if (!silent) setErrorMsg(i18n.t('contacts_permission_needed'));

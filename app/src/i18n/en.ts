@@ -189,4 +189,6 @@ export const en = {
   limited_contacts_text: "You chose to share only selected contacts with Position. Missing a friend?",
   limited_contacts_btn: "Manage contacts ⚙️",
   limited_empty_settings_btn: "Missing a contact? Change here ⚙️",
+  contacts_pre_perm_title: "Find your friends 👥",
+  contacts_pre_perm_desc: "Position needs access to your contacts to find your friends. Please choose \"Allow Full Access\" in the next prompt so all friends appear automatically.",
 };

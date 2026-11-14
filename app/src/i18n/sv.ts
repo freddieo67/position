@@ -194,4 +194,6 @@ export const sv = {
   limited_contacts_text: "Du har valt att bara dela vissa kontakter med appen. Saknar du en vän?",
   limited_contacts_btn: "Hantera kontakter ⚙️",
   limited_empty_settings_btn: "Saknar du en kontakt? Ändra här ⚙️",
+  contacts_pre_perm_title: "Hitta dina vänner 👥",
+  contacts_pre_perm_desc: "Position behöver tillgång till dina kontakter för att hitta dina vänner. Välj gärna \"Tillåt full åtkomst\" i nästa ruta så syns dina kontakter automatiskt.",
 };
