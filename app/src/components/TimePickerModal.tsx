@@ -166,6 +166,19 @@ export default function TimePickerModal({
               {i18n.t('confirm_time_btn', { time: timeString }) || `Välj ${timeString}`}
             </Text>
           </TouchableOpacity>
+
+          {Boolean(initialTime) && (
+            <TouchableOpacity
+              style={styles.clearBtn}
+              onPress={() => {
+                onSelectTime('');
+                onClose();
+              }}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.clearBtnText}>Ta bort vald tid</Text>
+            </TouchableOpacity>
+          )}
         </TouchableOpacity>
       </TouchableOpacity>
     </Modal>
@@ -191,6 +204,17 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 10,
     elevation: 10,
+  },
+  clearBtn: {
+    marginTop: 10,
+    paddingVertical: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  clearBtnText: {
+    color: '#64748b',
+    fontSize: 14,
+    fontWeight: '600',
   },
   header: {
     flexDirection: 'row',
@@ -315,3 +339,4 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 });
+

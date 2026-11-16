@@ -25,7 +25,7 @@ import { registerForPushToken, getNotifications, refreshNotificationTexts } from
 import type * as NotificationsType from 'expo-notifications';
 import i18n, { syncSystemLocale } from './src/i18n';
 import mobileAds, { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
-import { fetchNearbyPlace, DetectedPlace, getMeetingTimeSuggestions } from './src/places';
+import { fetchNearbyPlace, DetectedPlace } from './src/places';
 const POLL_INTERVAL_MS = 30_000;
 const EMPTY_INBOX: Inbox = { positions: [], requests: [], outgoing: [], sharing: [], active_shares: [] };
 
@@ -981,8 +981,8 @@ export default function App() {
           </View>
         )}
 
-        {/* Logotyp högst upp på kartan (döljs när första kortet i karusellen dyker upp) */}
-        {!hasTopItems && (
+        {/* Logotyp högst upp på kartan (döljs när karusellkort visas eller när mötesplats sätts på kartan) */}
+        {!hasTopItems && !meetingDraft && (
           <View style={styles.logoHeader} pointerEvents="none">
             <Image
               source={require('./assets/logo-header.png')}
@@ -992,8 +992,8 @@ export default function App() {
           </View>
         )}
 
-        {/* Överst: vilka som delar med mig, vad jag delar och väntande förfrågningar */}
-        {hasTopItems && (
+        {/* Överst: vilka som delar med mig, vad jag delar och väntande förfrågningar (döljs också vid val av mötesplats) */}
+        {hasTopItems && !meetingDraft && (
           <View style={styles.topOverlay} pointerEvents="box-none">
             <ScrollView
               horizontal
@@ -1122,74 +1122,38 @@ export default function App() {
         {/* Knappar som ligger ovanpå kartan i botten */}
         {meetingDraft ? (
           <View style={[styles.meetingPickerBar, keyboardHeight > 0 && { bottom: keyboardHeight + 8 }]}>
-            {meetingPlace ? (
-              <View style={styles.detectedPlaceContainer}>
-                <Text style={styles.detectedPlaceEmoji}>{meetingPlace.emoji}</Text>
-                <View style={styles.detectedPlaceTextCol}>
-                  <Text style={styles.detectedPlaceName} numberOfLines={1}>
-                    {meetingPlace.name}
-                  </Text>
-                  {Boolean(meetingPlace.subtitle) && (
-                    <Text style={styles.detectedPlaceSub} numberOfLines={1}>
-                      {meetingPlace.subtitle}
-                    </Text>
-                  )}
-                </View>
+            {/* Plats & Välj tid i samma rad/knapp */}
+            <View style={styles.detectedPlaceContainer}>
+              <View style={styles.placeInfoCol}>
+                <Text style={styles.detectedPlaceEmoji}>
+                  {loadingPlace ? '🔍' : (meetingPlace ? meetingPlace.emoji : '📍')}
+                </Text>
+                <Text style={styles.detectedPlaceName} numberOfLines={1}>
+                  {loadingPlace
+                    ? i18n.t('searching_nearby_place')
+                    : (meetingPlace ? meetingPlace.name : i18n.t('move_map_instruction'))}
+                </Text>
               </View>
-            ) : loadingPlace ? (
-              <View style={styles.detectedPlaceLoading}>
-                <ActivityIndicator size="small" color="#0F4C5C" />
-                <Text style={styles.detectedPlaceLoadingText}>{i18n.t('searching_nearby_place')}</Text>
-              </View>
-            ) : (
-              <Text style={styles.meetingPickerHint}>{i18n.t('move_map_instruction')}</Text>
-            )}
 
-            {/* Snabbtider / Tidsväljare */}
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              keyboardShouldPersistTaps="handled"
-              contentContainerStyle={styles.timePillsScroll}
-            >
-              {getMeetingTimeSuggestions().map(timeOption => {
-                const isSelected = selectedMeetingTime === timeOption;
-                return (
-                  <TouchableOpacity
-                    key={timeOption}
-                    style={[styles.timePill, isSelected && styles.timePillActive]}
-                    activeOpacity={0.8}
-                    onPress={() => {
-                      setSelectedMeetingTime(prev => prev === timeOption ? null : timeOption);
-                    }}
-                  >
-                    <Text style={[styles.timePillText, isSelected && styles.timePillTextActive]}>
-                      {timeOption}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
               <TouchableOpacity
                 style={[
-                  styles.timePill,
-                  styles.timePickerTriggerPill,
-                  Boolean(selectedMeetingTime && selectedMeetingTime.startsWith('Kl')) && styles.timePillActive,
+                  styles.inlineTimeBtn,
+                  Boolean(selectedMeetingTime) && styles.inlineTimeBtnActive,
                 ]}
                 activeOpacity={0.8}
                 onPress={() => setTimePickerVisible(true)}
               >
                 <Text
                   style={[
-                    styles.timePillText,
-                    Boolean(selectedMeetingTime && selectedMeetingTime.startsWith('Kl')) && styles.timePillTextActive,
+                    styles.inlineTimeBtnText,
+                    Boolean(selectedMeetingTime) && styles.inlineTimeBtnTextActive,
                   ]}
+                  numberOfLines={1}
                 >
-                  {selectedMeetingTime && selectedMeetingTime.startsWith('Kl')
-                    ? `🕒 ${selectedMeetingTime}`
-                    : i18n.t('pick_custom_time')}
+                  {selectedMeetingTime ? selectedMeetingTime : '🕒 Välj tid'}
                 </Text>
               </TouchableOpacity>
-            </ScrollView>
+            </View>
 
             {/* Textmeddelande / Anteckning */}
             <View style={styles.meetingInputContainer}>
@@ -1895,73 +1859,51 @@ const styles = StyleSheet.create({
   detectedPlaceContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     backgroundColor: '#f1f5f9',
-    borderRadius: 12,
+    borderRadius: 14,
     paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginBottom: 10,
+    paddingVertical: 10,
+    marginBottom: 12,
     borderWidth: 1.5,
     borderColor: '#0F4C5C',
-    gap: 10,
+    gap: 8,
   },
-  detectedPlaceEmoji: {
-    fontSize: 24,
-  },
-  detectedPlaceTextCol: {
+  placeInfoCol: {
     flex: 1,
-  },
-  detectedPlaceName: {
-    fontSize: 14.5,
-    fontWeight: '700',
-    color: '#0f172a',
-  },
-  detectedPlaceSub: {
-    fontSize: 12,
-    color: '#64748b',
-    marginTop: 1,
-  },
-  detectedPlaceLoading: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
     gap: 8,
-    paddingVertical: 8,
-    marginBottom: 10,
   },
-  detectedPlaceLoadingText: {
-    fontSize: 13,
-    color: '#64748b',
-    fontWeight: '500',
+  detectedPlaceEmoji: {
+    fontSize: 22,
   },
-  timePillsScroll: {
-    flexDirection: 'row',
-    gap: 8,
-    paddingBottom: 10,
+  detectedPlaceName: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#0f172a',
+    flex: 1,
   },
-  timePill: {
+  inlineTimeBtn: {
     paddingVertical: 7,
     paddingHorizontal: 12,
-    borderRadius: 16,
+    borderRadius: 10,
     backgroundColor: '#ffffff',
     borderWidth: 1.5,
     borderColor: '#0F4C5C',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  timePillActive: {
+  inlineTimeBtnActive: {
     backgroundColor: '#0F4C5C',
   },
-  timePillText: {
-    fontSize: 12.5,
-    fontWeight: '600',
-    color: '#0f172a',
-  },
-  timePillTextActive: {
-    color: '#ffffff',
+  inlineTimeBtnText: {
+    fontSize: 13,
     fontWeight: '700',
+    color: '#0F4C5C',
   },
-  timePickerTriggerPill: {
-    backgroundColor: '#f1f5f9',
+  inlineTimeBtnTextActive: {
+    color: '#ffffff',
   },
   meetingInputContainer: {
     flexDirection: 'row',
