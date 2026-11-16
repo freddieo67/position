@@ -105,3 +105,31 @@ export async function fetchNearbyPlace(lat: number, lng: number): Promise<Detect
     clearTimeout(timeoutId);
   }
 }
+
+export function getMeetingTimeSuggestions(): string[] {
+  const now = new Date();
+  const suggestions: string[] = ['Nu direkt', 'Om 15 min', 'Om 30 min'];
+
+  // Hitta nästa hel- och halvtimme
+  const d = new Date(now.getTime() + 15 * 60 * 1000);
+  d.setSeconds(0, 0);
+  const m = d.getMinutes();
+  if (m > 0 && m <= 30) {
+    d.setMinutes(30);
+  } else {
+    d.setMinutes(0);
+    d.setHours(d.getHours() + (m > 30 ? 1 : 0));
+  }
+
+  for (let i = 0; i < 4; i++) {
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mm = String(d.getMinutes()).padStart(2, '0');
+    const timeStr = `Kl ${hh}:${mm}`;
+    if (!suggestions.includes(timeStr)) {
+      suggestions.push(timeStr);
+    }
+    d.setMinutes(d.getMinutes() + 30);
+  }
+  return suggestions;
+}
+

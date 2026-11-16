@@ -1,6 +1,6 @@
 import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { StyleSheet, Text, View, ActivityIndicator, TouchableOpacity, Platform, Alert, AppState, ScrollView, Image, Modal, Linking } from 'react-native';
+import { StyleSheet, Text, View, ActivityIndicator, TouchableOpacity, Platform, Alert, AppState, ScrollView, Image, Modal, Linking, Keyboard, TextInput } from 'react-native';
 import * as Location from 'expo-location';
 import { FontAwesome6 } from '@expo/vector-icons';
 import LeafletMap, { MapMarkerData, LeafletMapRef } from './src/components/LeafletMap';
@@ -12,6 +12,7 @@ import FlashMessModal from './src/components/FlashMessModal';
 import ShareBackModal from './src/components/ShareBackModal';
 import ReceivedPingModal, { ReceivedPingData } from './src/components/ReceivedPingModal';
 import IncomingRequestModal from './src/components/IncomingRequestModal';
+import TimePickerModal from './src/components/TimePickerModal';
 import { api, Inbox, IncomingPosition, IncomingRequest, User, ActiveShare } from './src/api';
 import { ApiError } from './src/config';
 import { clearUser, loadUser } from './src/session';
@@ -24,7 +25,7 @@ import { registerForPushToken, getNotifications, refreshNotificationTexts } from
 import type * as NotificationsType from 'expo-notifications';
 import i18n, { syncSystemLocale } from './src/i18n';
 import mobileAds, { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
-import { fetchNearbyPlace, DetectedPlace } from './src/places';
+import { fetchNearbyPlace, DetectedPlace, getMeetingTimeSuggestions } from './src/places';
 const POLL_INTERVAL_MS = 30_000;
 const EMPTY_INBOX: Inbox = { positions: [], requests: [], outgoing: [], sharing: [], active_shares: [] };
 
@@ -56,6 +57,10 @@ export default function App() {
   const [sendingMeeting, setSendingMeeting] = useState(false);
   const [meetingPlace, setMeetingPlace] = useState<DetectedPlace | null>(null);
   const [loadingPlace, setLoadingPlace] = useState(false);
+  const [meetingMessageText, setMeetingMessageText] = useState('');
+  const [selectedMeetingTime, setSelectedMeetingTime] = useState<string | null>(null);
+  const [timePickerVisible, setTimePickerVisible] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const placeLookupTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mapCenterRef = useRef<{ lat: number; lng: number } | null>(null);
   const [receivedPing, setReceivedPing] = useState<ReceivedPingData | null>(null);
@@ -688,7 +693,17 @@ export default function App() {
   };
 
   useEffect(() => {
+    const showEvt = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvt = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const s1 = Keyboard.addListener(showEvt, e => setKeyboardHeight(e.endCoordinates?.height || 260));
+    const s2 = Keyboard.addListener(hideEvt, () => setKeyboardHeight(0));
+    return () => { s1.remove(); s2.remove(); };
+  }, []);
+
+  useEffect(() => {
     if (meetingDraft) {
+      setMeetingMessageText(meetingDraft.message || '');
+      setSelectedMeetingTime(null);
       const center = mapCenterRef.current ?? (location ? { lat: location.coords.latitude, lng: location.coords.longitude } : null);
       if (center) {
         setLoadingPlace(true);
@@ -701,6 +716,9 @@ export default function App() {
       if (placeLookupTimeoutRef.current) clearTimeout(placeLookupTimeoutRef.current);
       setMeetingPlace(null);
       setLoadingPlace(false);
+      setMeetingMessageText('');
+      setSelectedMeetingTime(null);
+      Keyboard.dismiss();
     }
   }, [meetingDraft]);
 
@@ -710,7 +728,20 @@ export default function App() {
     if (!center) return;
     setSendingMeeting(true);
 
-    const effectiveMessage = meetingDraft.message || (meetingPlace ? meetingPlace.name : undefined);
+    const userParts: string[] = [];
+    if (selectedMeetingTime) userParts.push(selectedMeetingTime);
+    if (meetingMessageText.trim()) userParts.push(meetingMessageText.trim());
+    const userText = userParts.join(' • ');
+
+    let finalMessage: string | undefined = undefined;
+    if (meetingPlace && userText) {
+      finalMessage = `${meetingPlace.name} • ${userText}`;
+    } else if (meetingPlace) {
+      finalMessage = meetingPlace.name;
+    } else if (userText) {
+      finalMessage = userText;
+    }
+
     const effectiveIcon = meetingPlace ? meetingPlace.emoji : '📍';
 
     try {
@@ -722,7 +753,7 @@ export default function App() {
             latitude: center.lat,
             longitude: center.lng,
             accuracy_meters: null,
-            message: effectiveMessage,
+            message: finalMessage,
             duration_minutes: meetingDraft.durationMinutes,
             icon: effectiveIcon,
             is_meeting_point: true,
@@ -733,6 +764,9 @@ export default function App() {
       const names = meetingDraft.contacts.map(c => c.name).join(', ');
       setMeetingDraft(null);
       setMeetingPlace(null);
+      setMeetingMessageText('');
+      setSelectedMeetingTime(null);
+      Keyboard.dismiss();
       Alert.alert(i18n.t('sent'), i18n.t('meeting_point_sent', { names }));
       refreshRef.current();
     } catch (error) {
@@ -1087,7 +1121,7 @@ export default function App() {
 
         {/* Knappar som ligger ovanpå kartan i botten */}
         {meetingDraft ? (
-          <View style={styles.meetingPickerBar}>
+          <View style={[styles.meetingPickerBar, keyboardHeight > 0 && { bottom: keyboardHeight + 8 }]}>
             {meetingPlace ? (
               <View style={styles.detectedPlaceContainer}>
                 <Text style={styles.detectedPlaceEmoji}>{meetingPlace.emoji}</Text>
@@ -1110,6 +1144,76 @@ export default function App() {
             ) : (
               <Text style={styles.meetingPickerHint}>{i18n.t('move_map_instruction')}</Text>
             )}
+
+            {/* Snabbtider / Tidsväljare */}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={styles.timePillsScroll}
+            >
+              {getMeetingTimeSuggestions().map(timeOption => {
+                const isSelected = selectedMeetingTime === timeOption;
+                return (
+                  <TouchableOpacity
+                    key={timeOption}
+                    style={[styles.timePill, isSelected && styles.timePillActive]}
+                    activeOpacity={0.8}
+                    onPress={() => {
+                      setSelectedMeetingTime(prev => prev === timeOption ? null : timeOption);
+                    }}
+                  >
+                    <Text style={[styles.timePillText, isSelected && styles.timePillTextActive]}>
+                      {timeOption}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+              <TouchableOpacity
+                style={[
+                  styles.timePill,
+                  styles.timePickerTriggerPill,
+                  Boolean(selectedMeetingTime && selectedMeetingTime.startsWith('Kl')) && styles.timePillActive,
+                ]}
+                activeOpacity={0.8}
+                onPress={() => setTimePickerVisible(true)}
+              >
+                <Text
+                  style={[
+                    styles.timePillText,
+                    Boolean(selectedMeetingTime && selectedMeetingTime.startsWith('Kl')) && styles.timePillTextActive,
+                  ]}
+                >
+                  {selectedMeetingTime && selectedMeetingTime.startsWith('Kl')
+                    ? `🕒 ${selectedMeetingTime}`
+                    : i18n.t('pick_custom_time')}
+                </Text>
+              </TouchableOpacity>
+            </ScrollView>
+
+            {/* Textmeddelande / Anteckning */}
+            <View style={styles.meetingInputContainer}>
+              <TextInput
+                style={styles.meetingInputField}
+                placeholder={i18n.t('meeting_note_placeholder')}
+                placeholderTextColor="#94a3b8"
+                value={meetingMessageText}
+                onChangeText={setMeetingMessageText}
+                maxLength={80}
+                returnKeyType="done"
+                onSubmitEditing={() => Keyboard.dismiss()}
+              />
+              {Boolean(meetingMessageText) && (
+                <TouchableOpacity
+                  style={styles.meetingInputClearBtn}
+                  onPress={() => setMeetingMessageText('')}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Text style={styles.meetingInputClearText}>✕</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
             <View style={styles.meetingPickerActions}>
               <TouchableOpacity
                 style={styles.meetingCancelBtn}
@@ -1230,6 +1334,13 @@ export default function App() {
           setFlashModalVisible(false);
           refreshRef.current();
         }}
+      />
+
+      <TimePickerModal
+        visible={timePickerVisible}
+        initialTime={selectedMeetingTime}
+        onClose={() => setTimePickerVisible(false)}
+        onSelectTime={(time) => setSelectedMeetingTime(time)}
       />
 
       <ShareBackModal
@@ -1821,6 +1932,62 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#64748b',
     fontWeight: '500',
+  },
+  timePillsScroll: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingBottom: 10,
+  },
+  timePill: {
+    paddingVertical: 7,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    backgroundColor: '#ffffff',
+    borderWidth: 1.5,
+    borderColor: '#0F4C5C',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  timePillActive: {
+    backgroundColor: '#0F4C5C',
+  },
+  timePillText: {
+    fontSize: 12.5,
+    fontWeight: '600',
+    color: '#0f172a',
+  },
+  timePillTextActive: {
+    color: '#ffffff',
+    fontWeight: '700',
+  },
+  timePickerTriggerPill: {
+    backgroundColor: '#f1f5f9',
+  },
+  meetingInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f1f5f9',
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#0F4C5C',
+    paddingHorizontal: 12,
+    height: 44,
+    marginBottom: 12,
+  },
+  meetingInputField: {
+    flex: 1,
+    fontSize: 13.5,
+    color: '#0f172a',
+    paddingVertical: 0,
+  },
+  meetingInputClearBtn: {
+    padding: 4,
+    marginLeft: 6,
+  },
+  meetingInputClearText: {
+    fontSize: 14,
+    color: '#64748b',
+    fontWeight: 'bold',
   },
   meetingPickerActions: {
     flexDirection: 'row',
