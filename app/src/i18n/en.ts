@@ -182,6 +182,7 @@ export const en = {
   meeting_point_msg_placeholder: "E.g. Meet at the entrance at 6 PM...",
   pick_on_map_btn: "Pick location on map 📍",
   move_map_instruction: "Move the map so the pin points to the meeting spot",
+  searching_nearby_place: "Searching location...",
   send_meeting_point_btn: "Send meeting spot 📍",
   meeting_point_sent: "Meeting spot sent to %{names}!",
   meeting_with_name: "Meeting point with %{name}",

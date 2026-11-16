@@ -24,6 +24,7 @@ import { registerForPushToken, getNotifications, refreshNotificationTexts } from
 import type * as NotificationsType from 'expo-notifications';
 import i18n, { syncSystemLocale } from './src/i18n';
 import mobileAds, { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
+import { fetchNearbyPlace, DetectedPlace } from './src/places';
 const POLL_INTERVAL_MS = 30_000;
 const EMPTY_INBOX: Inbox = { positions: [], requests: [], outgoing: [], sharing: [], active_shares: [] };
 
@@ -53,6 +54,9 @@ export default function App() {
     message?: string;
   } | null>(null);
   const [sendingMeeting, setSendingMeeting] = useState(false);
+  const [meetingPlace, setMeetingPlace] = useState<DetectedPlace | null>(null);
+  const [loadingPlace, setLoadingPlace] = useState(false);
+  const placeLookupTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mapCenterRef = useRef<{ lat: number; lng: number } | null>(null);
   const [receivedPing, setReceivedPing] = useState<ReceivedPingData | null>(null);
   const [inbox, setInbox] = useState<Inbox>(EMPTY_INBOX);
@@ -683,11 +687,32 @@ export default function App() {
     );
   };
 
+  useEffect(() => {
+    if (meetingDraft) {
+      const center = mapCenterRef.current ?? (location ? { lat: location.coords.latitude, lng: location.coords.longitude } : null);
+      if (center) {
+        setLoadingPlace(true);
+        fetchNearbyPlace(center.lat, center.lng).then(place => {
+          setMeetingPlace(place);
+          setLoadingPlace(false);
+        });
+      }
+    } else {
+      if (placeLookupTimeoutRef.current) clearTimeout(placeLookupTimeoutRef.current);
+      setMeetingPlace(null);
+      setLoadingPlace(false);
+    }
+  }, [meetingDraft]);
+
   const confirmSendMeetingPoint = async () => {
     if (!user || !meetingDraft || sendingMeeting) return;
     const center = mapCenterRef.current ?? (location ? { lat: location.coords.latitude, lng: location.coords.longitude } : null);
     if (!center) return;
     setSendingMeeting(true);
+
+    const effectiveMessage = meetingDraft.message || (meetingPlace ? meetingPlace.name : undefined);
+    const effectiveIcon = meetingPlace ? meetingPlace.emoji : '📍';
+
     try {
       await Promise.all(
         meetingDraft.contacts.map(c =>
@@ -697,9 +722,9 @@ export default function App() {
             latitude: center.lat,
             longitude: center.lng,
             accuracy_meters: null,
-            message: meetingDraft.message,
+            message: effectiveMessage,
             duration_minutes: meetingDraft.durationMinutes,
-            icon: '📍',
+            icon: effectiveIcon,
             is_meeting_point: true,
           })
         )
@@ -707,6 +732,7 @@ export default function App() {
       recordContactUsage(user.id, meetingDraft.contacts.map(c => c.userId));
       const names = meetingDraft.contacts.map(c => c.name).join(', ');
       setMeetingDraft(null);
+      setMeetingPlace(null);
       Alert.alert(i18n.t('sent'), i18n.t('meeting_point_sent', { names }));
       refreshRef.current();
     } catch (error) {
@@ -841,6 +867,15 @@ export default function App() {
               centerLng={location.coords.longitude}
               onCenterChange={(lat, lng) => {
                 mapCenterRef.current = { lat, lng };
+                if (meetingDraft) {
+                  if (placeLookupTimeoutRef.current) clearTimeout(placeLookupTimeoutRef.current);
+                  setLoadingPlace(true);
+                  placeLookupTimeoutRef.current = setTimeout(async () => {
+                    const place = await fetchNearbyPlace(lat, lng);
+                    setMeetingPlace(place);
+                    setLoadingPlace(false);
+                  }, 400);
+                }
               }}
               markers={[
                 {
@@ -1053,7 +1088,28 @@ export default function App() {
         {/* Knappar som ligger ovanpå kartan i botten */}
         {meetingDraft ? (
           <View style={styles.meetingPickerBar}>
-            <Text style={styles.meetingPickerHint}>{i18n.t('move_map_instruction')}</Text>
+            {meetingPlace ? (
+              <View style={styles.detectedPlaceContainer}>
+                <Text style={styles.detectedPlaceEmoji}>{meetingPlace.emoji}</Text>
+                <View style={styles.detectedPlaceTextCol}>
+                  <Text style={styles.detectedPlaceName} numberOfLines={1}>
+                    {meetingPlace.name}
+                  </Text>
+                  {Boolean(meetingPlace.subtitle) && (
+                    <Text style={styles.detectedPlaceSub} numberOfLines={1}>
+                      {meetingPlace.subtitle}
+                    </Text>
+                  )}
+                </View>
+              </View>
+            ) : loadingPlace ? (
+              <View style={styles.detectedPlaceLoading}>
+                <ActivityIndicator size="small" color="#0F4C5C" />
+                <Text style={styles.detectedPlaceLoadingText}>{i18n.t('searching_nearby_place')}</Text>
+              </View>
+            ) : (
+              <Text style={styles.meetingPickerHint}>{i18n.t('move_map_instruction')}</Text>
+            )}
             <View style={styles.meetingPickerActions}>
               <TouchableOpacity
                 style={styles.meetingCancelBtn}
@@ -1724,6 +1780,47 @@ const styles = StyleSheet.create({
     color: '#222',
     textAlign: 'center',
     marginBottom: 10,
+  },
+  detectedPlaceContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f1f5f9',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginBottom: 10,
+    borderWidth: 1.5,
+    borderColor: '#0F4C5C',
+    gap: 10,
+  },
+  detectedPlaceEmoji: {
+    fontSize: 24,
+  },
+  detectedPlaceTextCol: {
+    flex: 1,
+  },
+  detectedPlaceName: {
+    fontSize: 14.5,
+    fontWeight: '700',
+    color: '#0f172a',
+  },
+  detectedPlaceSub: {
+    fontSize: 12,
+    color: '#64748b',
+    marginTop: 1,
+  },
+  detectedPlaceLoading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 8,
+    marginBottom: 10,
+  },
+  detectedPlaceLoadingText: {
+    fontSize: 13,
+    color: '#64748b',
+    fontWeight: '500',
   },
   meetingPickerActions: {
     flexDirection: 'row',

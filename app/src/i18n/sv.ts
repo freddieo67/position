@@ -187,6 +187,7 @@ export const sv = {
   meeting_point_msg_placeholder: "T.ex. Ses vid entrén kl 18...",
   pick_on_map_btn: "Välj plats på kartan 📍",
   move_map_instruction: "Flytta kartan så nålen pekar på mötesplatsen",
+  searching_nearby_place: "Söker plats...",
   send_meeting_point_btn: "Skicka mötesplats 📍",
   meeting_point_sent: "Mötesplats skickad till %{names}!",
   meeting_with_name: "Mötesplats med %{name}",

@@ -72,9 +72,13 @@ const LeafletMap = React.forwardRef<LeafletMapRef, Props>(
     <body>
       <div id="map"></div>
       <script>
-        var map = L.map('map', { zoomControl: false }).setView([${initialCenterRef.current.lat}, ${initialCenterRef.current.lng}], 13);
+        var map = L.map('map', {
+          zoomControl: false,
+          maxZoom: 22
+        }).setView([${initialCenterRef.current.lat}, ${initialCenterRef.current.lng}], 13);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          maxZoom: 19
+          maxZoom: 22,
+          maxNativeZoom: 19
         }).addTo(map);
 
         map.on('moveend', function() {
