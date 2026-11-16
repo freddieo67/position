@@ -259,7 +259,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 22,
     borderWidth: 1.5,
-    borderColor: '#cbd5e1',
+    borderColor: '#134e5e',
     backgroundColor: '#fff',
   },
   chipText: {
@@ -276,6 +276,8 @@ const styles = StyleSheet.create({
     paddingRight: 6,
     height: 52,
     marginBottom: 24,
+    borderWidth: 1.5,
+    borderColor: '#134e5e',
   },
   inputField: {
     flex: 1,

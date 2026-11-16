@@ -52,6 +52,7 @@ export default function PingModal({
   const [selectedDuration, setSelectedDuration] = useState<15 | 30 | 60>(15);
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
+  const isLaunchingRef = useRef(false);
 
   useEffect(() => {
     if (visible) {
@@ -61,6 +62,18 @@ export default function PingModal({
       setProcessingPhoto(false);
       setSelectedDuration(15);
       setIsKeyboardOpen(false);
+      isLaunchingRef.current = false;
+
+      // Återställ eventuellt avbrutet eller väntande kameraresultat på Android
+      if (Platform.OS === 'android') {
+        ImagePicker.getPendingResultAsync()
+          .then((res: any) => {
+            if (res && !res.error && !res.canceled && res.assets?.[0]?.uri) {
+              processSelectedAsset(res.assets[0].uri);
+            }
+          })
+          .catch(() => {});
+      }
     }
   }, [visible]);
 
@@ -115,8 +128,13 @@ export default function PingModal({
   };
 
   const pickFromCamera = async () => {
+    if (isLaunchingRef.current) return;
+    isLaunchingRef.current = true;
     try {
-      const perm = await ImagePicker.requestCameraPermissionsAsync();
+      let perm = await ImagePicker.getCameraPermissionsAsync();
+      if (!perm.granted) {
+        perm = await ImagePicker.requestCameraPermissionsAsync();
+      }
       if (!perm.granted) {
         Alert.alert(i18n.t('permission_missing_title'), i18n.t('camera_permission_needed'));
         return;
@@ -124,6 +142,7 @@ export default function PingModal({
       const res = await ImagePicker.launchCameraAsync({
         mediaTypes: ['images'],
         quality: 0.8,
+        allowsEditing: false,
       });
       if (!res.canceled && res.assets?.[0]?.uri) {
         await processSelectedAsset(res.assets[0].uri);
@@ -131,12 +150,19 @@ export default function PingModal({
     } catch (e) {
       console.warn('Kamerafel:', e);
       Alert.alert(i18n.t('error'), i18n.t('camera_error'));
+    } finally {
+      isLaunchingRef.current = false;
     }
   };
 
   const pickFromGallery = async () => {
+    if (isLaunchingRef.current) return;
+    isLaunchingRef.current = true;
     try {
-      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      let perm = await ImagePicker.getMediaLibraryPermissionsAsync();
+      if (!perm.granted) {
+        perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      }
       if (!perm.granted) {
         Alert.alert(i18n.t('permission_missing_title'), i18n.t('gallery_permission_needed'));
         return;
@@ -144,6 +170,7 @@ export default function PingModal({
       const res = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
         quality: 0.8,
+        allowsMultipleSelection: false,
       });
       if (!res.canceled && res.assets?.[0]?.uri) {
         await processSelectedAsset(res.assets[0].uri);
@@ -151,6 +178,8 @@ export default function PingModal({
     } catch (e) {
       console.warn('Gallerifel:', e);
       Alert.alert(i18n.t('error'), i18n.t('gallery_error'));
+    } finally {
+      isLaunchingRef.current = false;
     }
   };
 
@@ -223,29 +252,29 @@ export default function PingModal({
 
                 <View style={styles.actionCardsRow}>
                   <TouchableOpacity
-                    style={styles.actionCardTeal}
+                    style={styles.actionCard}
                     onPress={pickFromCamera}
                     disabled={loading || processingPhoto}
                     activeOpacity={0.8}
                   >
                     {processingPhoto ? (
-                      <ActivityIndicator color="#fff" size="small" />
+                      <ActivityIndicator color="#134e5e" size="small" />
                     ) : (
                       <>
-                        <FontAwesome6 name="camera" size={26} color="#fff" />
-                        <Text style={styles.actionCardTealText}>{i18n.t('take_a_photo')}</Text>
+                        <FontAwesome6 name="camera" size={26} color="#134e5e" />
+                        <Text style={styles.actionCardText}>{i18n.t('take_a_photo')}</Text>
                       </>
                     )}
                   </TouchableOpacity>
 
                   <TouchableOpacity
-                    style={styles.actionCardGrey}
+                    style={styles.actionCard}
                     onPress={pickFromGallery}
                     disabled={loading || processingPhoto}
                     activeOpacity={0.8}
                   >
-                    <FontAwesome6 name="image" size={26} color="#0F4C5C" />
-                    <Text style={styles.actionCardGreyText}>
+                    <FontAwesome6 name="image" size={26} color="#134e5e" />
+                    <Text style={styles.actionCardText}>
                       {i18n.t('choose_from_gallery_btn')}
                     </Text>
                   </TouchableOpacity>
@@ -402,21 +431,7 @@ const styles = StyleSheet.create({
     gap: 12,
     marginBottom: 26,
   },
-  actionCardTeal: {
-    flex: 1,
-    height: 115,
-    borderRadius: 16,
-    backgroundColor: '#0F4C5C',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-  },
-  actionCardTealText: {
-    color: '#fff',
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  actionCardGrey: {
+  actionCard: {
     flex: 1,
     height: 115,
     borderRadius: 16,
@@ -424,8 +439,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
+    borderWidth: 1.5,
+    borderColor: '#134e5e',
   },
-  actionCardGreyText: {
+  actionCardText: {
     color: '#0f172a',
     fontSize: 15,
     fontWeight: '700',
@@ -472,9 +489,11 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: '#134e5e',
   },
   durationBtnActive: {
-    backgroundColor: '#0F4C5C',
+    backgroundColor: '#134e5e',
   },
   durationBtnInactive: {
     backgroundColor: '#f1f5f9',
@@ -498,11 +517,13 @@ const styles = StyleSheet.create({
     fontSize: 14.5,
     color: '#0f172a',
     marginBottom: 16,
+    borderWidth: 1.5,
+    borderColor: '#134e5e',
   },
   primarySendBtn: {
     height: 50,
     borderRadius: 12,
-    backgroundColor: '#0F4C5C',
+    backgroundColor: '#134e5e',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',

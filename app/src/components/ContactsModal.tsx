@@ -430,24 +430,6 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
                           </TouchableOpacity>
                         ))}
                       </View>
-
-                      {/* Primary Button: Dela position */}
-                      <TouchableOpacity
-                        style={styles.primaryActionButton}
-                        activeOpacity={0.85}
-                        onPress={() =>
-                          onSelect(
-                            chosenContacts,
-                            'none',
-                            undefined,
-                            selectedDuration,
-                            selectedIcon
-                          )
-                        }
-                      >
-                        <Text style={styles.primaryActionButtonIcon}>📍</Text>
-                        <Text style={styles.primaryActionButtonText}>{i18n.t('share_position_btn_text')}</Text>
-                      </TouchableOpacity>
                     </>
                   )}
 
@@ -526,6 +508,26 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
                       <Text style={styles.sendArrowBtnText}>→</Text>
                     </TouchableOpacity>
                   </View>
+
+                  {/* Primary Button: Dela position */}
+                  {mode === 'send' && (
+                    <TouchableOpacity
+                      style={styles.primaryActionButton}
+                      activeOpacity={0.85}
+                      onPress={() =>
+                        onSelect(
+                          chosenContacts,
+                          'none',
+                          undefined,
+                          selectedDuration,
+                          selectedIcon
+                        )
+                      }
+                    >
+                      <Text style={styles.primaryActionButtonIcon}>📍</Text>
+                      <Text style={styles.primaryActionButtonText}>{i18n.t('share_position_btn_text')}</Text>
+                    </TouchableOpacity>
+                  )}
 
                   {/* Map Icon Row */}
                   {mode === 'send' && (
@@ -1071,6 +1073,8 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     padding: 4,
     marginBottom: 20,
+    borderWidth: 1.5,
+    borderColor: '#134e5e',
   },
   segmentBtn: {
     flex: 1,
@@ -1103,9 +1107,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#f1f5f9',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: '#134e5e',
   },
   durationPillActive: {
     backgroundColor: '#134e5e',
+    borderColor: '#134e5e',
   },
   durationPillText: {
     fontSize: 15,
@@ -1142,7 +1149,7 @@ const styles = StyleSheet.create({
   },
   chip: {
     borderWidth: 1.5,
-    borderColor: '#cbd5e1',
+    borderColor: '#134e5e',
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 9,
@@ -1162,6 +1169,8 @@ const styles = StyleSheet.create({
     paddingRight: 6,
     height: 50,
     marginBottom: 18,
+    borderWidth: 1.5,
+    borderColor: '#134e5e',
   },
   input: {
     flex: 1,
@@ -1176,6 +1185,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#0f172a',
     marginBottom: 18,
+    borderWidth: 1.5,
+    borderColor: '#134e5e',
   },
   sendArrowBtn: {
     width: 40,
