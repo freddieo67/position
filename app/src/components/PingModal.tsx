@@ -52,7 +52,16 @@ export default function PingModal({
   const [selectedDuration, setSelectedDuration] = useState<15 | 30 | 60>(15);
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
-  const isLaunchingRef = useRef(false);
+  const lastLaunchTimeRef = useRef(0);
+
+  const canLaunch = () => {
+    const now = Date.now();
+    if (now - lastLaunchTimeRef.current < 1500) {
+      return false;
+    }
+    lastLaunchTimeRef.current = now;
+    return true;
+  };
 
   useEffect(() => {
     if (visible) {
@@ -62,7 +71,7 @@ export default function PingModal({
       setProcessingPhoto(false);
       setSelectedDuration(15);
       setIsKeyboardOpen(false);
-      isLaunchingRef.current = false;
+      lastLaunchTimeRef.current = 0;
 
       // Återställ eventuellt avbrutet eller väntande kameraresultat på Android
       if (Platform.OS === 'android') {
@@ -101,18 +110,16 @@ export default function PingModal({
   const processSelectedAsset = async (uri: string) => {
     setProcessingPhoto(true);
     try {
-      const [thumbRes, fullRes] = await Promise.all([
-        ImageManipulator.manipulateAsync(
-          uri,
-          [{ resize: { width: 160 } }],
-          { compress: 0.65, format: ImageManipulator.SaveFormat.JPEG, base64: true }
-        ),
-        ImageManipulator.manipulateAsync(
-          uri,
-          [{ resize: { width: 900 } }],
-          { compress: 0.68, format: ImageManipulator.SaveFormat.JPEG, base64: true }
-        ),
-      ]);
+      const thumbRes = await ImageManipulator.manipulateAsync(
+        uri,
+        [{ resize: { width: 160 } }],
+        { compress: 0.65, format: ImageManipulator.SaveFormat.JPEG, base64: true }
+      );
+      const fullRes = await ImageManipulator.manipulateAsync(
+        uri,
+        [{ resize: { width: 900 } }],
+        { compress: 0.68, format: ImageManipulator.SaveFormat.JPEG, base64: true }
+      );
       if (thumbRes.base64) {
         setPhotoThumb(`data:image/jpeg;base64,${thumbRes.base64}`);
       }
@@ -128,8 +135,7 @@ export default function PingModal({
   };
 
   const pickFromCamera = async () => {
-    if (isLaunchingRef.current) return;
-    isLaunchingRef.current = true;
+    if (!canLaunch()) return;
     try {
       let perm = await ImagePicker.getCameraPermissionsAsync();
       if (!perm.granted) {
@@ -150,22 +156,21 @@ export default function PingModal({
     } catch (e) {
       console.warn('Kamerafel:', e);
       Alert.alert(i18n.t('error'), i18n.t('camera_error'));
-    } finally {
-      isLaunchingRef.current = false;
     }
   };
 
   const pickFromGallery = async () => {
-    if (isLaunchingRef.current) return;
-    isLaunchingRef.current = true;
+    if (!canLaunch()) return;
     try {
-      let perm = await ImagePicker.getMediaLibraryPermissionsAsync();
-      if (!perm.granted) {
-        perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      }
-      if (!perm.granted) {
-        Alert.alert(i18n.t('permission_missing_title'), i18n.t('gallery_permission_needed'));
-        return;
+      if (Platform.OS === 'ios') {
+        let perm = await ImagePicker.getMediaLibraryPermissionsAsync();
+        if (!perm.granted) {
+          perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        }
+        if (!perm.granted) {
+          Alert.alert(i18n.t('permission_missing_title'), i18n.t('gallery_permission_needed'));
+          return;
+        }
       }
       const res = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
@@ -178,8 +183,6 @@ export default function PingModal({
     } catch (e) {
       console.warn('Gallerifel:', e);
       Alert.alert(i18n.t('error'), i18n.t('gallery_error'));
-    } finally {
-      isLaunchingRef.current = false;
     }
   };
 
@@ -215,7 +218,7 @@ export default function PingModal({
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <KeyboardAvoidingView
         style={styles.overlay}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <TouchableOpacity
           style={styles.backdrop}

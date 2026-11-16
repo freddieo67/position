@@ -57,10 +57,11 @@ interface ContactsModalProps {
   ) => void;
 }
 
-const formatShortName = (name: string) => {
+const formatShortName = (name?: string) => {
+  if (!name) return '';
   const parts = name.trim().split(/\s+/);
   if (parts.length <= 1) return parts[0] || '';
-  return `${parts[0]} ${parts[1].charAt(0)}.`;
+  return `${parts[0]} ${parts[1]?.charAt(0) || ''}.`;
 };
 
 const QUICK_SIGNALS = [
@@ -129,14 +130,19 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
 
     const appStateSub = AppState.addEventListener('change', state => {
       if (state === 'active') {
-        loadContactsInner(true).catch(() => {});
+        setContacts(current => {
+          if (current.length === 0) {
+            loadContactsInner(true).catch(() => {});
+          }
+          return current;
+        });
       }
     });
     return () => appStateSub.remove();
   }, [visible]);
 
   const sortAlphabetically = (list: AppContact[]) =>
-    [...list].sort((a, b) => a.name.localeCompare(b.name, 'sv'));
+    [...list].sort((a, b) => (a.name || '').localeCompare(b.name || '', 'sv'));
 
   const checkLimitedStatus = async () => {
     try {
@@ -211,7 +217,11 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
     const entries = data.flatMap(c =>
       (c.phoneNumbers ?? [])
         .filter(p => !!p.number)
-        .map(p => ({ id: String(c.id), name: c.name, phone: normalizePhone(p.number!) }))
+        .map(p => ({
+          id: String(c.id),
+          name: (c.name || `${c.firstName || ''} ${c.lastName || ''}`.trim() || p.number || 'Okänd').trim(),
+          phone: normalizePhone(p.number!),
+        }))
     );
     if (entries.length === 0) {
       setContacts([]);
@@ -281,10 +291,21 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent={true} onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      animationType="slide"
+      transparent={true}
+      onRequestClose={() => {
+        if (chosenContacts.length > 0) {
+          setChosenContacts([]);
+        } else {
+          onClose();
+        }
+      }}
+    >
       <KeyboardAvoidingView
         style={styles.overlay}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <TouchableOpacity
           style={styles.backdrop}
@@ -1069,22 +1090,22 @@ const styles = StyleSheet.create({
   },
   segmentedContainer: {
     flexDirection: 'row',
-    backgroundColor: '#f1f5f9',
-    borderRadius: 14,
-    padding: 4,
+    gap: 10,
     marginBottom: 20,
-    borderWidth: 1.5,
-    borderColor: '#134e5e',
   },
   segmentBtn: {
     flex: 1,
-    paddingVertical: 10,
-    borderRadius: 10,
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: '#f1f5f9',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: '#134e5e',
   },
   segmentBtnActive: {
     backgroundColor: '#134e5e',
+    borderColor: '#134e5e',
   },
   segmentText: {
     fontSize: 15,
