@@ -66,8 +66,7 @@ const LeafletMap = React.forwardRef<LeafletMapRef, Props>(
       <style>
         body { padding: 0; margin: 0; }
         html, body, #map { height: 100vh; width: 100vw; }
-        /* Klara och tydliga färger utan beige/sepia-filter */
-        .leaflet-tile-pane { filter: contrast(1.04) brightness(1.01); }
+        .leaflet-tile-pane { filter: grayscale(0.35) sepia(0.22) contrast(0.96) brightness(1.02); }
       </style>
     </head>
     <body>
@@ -77,8 +76,7 @@ const LeafletMap = React.forwardRef<LeafletMapRef, Props>(
           zoomControl: false,
           maxZoom: 22
         }).setView([${initialCenterRef.current.lat}, ${initialCenterRef.current.lng}], 13);
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-          subdomains: 'abcd',
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           maxZoom: 22,
           maxNativeZoom: 19
         }).addTo(map);
@@ -229,7 +227,7 @@ const LeafletMap = React.forwardRef<LeafletMapRef, Props>(
               } else if (payload?.type === 'centerChanged' && onCenterChange) {
                 onCenterChange(Number(payload.lat), Number(payload.lng));
               }
-            } catch (_) { }
+            } catch (_) {}
           }}
           onLoadEnd={() => {
             readyRef.current = true;
