@@ -11,7 +11,7 @@ on:
 jobs:
   build-and-submit:
     name: Bygg iOS på Mac & Ladda upp till TestFlight
-    runs-on: macos-14
+    runs-on: macos-latest
     timeout-minutes: 60
 
     steps:
@@ -59,3 +59,4 @@ jobs:
           name: app-ios-testflight
           path: app/build/app.ipa
           if-no-files-found: ignore
+
