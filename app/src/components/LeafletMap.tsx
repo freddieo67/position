@@ -66,7 +66,7 @@ const LeafletMap = React.forwardRef<LeafletMapRef, Props>(
       <style>
         body { padding: 0; margin: 0; }
         html, body, #map { height: 100vh; width: 100vw; }
-        .leaflet-tile-pane { filter: grayscale(0.35) sepia(0.22) contrast(0.96) brightness(1.02); }
+        .leaflet-tile-pane { filter: grayscale(0.18) sepia(0.11) contrast(0.98) brightness(1.01); }
       </style>
     </head>
     <body>
