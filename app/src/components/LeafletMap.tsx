@@ -229,7 +229,7 @@ const LeafletMap = React.forwardRef<LeafletMapRef, Props>(
               } else if (payload?.type === 'centerChanged' && onCenterChange) {
                 onCenterChange(Number(payload.lat), Number(payload.lng));
               }
-            } catch (_) {}
+            } catch (_) { }
           }}
           onLoadEnd={() => {
             readyRef.current = true;
