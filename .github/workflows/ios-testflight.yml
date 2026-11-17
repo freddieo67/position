@@ -1,0 +1,61 @@
+name: Bygg & Skicka till TestFlight
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_number:
+        description: 'iOS Build Number (valfritt, lämna tomt för app.json värde)'
+        required: false
+        default: ''
+
+jobs:
+  build-and-submit:
+    name: Bygg iOS på Mac & Ladda upp till TestFlight
+    runs-on: macos-14
+    timeout-minutes: 60
+
+    steps:
+      - name: 1. Klona repository
+        uses: actions/checkout@v4
+
+      - name: 2. Konfigurera Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: app/package.json
+
+      - name: 3. Installera EAS CLI
+        run: npm install -g eas-cli
+
+      - name: 4. Installera projektberoenden
+        working-directory: ./app
+        run: npm install
+
+      - name: 5. Uppdatera buildNumber om angivet
+        if: "${{ github.event.inputs.build_number != '' }}"
+        run: |
+          node -e "const fs=require('fs'); const path='./app/app.json'; const json=JSON.parse(fs.readFileSync(path, 'utf8')); json.expo.ios.buildNumber='${{ github.event.inputs.build_number }}'; fs.writeFileSync(path, JSON.stringify(json, null, 2) + '\n');"
+
+      - name: 6. Bygg iOS IPA lokalt på GitHubs gratis macOS-server (0 Expo-byggen används)
+        working-directory: ./app
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          mkdir -p build
+          eas build --platform ios --profile production --local --output ./build/app.ipa --non-interactive
+
+      - name: 7. Ladda upp till TestFlight via EAS Submit
+        working-directory: ./app
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          eas submit --platform ios --path ./build/app.ipa --non-interactive
+
+      - name: 8. Spara IPA-fil som backup-artefakt i GitHub
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: app-ios-testflight
+          path: app/build/app.ipa
+          if-no-files-found: ignore
