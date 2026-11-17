@@ -12,7 +12,7 @@ import FlashMessModal from './src/components/FlashMessModal';
 import ShareBackModal from './src/components/ShareBackModal';
 import ReceivedPingModal, { ReceivedPingData } from './src/components/ReceivedPingModal';
 import IncomingRequestModal from './src/components/IncomingRequestModal';
-import TimePickerModal from './src/components/TimePickerModal';
+import MeetingConfigModal from './src/components/MeetingConfigModal';
 import { api, Inbox, IncomingPosition, IncomingRequest, User, ActiveShare } from './src/api';
 import { ApiError } from './src/config';
 import { clearUser, loadUser } from './src/session';
@@ -54,12 +54,12 @@ export default function App() {
     durationMinutes: number;
     message?: string;
   } | null>(null);
+  const [meetingConfigVisible, setMeetingConfigVisible] = useState(false);
   const [sendingMeeting, setSendingMeeting] = useState(false);
   const [meetingPlace, setMeetingPlace] = useState<DetectedPlace | null>(null);
   const [loadingPlace, setLoadingPlace] = useState(false);
   const [meetingMessageText, setMeetingMessageText] = useState('');
   const [selectedMeetingTime, setSelectedMeetingTime] = useState<string | null>(null);
-  const [timePickerVisible, setTimePickerVisible] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const placeLookupTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mapCenterRef = useRef<{ lat: number; lng: number } | null>(null);
@@ -718,19 +718,24 @@ export default function App() {
       setLoadingPlace(false);
       setMeetingMessageText('');
       setSelectedMeetingTime(null);
+      setMeetingConfigVisible(false);
       Keyboard.dismiss();
     }
   }, [meetingDraft]);
 
-  const confirmSendMeetingPoint = async () => {
+  const confirmSendMeetingPoint = async (
+    durationMinutes: number = 60,
+    timeString: string | null = null,
+    customMessage: string = ''
+  ) => {
     if (!user || !meetingDraft || sendingMeeting) return;
     const center = mapCenterRef.current ?? (location ? { lat: location.coords.latitude, lng: location.coords.longitude } : null);
     if (!center) return;
     setSendingMeeting(true);
 
     const userParts: string[] = [];
-    if (selectedMeetingTime) userParts.push(selectedMeetingTime);
-    if (meetingMessageText.trim()) userParts.push(meetingMessageText.trim());
+    if (timeString) userParts.push(timeString);
+    if (customMessage.trim()) userParts.push(customMessage.trim());
     const userText = userParts.join(' • ');
 
     let finalMessage: string | undefined = undefined;
@@ -754,7 +759,7 @@ export default function App() {
             longitude: center.lng,
             accuracy_meters: null,
             message: finalMessage,
-            duration_minutes: meetingDraft.durationMinutes,
+            duration_minutes: durationMinutes,
             icon: effectiveIcon,
             is_meeting_point: true,
           })
@@ -764,8 +769,10 @@ export default function App() {
       const names = meetingDraft.contacts.map(c => c.name).join(', ');
       setMeetingDraft(null);
       setMeetingPlace(null);
+      setMeetingConfigVisible(false);
       setMeetingMessageText('');
       setSelectedMeetingTime(null);
+      setMeetingConfigVisible(false);
       Keyboard.dismiss();
       Alert.alert(i18n.t('sent'), i18n.t('meeting_point_sent', { names }));
       refreshRef.current();
@@ -1120,9 +1127,9 @@ export default function App() {
         )}
 
         {/* Knappar som ligger ovanpå kartan i botten */}
-        {meetingDraft ? (
-          <View style={[styles.meetingPickerBar, keyboardHeight > 0 && { bottom: keyboardHeight + 8 }]}>
-            {/* Plats & Välj tid i samma rad/knapp */}
+        {meetingDraft && !meetingConfigVisible ? (
+          <View style={styles.meetingPickerBar}>
+            {/* Platsinfo */}
             <View style={styles.detectedPlaceContainer}>
               <View style={styles.placeInfoCol}>
                 <Text style={styles.detectedPlaceEmoji}>
@@ -1134,72 +1141,32 @@ export default function App() {
                     : (meetingPlace ? meetingPlace.name : i18n.t('move_map_instruction'))}
                 </Text>
               </View>
-
-              <TouchableOpacity
-                style={[
-                  styles.inlineTimeBtn,
-                  Boolean(selectedMeetingTime) && styles.inlineTimeBtnActive,
-                ]}
-                activeOpacity={0.8}
-                onPress={() => setTimePickerVisible(true)}
-              >
-                <Text
-                  style={[
-                    styles.inlineTimeBtnText,
-                    Boolean(selectedMeetingTime) && styles.inlineTimeBtnTextActive,
-                  ]}
-                  numberOfLines={1}
-                >
-                  {selectedMeetingTime ? selectedMeetingTime : '🕒 Välj tid'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Textmeddelande / Anteckning */}
-            <View style={styles.meetingInputContainer}>
-              <TextInput
-                style={styles.meetingInputField}
-                placeholder={i18n.t('meeting_note_placeholder')}
-                placeholderTextColor="#94a3b8"
-                value={meetingMessageText}
-                onChangeText={setMeetingMessageText}
-                maxLength={80}
-                returnKeyType="done"
-                onSubmitEditing={() => Keyboard.dismiss()}
-              />
-              {Boolean(meetingMessageText) && (
-                <TouchableOpacity
-                  style={styles.meetingInputClearBtn}
-                  onPress={() => setMeetingMessageText('')}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                >
-                  <Text style={styles.meetingInputClearText}>✕</Text>
-                </TouchableOpacity>
-              )}
             </View>
 
             <View style={styles.meetingPickerActions}>
               <TouchableOpacity
                 style={styles.meetingCancelBtn}
-                onPress={() => setMeetingDraft(null)}
+                onPress={() => {
+                  setMeetingDraft(null);
+                  setMeetingPlace(null);
+                }}
                 disabled={sendingMeeting}
               >
                 <Text style={styles.meetingCancelText}>{i18n.t('cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.meetingSendBtn, sendingMeeting && { opacity: 0.7 }]}
-                onPress={confirmSendMeetingPoint}
-                disabled={sendingMeeting}
+                style={styles.meetingProceedBtn}
+                onPress={() => setMeetingConfigVisible(true)}
+                disabled={loadingPlace || sendingMeeting}
+                activeOpacity={0.85}
               >
-                {sendingMeeting ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <Text style={styles.meetingSendText}>{i18n.t('send_meeting_point_btn')}</Text>
-                )}
+                <Text style={styles.meetingProceedBtnText}>
+                  {i18n.t('meeting_point_select_place') || 'Välj denna plats ➔'}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
-        ) : (
+        ) : !meetingDraft ? (
           <View style={styles.buttonRow}>
             <TouchableOpacity 
               style={[styles.actionButton, styles.requestButton]} 
@@ -1237,7 +1204,7 @@ export default function App() {
               </Text>
             </TouchableOpacity>
           </View>
-        )}
+        ) : null}
       </View>
       
       {/* Reklamyta: Visas först när annonsmotorn är helt initierad */}
@@ -1300,12 +1267,30 @@ export default function App() {
         }}
       />
 
-      <TimePickerModal
-        visible={timePickerVisible}
-        initialTime={selectedMeetingTime}
-        onClose={() => setTimePickerVisible(false)}
-        onSelectTime={(time) => setSelectedMeetingTime(time)}
-      />
+      {meetingDraft && (
+        <MeetingConfigModal
+          visible={meetingConfigVisible}
+          contacts={meetingDraft.contacts}
+          place={meetingPlace}
+          initialDuration={(meetingDraft.durationMinutes as 30 | 60 | 120) || 60}
+          initialTime={selectedMeetingTime}
+          initialMessage={meetingMessageText}
+          sending={sendingMeeting}
+          onClose={() => {
+            setMeetingConfigVisible(false);
+            setMeetingDraft(null);
+            setMeetingPlace(null);
+          }}
+          onChangePlaceOnMap={() => {
+            setMeetingConfigVisible(false);
+          }}
+          onConfirm={(duration, timeStr, customMsg) => {
+            setSelectedMeetingTime(timeStr);
+            setMeetingMessageText(customMsg);
+            confirmSendMeetingPoint(duration, timeStr, customMsg);
+          }}
+        />
+      )}
 
       <ShareBackModal
         visible={shareBackTargetPos !== null}
@@ -1947,6 +1932,24 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     color: '#444',
+  },
+  meetingProceedBtn: {
+    flex: 2,
+    height: 44,
+    borderRadius: 10,
+    backgroundColor: '#0F4C5C',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#0F4C5C',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  meetingProceedBtnText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#fff',
   },
   meetingSendBtn: {
     flex: 2,

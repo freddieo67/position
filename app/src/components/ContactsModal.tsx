@@ -365,44 +365,16 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
               )}
 
               {mode === 'send' && shareSubMode === 'meeting' ? (
-                <>
-                  <Text style={styles.sectionLabel}>{i18n.t('how_long_label')}</Text>
-                  <View style={styles.durationRow}>
-                    {([30, 60, 120] as const).map(mins => (
-                      <TouchableOpacity
-                        key={mins}
-                        style={[
-                          styles.durationPill,
-                          selectedMeetingDuration === mins && styles.durationPillActive,
-                        ]}
-                        onPress={() => setSelectedMeetingDuration(mins)}
-                        activeOpacity={0.8}
-                      >
-                        <Text
-                          style={[
-                            styles.durationPillText,
-                            selectedMeetingDuration === mins && styles.durationPillTextActive,
-                          ]}
-                        >
-                          {mins} {i18n.t('min_short')}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
+                <View style={styles.firstStageMeetingContainer}>
+                  <View style={styles.firstStageMeetingCard}>
+                    <Text style={styles.firstStageMeetingEmoji}>📍</Text>
+                    <Text style={styles.firstStageMeetingTitle}>
+                      {i18n.t('meeting_point_pick_desc')}
+                    </Text>
+                    <Text style={styles.firstStageMeetingSub}>
+                      {i18n.t('meeting_point_pick_sub')}
+                    </Text>
                   </View>
-
-                  <Text style={styles.sectionLabel}>{i18n.t('write_custom_message').toUpperCase()}</Text>
-                  <TextInput
-                    style={styles.meetingInput}
-                    placeholder={i18n.t('meeting_point_msg_placeholder')}
-                    placeholderTextColor="#94a3b8"
-                    value={customMessageText}
-                    onChangeText={setCustomMessageText}
-                    maxLength={100}
-                    onFocus={() => {
-                      setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
-                      setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 300);
-                    }}
-                  />
 
                   <TouchableOpacity
                     style={styles.primaryActionButton}
@@ -411,8 +383,8 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
                       onSelect(
                         chosenContacts,
                         'meeting_point',
-                        customMessageText.trim() || undefined,
-                        selectedMeetingDuration,
+                        undefined,
+                        60,
                         '📍',
                         null,
                         null,
@@ -423,7 +395,7 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
                     <Text style={styles.primaryActionButtonIcon}>📍</Text>
                     <Text style={styles.primaryActionButtonText}>{i18n.t('pick_on_map_btn')}</Text>
                   </TouchableOpacity>
-                </>
+                </View>
               ) : (
                 <>
                   {mode === 'send' && (
@@ -1208,6 +1180,36 @@ const styles = StyleSheet.create({
     marginBottom: 18,
     borderWidth: 1.5,
     borderColor: '#134e5e',
+  },
+  firstStageMeetingContainer: {
+    marginTop: 6,
+    marginBottom: 12,
+  },
+  firstStageMeetingCard: {
+    backgroundColor: '#f8fafc',
+    borderRadius: 16,
+    padding: 20,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    marginBottom: 16,
+  },
+  firstStageMeetingEmoji: {
+    fontSize: 36,
+    marginBottom: 8,
+  },
+  firstStageMeetingTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#0f172a',
+    textAlign: 'center',
+    marginBottom: 6,
+  },
+  firstStageMeetingSub: {
+    fontSize: 13,
+    color: '#64748b',
+    textAlign: 'center',
+    lineHeight: 18,
   },
   sendArrowBtn: {
     width: 40,
