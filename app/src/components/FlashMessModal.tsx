@@ -55,8 +55,8 @@ export default function FlashMessModal({
 
     const showSub = Keyboard.addListener(showEvt, () => {
       setIsKeyboardOpen(true);
-      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
-      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 300);
+      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 80);
+      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 250);
     });
 
     const hideSub = Keyboard.addListener(hideEvt, () => {
@@ -121,7 +121,7 @@ export default function FlashMessModal({
             bounces={false}
             contentContainerStyle={[
               styles.scrollContent,
-              { paddingBottom: isKeyboardOpen ? 180 : Platform.OS === 'ios' ? 36 : 24 },
+              { paddingBottom: isKeyboardOpen ? 260 : Platform.OS === 'ios' ? 36 : 24 },
             ]}
           >
             <View style={styles.dragHandle} />
@@ -160,8 +160,9 @@ export default function FlashMessModal({
                 returnKeyType="send"
                 onSubmitEditing={() => customText.trim() && sendFlash('custom', customText.trim())}
                 onFocus={() => {
-                  setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
-                  setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 300);
+                  setIsKeyboardOpen(true);
+                  setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 80);
+                  setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 250);
                 }}
               />
               <TouchableOpacity
@@ -203,7 +204,11 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   backdrop: {
-    flex: 1,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   sheetContainer: {
     backgroundColor: '#fff',
