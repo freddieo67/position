@@ -1132,9 +1132,6 @@ export default function App() {
             {/* Platsinfo */}
             <View style={styles.detectedPlaceContainer}>
               <View style={styles.placeInfoCol}>
-                <Text style={styles.detectedPlaceEmoji}>
-                  {loadingPlace ? '🔍' : (meetingPlace ? meetingPlace.emoji : '📍')}
-                </Text>
                 <Text style={styles.detectedPlaceName} numberOfLines={1}>
                   {loadingPlace
                     ? i18n.t('searching_nearby_place')
@@ -1161,7 +1158,7 @@ export default function App() {
                 activeOpacity={0.85}
               >
                 <Text style={styles.meetingProceedBtnText}>
-                  {i18n.t('meeting_point_select_place') || 'Välj denna plats ➔'}
+                  {i18n.t('meeting_point_select_place') || 'Välj denna plats'}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -1385,7 +1382,7 @@ export default function App() {
             </View>
 
             {Boolean(photoViewer?.message) && (
-              <Text style={styles.photoModalMessage}>💬 "{photoViewer?.message}"</Text>
+              <Text style={styles.photoModalMessage}>"{photoViewer?.message}"</Text>
             )}
 
             {Boolean(photoViewer?.senderId && photoViewer.senderId !== user?.id) && (

@@ -113,8 +113,8 @@ export default function IncomingRequestModal({
             ) : (
               <Text style={styles.shareBtnText}>
                 {hasMessage
-                  ? `${i18n.t('share_with_message')} (${selectedDuration} ${i18n.t('min_short')}) 💬`
-                  : `${i18n.t('share_position_btn')} (${selectedDuration} ${i18n.t('min_short')}) 📍`}
+                  ? `${i18n.t('share_with_message')} (${selectedDuration} ${i18n.t('min_short')})`
+                  : `${i18n.t('share_position_btn')} (${selectedDuration} ${i18n.t('min_short')})`}
               </Text>
             )}
           </TouchableOpacity>

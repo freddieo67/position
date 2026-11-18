@@ -167,20 +167,17 @@ export default function MeetingConfigModal({
             {/* Vald plats */}
             <Text style={styles.sectionLabel}>VALD MÖTESPLATS</Text>
             <View style={styles.placeCard}>
-              <View style={styles.placeInfo}>
-                <Text style={styles.placeEmoji}>{place?.emoji || '📍'}</Text>
-                <View style={{ flex: 1, marginRight: 8 }}>
-                  <Text style={styles.placeName} numberOfLines={2}>
-                    {place?.name || i18n.t('move_map_instruction')}
-                  </Text>
-                </View>
+              <View style={{ flex: 1, marginRight: 8 }}>
+                <Text style={styles.placeName} numberOfLines={2}>
+                  {place?.name || i18n.t('move_map_instruction')}
+                </Text>
               </View>
               <TouchableOpacity
                 style={styles.changePlaceBtn}
                 onPress={onChangePlaceOnMap}
                 activeOpacity={0.7}
               >
-                <Text style={styles.changePlaceText}>Ändra 📍</Text>
+                <Text style={styles.changePlaceText}>Ändra</Text>
               </TouchableOpacity>
             </View>
 
@@ -202,7 +199,7 @@ export default function MeetingConfigModal({
                 activeOpacity={0.8}
               >
                 <Text style={[styles.timeModeText, hasSpecificTime && styles.timeModeTextActive]}>
-                  🕒 Välj klockslag
+                  Välj klockslag
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -211,7 +208,7 @@ export default function MeetingConfigModal({
                 activeOpacity={0.8}
               >
                 <Text style={[styles.timeModeText, !hasSpecificTime && styles.timeModeTextActive]}>
-                  ⚡ Nu direkt / Valfri tid
+                  Nu direkt / Valfri tid
                 </Text>
               </TouchableOpacity>
             </View>
@@ -291,12 +288,9 @@ export default function MeetingConfigModal({
               {sending ? (
                 <ActivityIndicator size="small" color="#fff" />
               ) : (
-                <>
-                  <Text style={styles.primaryButtonIcon}>📍</Text>
-                  <Text style={styles.primaryButtonText}>
-                    {i18n.t('send_meeting_point_btn')}
-                  </Text>
-                </>
+                <Text style={styles.primaryButtonText}>
+                  {i18n.t('send_meeting_point_btn')}
+                </Text>
               )}
             </TouchableOpacity>
           </ScrollView>

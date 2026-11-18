@@ -31,7 +31,6 @@ export default function ShareBackModal({
           </Text>
 
           <TouchableOpacity style={styles.optionBtn} onPress={onSelectPosition} activeOpacity={0.7}>
-            <Text style={styles.optionEmoji}>📍</Text>
             <View style={styles.optionTextContainer}>
               <Text style={styles.optionTitle}>{i18n.t('share_back_position')}</Text>
               <Text style={styles.optionSub}>{i18n.t('share_back_position_sub')}</Text>
@@ -39,7 +38,6 @@ export default function ShareBackModal({
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.optionBtn} onPress={onSelectFlashMess} activeOpacity={0.7}>
-            <Text style={styles.optionEmoji}>⚡</Text>
             <View style={styles.optionTextContainer}>
               <Text style={styles.optionTitle}>Flash-mess</Text>
               <Text style={styles.optionSub}>{i18n.t('share_back_flash_sub')}</Text>
@@ -47,7 +45,6 @@ export default function ShareBackModal({
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.optionBtn} onPress={onSelectPhing} activeOpacity={0.7}>
-            <Text style={styles.optionEmoji}>📷</Text>
             <View style={styles.optionTextContainer}>
               <Text style={styles.optionTitle}>{i18n.t('share_back_phing')}</Text>
               <Text style={styles.optionSub}>{i18n.t('share_back_phing_sub')}</Text>

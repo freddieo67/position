@@ -392,7 +392,6 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
                       )
                     }
                   >
-                    <Text style={styles.primaryActionButtonIcon}>📍</Text>
                     <Text style={styles.primaryActionButtonText}>{i18n.t('pick_on_map_btn')}</Text>
                   </TouchableOpacity>
                 </View>
@@ -517,7 +516,6 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
                         )
                       }
                     >
-                      <Text style={styles.primaryActionButtonIcon}>📍</Text>
                       <Text style={styles.primaryActionButtonText}>{i18n.t('share_position_btn_text')}</Text>
                     </TouchableOpacity>
                   )}
@@ -640,7 +638,7 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
                 <View style={styles.limitedBanner}>
                   <View style={styles.limitedBannerTextCol}>
                     <Text style={styles.limitedBannerTitle}>
-                      🔒 {i18n.t('limited_contacts_title')}
+                      {i18n.t('limited_contacts_title')}
                     </Text>
                     <Text style={styles.limitedBannerText}>
                       {i18n.t('limited_contacts_text')}

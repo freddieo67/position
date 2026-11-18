@@ -31,7 +31,7 @@ export default function ReceivedPingModal({
 }: ReceivedPingModalProps) {
   if (!visible || !data) return null;
 
-  const displayTitle = data.title || `${data.sender.name} skickade ett flashmess ⚡`;
+  const displayTitle = data.title || `${data.sender.name} skickade ett flashmess`;
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -60,7 +60,6 @@ export default function ReceivedPingModal({
               onReply(data.sender);
             }}
           >
-            <Text style={styles.replyBtnIcon}>⚡</Text>
             <Text style={styles.replyBtnText}>{i18n.t('reply')}</Text>
           </TouchableOpacity>
 

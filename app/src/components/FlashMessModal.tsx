@@ -126,7 +126,7 @@ export default function FlashMessModal({
           >
             <View style={styles.dragHandle} />
 
-            <Text style={styles.title}>Flash-mess till {targetNames} ⚡</Text>
+            <Text style={styles.title}>Flash-mess till {targetNames}</Text>
             <Text style={styles.subtitle}>
               {i18n.t('flash_mess_subtitle', { names: targetNames })}
             </Text>
