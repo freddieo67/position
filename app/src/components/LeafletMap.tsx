@@ -67,6 +67,9 @@ const LeafletMap = React.forwardRef<LeafletMapRef, Props>(
         body { padding: 0; margin: 0; }
         html, body, #map { height: 100vh; width: 100vw; }
         .leaflet-tile-pane { filter: grayscale(0.18) sepia(0.11) contrast(0.98) brightness(1.01); }
+        .leaflet-marker-icon {
+          transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1) !important;
+        }
       </style>
     </head>
     <body>

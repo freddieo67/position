@@ -16,7 +16,7 @@ import MeetingConfigModal from './src/components/MeetingConfigModal';
 import { api, Inbox, IncomingPosition, IncomingRequest, User, ActiveShare } from './src/api';
 import { ApiError } from './src/config';
 import { clearUser, loadUser } from './src/session';
-import { getCurrentCoords, getSavedLocation, saveLocationCache, withTimeout } from './src/location';
+import { getCurrentCoords, getSavedLocation, saveLocationCache, withTimeout, shouldAcceptLocationUpdate } from './src/location';
 import { syncBackgroundLocation, addActiveShare } from './src/backgroundLocation';
 import { SIGNALS } from './src/signals';
 import { getSavedMapIcon, saveMapIcon, MapIconEmoji, DEFAULT_MAP_ICON } from './src/mapIcons';
@@ -169,6 +169,9 @@ export default function App() {
 
     const updateLocation = (newLoc: Location.LocationObject) => {
       if (!active) return;
+      if (!shouldAcceptLocationUpdate(locationRef.current, newLoc)) {
+        return;
+      }
       locationRef.current = newLoc;
       setLocation(newLoc);
       saveLocationCache(newLoc).catch(() => {});
@@ -183,8 +186,8 @@ export default function App() {
         subscription = await Location.watchPositionAsync(
           {
             accuracy: Location.Accuracy.High,
-            timeInterval: 10000,
-            distanceInterval: 10,
+            timeInterval: 4000,
+            distanceInterval: 4,
           },
           updateLocation
         );

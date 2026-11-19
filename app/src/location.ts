@@ -41,6 +41,60 @@ export async function saveLocationCache(loc: Location.LocationObject): Promise<v
   } catch {}
 }
 
+// Beräknar avstånd i meter mellan två GPS-koordinater med Haversine-formeln
+export function getDistanceMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371e3;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+// Filtrerar bort GPS-svaj, mast-hopp och stillastående darr
+export function shouldAcceptLocationUpdate(
+  current: Location.LocationObject | null,
+  newLoc: Location.LocationObject
+): boolean {
+  if (!current) return true;
+
+  const newAcc = newLoc.coords.accuracy ?? 999;
+  const currentAcc = current.coords.accuracy ?? 999;
+
+  // 1. Förkasta uppdateringar med dålig precision (> 45m) om vi redan har en hyfsad GPS-fix (<= 45m)
+  if (newAcc > 45 && currentAcc <= 45) {
+    return false;
+  }
+
+  const dist = getDistanceMeters(
+    current.coords.latitude,
+    current.coords.longitude,
+    newLoc.coords.latitude,
+    newLoc.coords.longitude
+  );
+
+  // 2. DÖDBAND: Om förflyttningen är under 5 meter och användaren står i princip stilla (< 0.7 m/s ≈ 2.5 km/h),
+  // uppdatera inte koordinaten för att slippa att markören svajar/hoppar runt på kartan när man är inomhus eller stilla
+  const speed = newLoc.coords.speed;
+  const isNearlyStill = speed === null || speed === undefined || speed < 0.7;
+  if (dist < 5 && isNearlyStill && newAcc >= currentAcc - 4) {
+    return false;
+  }
+
+  // 3. Orimliga hopp (GPS-multipath spikar över 100m på under 3s utan hög hastighet)
+  const timeDiffSec = (newLoc.timestamp - current.timestamp) / 1000;
+  if (timeDiffSec > 0 && timeDiffSec < 3 && dist > 100 && (speed == null || speed < 15)) {
+    return false;
+  }
+
+  return true;
+}
+
 // Hämtar en färsk position med hög precision; använder cachad position om den är under 30 sekunder gammal och har god noggrannhet
 export async function getCurrentCoords(fallback?: Location.LocationObject | null): Promise<Coords> {
   // 1. Om vi redan har en färsk position i appen med god precision (< 25m) under 30 sekunder gammal, använd den direkt
