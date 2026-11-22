@@ -65,9 +65,10 @@ export function shouldAcceptLocationUpdate(
 
   const newAcc = newLoc.coords.accuracy ?? 999;
   const currentAcc = current.coords.accuracy ?? 999;
+  const ageSec = (newLoc.timestamp - current.timestamp) / 1000;
 
-  // 1. Förkasta uppdateringar med dålig precision (> 45m) om vi redan har en hyfsad GPS-fix (<= 45m)
-  if (newAcc > 45 && currentAcc <= 45) {
+  // 1. Förkasta uppdateringar med dålig precision (> 45m) om vi har en färsk och hyfsad GPS-fix (<= 45m under senaste 60s)
+  if (ageSec < 60 && newAcc > 45 && currentAcc <= 45) {
     return false;
   }
 
@@ -78,17 +79,16 @@ export function shouldAcceptLocationUpdate(
     newLoc.coords.longitude
   );
 
-  // 2. DÖDBAND: Om förflyttningen är under 5 meter och användaren står i princip stilla (< 0.7 m/s ≈ 2.5 km/h),
-  // uppdatera inte koordinaten för att slippa att markören svajar/hoppar runt på kartan när man är inomhus eller stilla
+  // 2. DÖDBAND: Om förflyttningen är under 8 meter och användaren står stilla eller rör sig mycket långsamt (< 1.0 m/s),
+  // ignorera uppdateringen så att markören står helt still och inte hoppar omkring p.g.a. satellitbrus
   const speed = newLoc.coords.speed;
-  const isNearlyStill = speed === null || speed === undefined || speed < 0.7;
-  if (dist < 5 && isNearlyStill && newAcc >= currentAcc - 4) {
+  const isNearlyStill = speed === null || speed === undefined || speed < 1.0;
+  if (dist < 8 && isNearlyStill) {
     return false;
   }
 
   // 3. Orimliga hopp (GPS-multipath spikar över 100m på under 3s utan hög hastighet)
-  const timeDiffSec = (newLoc.timestamp - current.timestamp) / 1000;
-  if (timeDiffSec > 0 && timeDiffSec < 3 && dist > 100 && (speed == null || speed < 15)) {
+  if (ageSec > 0 && ageSec < 3 && dist > 100 && (speed == null || speed < 15)) {
     return false;
   }
 

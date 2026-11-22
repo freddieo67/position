@@ -186,8 +186,8 @@ export default function App() {
         subscription = await Location.watchPositionAsync(
           {
             accuracy: Location.Accuracy.High,
-            timeInterval: 4000,
-            distanceInterval: 4,
+            timeInterval: 10000,
+            distanceInterval: 10,
           },
           updateLocation
         );
