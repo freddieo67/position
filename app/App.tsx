@@ -49,6 +49,7 @@ export default function App() {
   const [flashModalVisible, setFlashModalVisible] = useState(false);
   const [flashTarget, setFlashTarget] = useState<AppContact[] | null>(null);
   const [shareBackTargetPos, setShareBackTargetPos] = useState<IncomingPosition | null>(null);
+  const [activeFlashMessages, setActiveFlashMessages] = useState<Record<number, { message: string; receivedAt: number }>>({});
   const [meetingDraft, setMeetingDraft] = useState<{
     contacts: AppContact[];
     durationMinutes: number;
@@ -91,6 +92,27 @@ export default function App() {
     });
     return () => sub.remove();
   }, []);
+
+  // Rensa utgångna flash-mess (pratbubblor) automatiskt efter 2 minuter
+  useEffect(() => {
+    const hasActiveFlash = Object.keys(activeFlashMessages).length > 0;
+    if (!hasActiveFlash) return;
+    const interval = setInterval(() => {
+      const now = Date.now();
+      setActiveFlashMessages(prev => {
+        let changed = false;
+        const next = { ...prev };
+        for (const [key, val] of Object.entries(next)) {
+          if (now - val.receivedAt >= 120000) {
+            delete next[Number(key)];
+            changed = true;
+          }
+        }
+        return changed ? next : prev;
+      });
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [activeFlashMessages]);
 
   const openPhotoViewer = useCallback(async (
     shareId: number,
@@ -509,11 +531,28 @@ export default function App() {
             // Användaren tryckte på själva notisen: visa vad personen skickade så det inte missas
             const title: string = payload.title || (response.notification.request.content.title ?? undefined) || i18n.t('pinged_you', { name: senderContact.name });
             const message: string = payload.message || (response.notification.request.content.body ?? '') || '';
-            setReceivedPing({
-              title,
-              message,
-              sender: senderContact,
-            });
+            const senderId = payload.sender_id;
+
+            setActiveFlashMessages(prev => ({
+              ...prev,
+              [senderId]: { message, receivedAt: Date.now() },
+            }));
+
+            const data = await api.inbox(user.id);
+            setInbox(data);
+            handleInbox(data);
+
+            const activePos = data.positions.find(p => p.sender_id === senderId);
+            if (activePos) {
+              mapRef.current?.focusOn(activePos.latitude, activePos.longitude);
+            } else {
+              setReceivedPing({
+                title,
+                message,
+                sender: senderContact,
+              });
+            }
+            return;
           }
         }
         const data = await api.inbox(user.id);
@@ -524,6 +563,43 @@ export default function App() {
       }
     };
 
+    // Lyssna på inkommande notiser medan appen är i förgrunden (visar pratbubbla direkt på kartan)
+    const notifSub = Notifications.addNotificationReceivedListener(notification => {
+      const payload = notification.request.content.data as {
+        type?: string;
+        sender_id?: number;
+        sender_name?: string;
+        title?: string;
+        message?: string;
+      };
+      if (payload?.type === 'signal' && payload.sender_id) {
+        const senderId = payload.sender_id;
+        const senderName: string = payload.sender_name || (i18n.t('a_friend') as string) || '';
+        const message = payload.message || (notification.request.content.body ?? '') || '';
+
+        setActiveFlashMessages(prev => ({
+          ...prev,
+          [senderId]: { message, receivedAt: Date.now() },
+        }));
+
+        const activePos = inbox.positions.find(p => p.sender_id === senderId);
+        if (activePos) {
+          mapRef.current?.focusOn(activePos.latitude, activePos.longitude);
+        } else {
+          setReceivedPing({
+            title: payload.title || (notification.request.content.title ?? undefined) || i18n.t('pinged_you', { name: senderName }),
+            message,
+            sender: {
+              id: String(senderId),
+              userId: senderId,
+              name: senderName,
+              phoneNumber: '',
+            },
+          });
+        }
+      }
+    });
+
     // Kallstart: appen öppnades genom att trycka på en avisering innan lyssnaren fanns
     if (!handledColdStart.current) {
       handledColdStart.current = true;
@@ -533,7 +609,10 @@ export default function App() {
     }
 
     const sub = Notifications.addNotificationResponseReceivedListener(handleResponse);
-    return () => sub.remove();
+    return () => {
+      sub.remove();
+      notifSub.remove();
+    };
   }, [user, handleInbox]);
 
   // Fokusera på den som delade så fort både kartan (position) och inkorgen finns
@@ -955,20 +1034,25 @@ export default function App() {
                     shareId: s.id,
                     isMeetingPoint: true,
                   })),
-                ...inbox.positions.map(pos => ({
-                  id: pos.is_meeting_point ? `meet-${pos.sender_id}` : String(pos.sender_id),
-                  lat: pos.latitude,
-                  lng: pos.longitude,
-                  title: pos.is_meeting_point
-                    ? (pos.message ? `${pos.sender_name}: "${pos.message}"` : i18n.t('meeting_point_badge'))
-                    : (pos.message ? `${pos.sender_name}: "${pos.message}"` : pos.sender_name),
-                  label: pos.is_meeting_point ? i18n.t('meeting_point_badge') : pos.sender_name,
-                  color: '#FF3B30',
-                  emoji: pos.is_meeting_point ? '📍' : (pos.icon || '🐷'),
-                  photoThumb: pos.photo_thumb ?? null,
-                  shareId: pos.id,
-                  isMeetingPoint: Boolean(pos.is_meeting_point),
-                }))
+                ...inbox.positions.map(pos => {
+                  const flash = activeFlashMessages[pos.sender_id];
+                  const isFlashActive = flash && (Date.now() - flash.receivedAt < 120000);
+                  return {
+                    id: pos.is_meeting_point ? `meet-${pos.sender_id}` : String(pos.sender_id),
+                    lat: pos.latitude,
+                    lng: pos.longitude,
+                    title: pos.is_meeting_point
+                      ? (pos.message ? `${pos.sender_name}: "${pos.message}"` : i18n.t('meeting_point_badge'))
+                      : (pos.message ? `${pos.sender_name}: "${pos.message}"` : pos.sender_name),
+                    label: pos.is_meeting_point ? i18n.t('meeting_point_badge') : pos.sender_name,
+                    color: '#FF3B30',
+                    emoji: pos.is_meeting_point ? '📍' : (pos.icon || '🐷'),
+                    photoThumb: pos.photo_thumb ?? null,
+                    shareId: pos.id,
+                    isMeetingPoint: Boolean(pos.is_meeting_point),
+                    flashMessage: isFlashActive ? flash.message : null,
+                  };
+                })
               ]}
               onMarkerPress={(marker) => {
                 if (!marker.shareId) return;

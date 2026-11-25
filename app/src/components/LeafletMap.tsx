@@ -13,6 +13,7 @@ export interface MapMarkerData {
   photoThumb?: string | null;
   shareId?: number;
   isMeetingPoint?: boolean;
+  flashMessage?: string | null;
 }
 
 interface Props {
@@ -67,6 +68,11 @@ const LeafletMap = React.forwardRef<LeafletMapRef, Props>(
         body { padding: 0; margin: 0; }
         html, body, #map { height: 100vh; width: 100vw; }
         .leaflet-tile-pane { filter: grayscale(0.18) sepia(0.11) contrast(0.98) brightness(1.01); }
+        @keyframes popIn {
+          0% { transform: translateX(-50%) scale(0.6) translateY(8px); opacity: 0; }
+          70% { transform: translateX(-50%) scale(1.08) translateY(-2px); opacity: 1; }
+          100% { transform: translateX(-50%) scale(1) translateY(0); opacity: 1; }
+        }
       </style>
     </head>
     <body>
@@ -99,11 +105,13 @@ const LeafletMap = React.forwardRef<LeafletMapRef, Props>(
             var prevThumb = existing ? (existing._photoThumb || '') : '';
             var prevEmoji = existing ? (existing._emoji || '') : '';
             var prevLabel = existing ? (existing._label || '') : '';
+            var prevFlash = existing ? (existing._flash || '') : '';
             var nextThumb = m.photoThumb || '';
             var nextEmoji = m.emoji || '';
             var nextLabel = m.label || '';
+            var nextFlash = m.flashMessage || '';
 
-            if (existing && prevThumb === nextThumb && prevEmoji === nextEmoji && prevLabel === nextLabel) {
+            if (existing && prevThumb === nextThumb && prevEmoji === nextEmoji && prevLabel === nextLabel && prevFlash === nextFlash) {
               existing.setLatLng([m.lat, m.lng]);
               if (existing.getPopup()) {
                 existing.getPopup().setContent(m.title);
@@ -114,6 +122,15 @@ const LeafletMap = React.forwardRef<LeafletMapRef, Props>(
                 delete markers[m.id];
               }
               var marker;
+
+              var speechBubbleHtml = '';
+              if (m.flashMessage) {
+                var safeFlash = String(m.flashMessage).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+                speechBubbleHtml = '<div style="position:absolute;bottom:100%;margin-bottom:6px;left:50%;transform:translateX(-50%);z-index:999;pointer-events:auto;min-width:64px;max-width:180px;background:#ffffff;color:#0f172a;padding:7px 11px;border-radius:14px;box-shadow:0 4px 14px rgba(0,0,0,0.25),0 1px 3px rgba(0,0,0,0.15);font-size:13px;font-weight:600;line-height:1.25;text-align:center;word-break:break-word;animation:popIn 0.3s cubic-bezier(0.175,0.885,0.32,1.275) forwards;">' +
+                  safeFlash +
+                  '<div style="position:absolute;bottom:-6px;left:50%;margin-left:-6px;width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:6px solid #ffffff;"></div>' +
+                '</div>';
+              }
 
               if (m.photoThumb) {
                 var photoBadgeText = m.label || (!isUser && m.title ? m.title.split(':')[0].split(' ')[0] : '');
@@ -134,7 +151,7 @@ const LeafletMap = React.forwardRef<LeafletMapRef, Props>(
                 marker = L.marker([m.lat, m.lng], {
                   icon: L.divIcon({
                     className: '',
-                    html: '<div style="display:flex;flex-direction:column;align-items:center;width:90px;overflow:visible;">' + thumbHtml + photoGroundShadow + photoBadgeHtml + '</div>',
+                    html: '<div style="position:relative;display:flex;flex-direction:column;align-items:center;width:90px;overflow:visible;">' + speechBubbleHtml + thumbHtml + photoGroundShadow + photoBadgeHtml + '</div>',
                     iconSize: [90, 80],
                     iconAnchor: [45, 52],
                     popupAnchor: [0, -52],
@@ -157,7 +174,7 @@ const LeafletMap = React.forwardRef<LeafletMapRef, Props>(
                 marker = L.marker([m.lat, m.lng], {
                   icon: L.divIcon({
                     className: '',
-                    html: '<div style="display:flex;flex-direction:column;align-items:center;width:100px;overflow:visible;">' + iconInnerHtml + groundShadowHtml + emojiNameHtml + '</div>',
+                    html: '<div style="position:relative;display:flex;flex-direction:column;align-items:center;width:100px;overflow:visible;">' + speechBubbleHtml + iconInnerHtml + groundShadowHtml + emojiNameHtml + '</div>',
                     iconSize: [100, 80],
                     iconAnchor: isMeeting ? [50, 52] : [50, 46],
                     popupAnchor: isMeeting ? [0, -50] : [0, -32],
@@ -185,6 +202,7 @@ const LeafletMap = React.forwardRef<LeafletMapRef, Props>(
               marker._photoThumb = nextThumb;
               marker._emoji = nextEmoji;
               marker._label = nextLabel;
+              marker._flash = nextFlash;
               marker.addTo(map);
               markers[m.id] = marker;
             }
