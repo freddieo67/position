@@ -163,7 +163,7 @@ const LeafletMap = React.forwardRef<LeafletMapRef, Props>(
                     popupAnchor: isMeeting ? [0, -50] : [0, -32],
                   }),
                 });
-                if (m.shareId && (m.emoji === '📷' || m.isMeetingPoint)) {
+                if (m.shareId) {
                   marker.on('click', function() {
                     if (window.ReactNativeWebView) {
                       window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'markerPress', id: m.id, shareId: m.shareId }));

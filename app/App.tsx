@@ -493,8 +493,18 @@ export default function App() {
 
           if (response.actionIdentifier === 'reply_ping') {
             // Användaren tryckte på "Svara" direkt i notisen
-            setFlashTarget([senderContact]);
-            setFlashModalVisible(true);
+            const pos: IncomingPosition = {
+              id: 0,
+              sender_id: senderContact.userId,
+              sender_name: senderContact.name,
+              latitude: location?.coords.latitude ?? 0,
+              longitude: location?.coords.longitude ?? 0,
+              accuracy_meters: null,
+              shared_at: new Date().toISOString(),
+              expires_at: new Date().toISOString(),
+              message: null,
+            };
+            setShareBackTargetPos(pos);
           } else {
             // Användaren tryckte på själva notisen: visa vad personen skickade så det inte missas
             const title: string = payload.title || (response.notification.request.content.title ?? undefined) || i18n.t('pinged_you', { name: senderContact.name });
@@ -980,6 +990,8 @@ export default function App() {
                   openMeetingPointDetails(pos);
                 } else if (pos && (pos.photo_thumb || pos.has_photo || pos.icon === '📷')) {
                   openPhotoViewer(pos.id, pos.sender_name, pos.photo_thumb, pos.message, pos.expires_at, pos.sender_id);
+                } else if (pos) {
+                  setShareBackTargetPos(pos);
                 }
               }}
             />
@@ -1334,8 +1346,18 @@ export default function App() {
         onClose={() => setReceivedPing(null)}
         onReply={(sender) => {
           setReceivedPing(null);
-          setFlashTarget([sender]);
-          setFlashModalVisible(true);
+          const pos: IncomingPosition = inbox.positions.find(p => p.sender_id === sender.userId) ?? {
+            id: 0,
+            sender_id: sender.userId,
+            sender_name: sender.name,
+            latitude: location?.coords.latitude ?? 0,
+            longitude: location?.coords.longitude ?? 0,
+            accuracy_meters: null,
+            shared_at: new Date().toISOString(),
+            expires_at: new Date().toISOString(),
+            message: null,
+          };
+          setShareBackTargetPos(pos);
         }}
       />
 
@@ -1394,20 +1416,26 @@ export default function App() {
                 activeOpacity={0.85}
                 onPress={() => {
                   if (!photoViewer?.senderId) return;
-                  const target: AppContact = {
-                    id: String(photoViewer.senderId),
-                    userId: photoViewer.senderId,
-                    name: photoViewer.senderName,
-                    phoneNumber: '',
+                  const pos: IncomingPosition = inbox.positions.find(
+                    p => p.id === photoViewer.shareId || p.sender_id === photoViewer.senderId
+                  ) ?? {
+                    id: photoViewer.shareId,
+                    sender_id: photoViewer.senderId,
+                    sender_name: photoViewer.senderName,
+                    latitude: location?.coords.latitude ?? 0,
+                    longitude: location?.coords.longitude ?? 0,
+                    accuracy_meters: null,
+                    shared_at: new Date().toISOString(),
+                    expires_at: photoViewer.expiresAt ?? new Date().toISOString(),
+                    message: photoViewer.message ?? null,
                   };
                   setPhotoViewer(null);
-                  setPingTarget([target]);
-                  setPingModalVisible(true);
+                  setShareBackTargetPos(pos);
                 }}
               >
-                <FontAwesome6 name="camera" size={16} color="#fff" style={{ marginRight: 8 }} />
+                <FontAwesome6 name="reply" size={16} color="#fff" style={{ marginRight: 8 }} />
                 <Text style={styles.photoModalReplyText}>
-                  {i18n.t('phing_back_btn')}
+                  {i18n.t('share_back')}
                 </Text>
               </TouchableOpacity>
             )}
