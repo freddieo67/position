@@ -147,7 +147,10 @@ export default function FlashMessModal({
               ))}
             </View>
 
-            <Text style={styles.sectionHeader}>{i18n.t('or_write_yourself_label')}</Text>
+            <View style={styles.sectionHeaderRow}>
+              <Text style={[styles.sectionHeader, { marginBottom: 0 }]}>{i18n.t('or_write_yourself_label')}</Text>
+              <Text style={styles.charCountText}>{customText.length}/40</Text>
+            </View>
 
             <View style={styles.inputRow}>
               <TextInput
@@ -156,7 +159,7 @@ export default function FlashMessModal({
                 placeholderTextColor="#94a3b8"
                 value={customText}
                 onChangeText={setCustomText}
-                maxLength={100}
+                maxLength={40}
                 returnKeyType="send"
                 onSubmitEditing={() => customText.trim() && sendFlash('custom', customText.trim())}
                 onFocus={() => {
@@ -252,6 +255,17 @@ const styles = StyleSheet.create({
     color: '#64748b',
     letterSpacing: 0.5,
     marginBottom: 12,
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  charCountText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#94a3b8',
   },
   chipsContainer: {
     flexDirection: 'row',

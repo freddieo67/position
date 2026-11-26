@@ -27,6 +27,7 @@ import i18n, { syncSystemLocale } from './src/i18n';
 import mobileAds, { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
 import { fetchNearbyPlace, DetectedPlace } from './src/places';
 const POLL_INTERVAL_MS = 30_000;
+const FLASH_MESSAGE_TTL_MS = 10 * 60 * 1000; // 10 minuter
 const EMPTY_INBOX: Inbox = { positions: [], requests: [], outgoing: [], sharing: [], active_shares: [] };
 
 function minutesLeft(expiresAt: string): number {
@@ -104,7 +105,7 @@ export default function App() {
     return () => sub.remove();
   }, []);
 
-  // Rensa utgångna flash-mess (pratbubblor) automatiskt efter 2 minuter
+  // Rensa utgångna flash-mess (pratbubblor) automatiskt efter 10 minuter
   useEffect(() => {
     const hasActiveFlash = Object.keys(activeFlashMessages).length > 0;
     if (!hasActiveFlash) return;
@@ -114,7 +115,7 @@ export default function App() {
         let changed = false;
         const next = { ...prev };
         for (const [key, val] of Object.entries(next)) {
-          if (now - val.receivedAt >= 120000) {
+          if (now - val.receivedAt >= FLASH_MESSAGE_TTL_MS) {
             delete next[Number(key)];
             changed = true;
           }
@@ -1086,7 +1087,7 @@ export default function App() {
                   })),
                 ...inbox.positions.map(pos => {
                   const flash = activeFlashMessages[pos.sender_id];
-                  const isFlashActive = flash && (Date.now() - flash.receivedAt < 120000);
+                  const isFlashActive = flash && (Date.now() - flash.receivedAt < FLASH_MESSAGE_TTL_MS);
                   return {
                     id: pos.is_meeting_point ? `meet-${pos.sender_id}` : String(pos.sender_id),
                     lat: pos.latitude,

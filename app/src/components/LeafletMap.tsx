@@ -69,9 +69,9 @@ const LeafletMap = React.forwardRef<LeafletMapRef, Props>(
         html, body, #map { height: 100vh; width: 100vw; }
         .leaflet-tile-pane { filter: grayscale(0.18) sepia(0.11) contrast(0.98) brightness(1.01); }
         @keyframes popIn {
-          0% { transform: translateX(-28%) scale(0.5) translateY(8px); opacity: 0; }
-          70% { transform: translateX(-28%) scale(1.06) translateY(-2px); opacity: 1; }
-          100% { transform: translateX(-28%) scale(1) translateY(0); opacity: 1; }
+          0% { transform: translateX(-26%) scale(0.5) translateY(8px); opacity: 0; }
+          70% { transform: translateX(-26%) scale(1.06) translateY(-2px); opacity: 1; }
+          100% { transform: translateX(-26%) scale(1) translateY(0); opacity: 1; }
         }
       </style>
     </head>
@@ -125,12 +125,20 @@ const LeafletMap = React.forwardRef<LeafletMapRef, Props>(
 
               var speechBubbleHtml = '';
               if (m.flashMessage) {
-                var safeFlash = String(m.flashMessage).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-                speechBubbleHtml = '<div style="position:absolute;bottom:100%;margin-bottom:1px;left:50%;transform:translateX(-28%);transform-origin:28% 100%;z-index:999;pointer-events:auto;min-width:78px;max-width:185px;padding:11px 19px 21px 19px;box-sizing:border-box;font-size:13px;font-weight:700;color:#0f172a;line-height:1.25;text-align:center;word-break:break-word;animation:popIn 0.3s cubic-bezier(0.175,0.885,0.32,1.275) forwards;">' +
-                  '<svg viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute;top:0;left:0;width:100%;height:100%;overflow:visible;z-index:1;pointer-events:none;filter:drop-shadow(0 4px 10px rgba(0,0,0,0.22)) drop-shadow(0 1px 2px rgba(0,0,0,0.14));">' +
-                    '<path d="M 52 78 Q 43 91 28 97 Q 36 86 38.5 76.9 A 48 37.5 0 1 1 52 78 Z" fill="#ffffff" stroke="#111827" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke" />' +
+                var rawFlash = String(m.flashMessage).trim();
+                if (rawFlash.length > 40) {
+                  rawFlash = rawFlash.slice(0, 40) + '…';
+                }
+                var safeFlash = rawFlash.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+                var isShortFlash = rawFlash.length <= 22;
+                var spanStyle = isShortFlash
+                  ? 'position:relative;z-index:2;display:block;white-space:nowrap;'
+                  : 'position:relative;z-index:2;display:block;width:165px;white-space:normal;word-break:normal;overflow-wrap:break-word;';
+                speechBubbleHtml = '<div style="position:absolute;bottom:100%;margin-bottom:2px;left:50%;transform:translateX(-26%);transform-origin:26% 100%;z-index:999;pointer-events:auto;width:max-content;min-width:96px;padding:10px 20px 19px 20px;box-sizing:border-box;font-size:13px;font-weight:600;color:#0f172a;line-height:1.25;text-align:center;animation:popIn 0.3s cubic-bezier(0.175,0.885,0.32,1.275) forwards;">' +
+                  '<svg viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute;top:0;left:0;width:100%;height:100%;overflow:visible;z-index:1;pointer-events:none;filter:drop-shadow(0 3px 8px rgba(0,0,0,0.18)) drop-shadow(0 1px 2px rgba(0,0,0,0.10));">' +
+                    '<path d="M 50 78 Q 41 91 26 97 Q 34 86 37 76.7 A 48 37.5 0 1 1 50 78 Z" fill="#ffffff" stroke="#111827" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke" />' +
                   '</svg>' +
-                  '<span style="position:relative;z-index:2;display:block;">' + safeFlash + '</span>' +
+                  '<span style="' + spanStyle + '">' + safeFlash + '</span>' +
                 '</div>';
               }
 
