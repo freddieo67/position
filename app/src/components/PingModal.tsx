@@ -49,7 +49,7 @@ export default function PingModal({
   const [photoThumb, setPhotoThumb] = useState<string | null>(null);
   const [photoData, setPhotoData] = useState<string | null>(null);
   const [processingPhoto, setProcessingPhoto] = useState(false);
-  const [selectedDuration, setSelectedDuration] = useState<15 | 30 | 60>(15);
+  const [selectedDuration, setSelectedDuration] = useState<30 | 60 | 240>(30);
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
   const lastLaunchTimeRef = useRef(0);
@@ -69,7 +69,7 @@ export default function PingModal({
       setPhotoThumb(null);
       setPhotoData(null);
       setProcessingPhoto(false);
-      setSelectedDuration(15);
+      setSelectedDuration(30);
       setIsKeyboardOpen(false);
       lastLaunchTimeRef.current = 0;
 
@@ -314,7 +314,7 @@ export default function PingModal({
                 <Text style={styles.sectionHeader}>{i18n.t('shown_on_map_in')}</Text>
 
                 <View style={styles.durationRow}>
-                  {([15, 30, 60] as const).map(mins => (
+                  {([30, 60, 240] as const).map(mins => (
                     <TouchableOpacity
                       key={mins}
                       style={[
@@ -330,7 +330,7 @@ export default function PingModal({
                           selectedDuration === mins ? styles.durationBtnTextActive : styles.durationBtnTextInactive,
                         ]}
                       >
-                        {mins} min
+                        {mins === 240 ? '4 tim' : `${mins} min`}
                       </Text>
                     </TouchableOpacity>
                   ))}

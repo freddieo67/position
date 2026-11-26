@@ -21,7 +21,7 @@ interface MeetingConfigModalProps {
   visible: boolean;
   contacts: AppContact[];
   place: DetectedPlace | null;
-  initialDuration?: 30 | 60 | 120;
+  initialDuration?: 30 | 60 | 240;
   initialTime?: string | null;
   initialMessage?: string;
   sending?: boolean;
@@ -42,7 +42,7 @@ export default function MeetingConfigModal({
   onChangePlaceOnMap,
   onConfirm,
 }: MeetingConfigModalProps) {
-  const [selectedDuration, setSelectedDuration] = useState<30 | 60 | 120>(initialDuration);
+  const [selectedDuration, setSelectedDuration] = useState<30 | 60 | 240>(initialDuration);
   const [hasSpecificTime, setHasSpecificTime] = useState<boolean>(true);
   const [selectedHour, setSelectedHour] = useState<number>(() => {
     const d = new Date(Date.now() + 30 * 60 * 1000);
@@ -227,7 +227,7 @@ export default function MeetingConfigModal({
               {i18n.t('meeting_duration_label')}
             </Text>
             <View style={styles.durationRow}>
-              {([30, 60, 120] as const).map(mins => (
+              {([30, 60, 240] as const).map(mins => (
                 <TouchableOpacity
                   key={mins}
                   style={[
@@ -243,7 +243,7 @@ export default function MeetingConfigModal({
                       selectedDuration === mins && styles.durationPillTextActive,
                     ]}
                   >
-                    {mins} {i18n.t('min_short')}
+                    {mins === 240 ? '4 tim' : `${mins} ${i18n.t('min_short')}`}
                   </Text>
                 </TouchableOpacity>
               ))}

@@ -372,7 +372,7 @@ export default function App() {
     receiverId: number,
     requestId: number | null = null,
     message?: string,
-    durationMinutes: number = 15,
+    durationMinutes: number = 30,
     icon?: string,
     photoThumb?: string | null,
     photoData?: string | null
@@ -394,7 +394,7 @@ export default function App() {
     await addActiveShare(receiverId, durationMinutes);
   }, [user, myMapIcon]);
 
-  const respondToRequest = useCallback(async (req: IncomingRequest, accept: boolean, message?: string, durationMinutes: number = 15) => {
+  const respondToRequest = useCallback(async (req: IncomingRequest, accept: boolean, message?: string, durationMinutes: number = 30) => {
     if (!user) return;
     setIsRespondingRequest(true);
     try {
@@ -685,7 +685,7 @@ export default function App() {
     contactOrContacts: AppContact | AppContact[],
     signalType?: string,
     message?: string,
-    durationMinutes: number = 15,
+    durationMinutes: number = 30,
     icon?: string,
     photoThumb?: string | null,
     photoData?: string | null,
@@ -1418,7 +1418,7 @@ export default function App() {
           visible={meetingConfigVisible}
           contacts={meetingDraft.contacts}
           place={meetingPlace}
-          initialDuration={(meetingDraft.durationMinutes as 30 | 60 | 120) || 60}
+          initialDuration={(meetingDraft.durationMinutes as 30 | 60 | 240) || 60}
           initialTime={selectedMeetingTime}
           initialMessage={meetingMessageText}
           sending={sendingMeeting}

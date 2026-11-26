@@ -57,13 +57,13 @@ async function insertShare(
   coords: Coords,
   requestId: number | null,
   message: string | null = null,
-  durationMinutes: number = 15,
+  durationMinutes: number = 30,
   icon: string = '🐷',
   photoThumb: string | null = null,
   photoData: string | null = null,
   isMeetingPoint: boolean = false
 ) {
-  const mins = [5, 15, 30, 60, 120].includes(durationMinutes) ? durationMinutes : 15;
+  const mins = [5, 15, 30, 60, 120, 240].includes(durationMinutes) ? durationMinutes : 30;
   const safeIcon = isMeetingPoint ? '📍' : (photoThumb ? '📷' : (VALID_ICONS.includes(icon) ? icon : '🐷'));
   const safeThumb = typeof photoThumb === 'string' && photoThumb.startsWith('data:image/') && photoThumb.length <= 150000 ? photoThumb : null;
   const safePhoto = typeof photoData === 'string' && photoData.startsWith('data:image/') && photoData.length <= 2000000 ? photoData : safeThumb;
@@ -183,7 +183,7 @@ app.post('/signals', async (req, res) => {
   }
 
   try {
-    // Kontrollera 5 minuters cooldown för ping mot samma mottagare
+    /* Cooldown på 5 minuter inaktiverad för Flash-mess:
     const cooldown = await pool.query(
       `SELECT EXTRACT(EPOCH FROM (NOW() - last_sent)) AS seconds_ago
          FROM public.signal_cooldowns
@@ -202,6 +202,7 @@ app.post('/signals', async (req, res) => {
         });
       }
     }
+    */
 
     const name = await getDisplayName(senderId);
     
@@ -346,7 +347,7 @@ app.post('/position/share', async (req, res) => {
       return res.json(updated.rows[0]);
     }
 
-    const durationMinutes = Number(req.body.duration_minutes) || 15;
+    const durationMinutes = Number(req.body.duration_minutes) || 30;
     const customMsg = typeof req.body.message === 'string' && req.body.message.trim().length > 0 
       ? req.body.message.trim().slice(0, 100) 
       : null;
@@ -500,7 +501,7 @@ app.post('/requests/:id/respond', async (req, res) => {
       return res.status(409).json({ error: 'Request not found, already answered or expired' });
     }
 
-    const durationMinutes = Number(req.body.duration_minutes) || 15;
+    const durationMinutes = Number(req.body.duration_minutes) || 30;
     const customMsg = typeof req.body.message === 'string' && req.body.message.trim().length > 0 
       ? req.body.message.trim().slice(0, 100) 
       : null;

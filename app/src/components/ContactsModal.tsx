@@ -82,9 +82,9 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
   const [multiSelectMode, setMultiSelectMode] = useState(false);
   const [checkedContacts, setCheckedContacts] = useState<AppContact[]>([]);
   const [customMessageText, setCustomMessageText] = useState('');
-  const [selectedDuration, setSelectedDuration] = useState<15 | 30 | 60>(15);
+  const [selectedDuration, setSelectedDuration] = useState<30 | 60 | 240>(30);
   const [shareSubMode, setShareSubMode] = useState<'position' | 'meeting'>('position');
-  const [selectedMeetingDuration, setSelectedMeetingDuration] = useState<30 | 60 | 120>(60);
+  const [selectedMeetingDuration, setSelectedMeetingDuration] = useState<30 | 60 | 240>(60);
   const [selectedIcon, setSelectedIcon] = useState<MapIconEmoji>(DEFAULT_MAP_ICON);
   const [showIconPicker, setShowIconPicker] = useState(false);
   const [favoriteIds, setFavoriteIds] = useState<number[]>([]);
@@ -121,7 +121,7 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
     setMultiSelectMode(false);
     setCheckedContacts([]);
     setCustomMessageText('');
-    setSelectedDuration(15);
+    setSelectedDuration(30);
     setShareSubMode('position');
     setSelectedMeetingDuration(60);
     setShowIconPicker(false);
@@ -401,7 +401,7 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
                     <>
                       <Text style={styles.sectionLabel}>{i18n.t('how_long_label')}</Text>
                       <View style={styles.durationRow}>
-                        {([15, 30, 60] as const).map(mins => (
+                        {([30, 60, 240] as const).map(mins => (
                           <TouchableOpacity
                             key={mins}
                             style={[
@@ -417,7 +417,7 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
                                 selectedDuration === mins && styles.durationPillTextActive,
                               ]}
                             >
-                              {mins} {i18n.t('min_short')}
+                              {mins === 240 ? '4 tim' : `${mins} ${i18n.t('min_short')}`}
                             </Text>
                           </TouchableOpacity>
                         ))}

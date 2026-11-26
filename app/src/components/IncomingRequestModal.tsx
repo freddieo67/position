@@ -27,12 +27,12 @@ export default function IncomingRequestModal({
   onDecline,
 }: IncomingRequestModalProps) {
   const [customText, setCustomText] = useState('');
-  const [selectedDuration, setSelectedDuration] = useState<15 | 30 | 60>(15);
+  const [selectedDuration, setSelectedDuration] = useState<30 | 60 | 240>(30);
 
   useEffect(() => {
     if (request) {
       setCustomText('');
-      setSelectedDuration(15);
+      setSelectedDuration(30);
     }
   }, [request]);
 
@@ -71,7 +71,7 @@ export default function IncomingRequestModal({
 
           <Text style={styles.durationLabel}>{i18n.t('how_long_share')}</Text>
           <View style={styles.durationRow}>
-            {([15, 30, 60] as const).map(mins => (
+            {([30, 60, 240] as const).map(mins => (
               <TouchableOpacity
                 key={mins}
                 style={[
@@ -86,7 +86,7 @@ export default function IncomingRequestModal({
                     selectedDuration === mins && styles.durationTextActive,
                   ]}
                 >
-                  {mins} {i18n.t('min_short')}
+                  {mins === 240 ? '4 tim' : `${mins} ${i18n.t('min_short')}`}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -113,8 +113,8 @@ export default function IncomingRequestModal({
             ) : (
               <Text style={styles.shareBtnText}>
                 {hasMessage
-                  ? `${i18n.t('share_with_message')} (${selectedDuration} ${i18n.t('min_short')})`
-                  : `${i18n.t('share_position_btn')} (${selectedDuration} ${i18n.t('min_short')})`}
+                  ? `${i18n.t('share_with_message')} (${selectedDuration === 240 ? '4 tim' : `${selectedDuration} ${i18n.t('min_short')}`})`
+                  : `${i18n.t('share_position_btn')} (${selectedDuration === 240 ? '4 tim' : `${selectedDuration} ${i18n.t('min_short')}`})`}
               </Text>
             )}
           </TouchableOpacity>
