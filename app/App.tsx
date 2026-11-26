@@ -37,6 +37,17 @@ function errorText(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
+type WidgetActionMode = 'request' | 'ping' | 'flash' | 'send';
+
+function parseWidgetActionUrl(url: string | null | undefined): WidgetActionMode | null {
+  if (!url) return null;
+  const match = url.match(/position:\/\/action\/(request|ping|flash|send)/i);
+  if (match && match[1]) {
+    return match[1].toLowerCase() as WidgetActionMode;
+  }
+  return null;
+}
+
 export default function App() {
   // undefined = laddar sparad användare, null = inte registrerad än
   const [user, setUser] = useState<User | null | undefined>(undefined);
@@ -153,6 +164,45 @@ export default function App() {
   const locationRef = useRef<Location.LocationObject | null>(null);
   const refreshRef = useRef<() => void>(() => {});
   const pendingRequestRef = useRef<IncomingRequest | null>(null);
+  const pendingWidgetActionRef = useRef<WidgetActionMode | null>(null);
+  const userRef = useRef<User | null | undefined>(undefined);
+  userRef.current = user;
+
+  const triggerWidgetAction = useCallback((action: WidgetActionMode) => {
+    setPingModalVisible(false);
+    setFlashModalVisible(false);
+    setShareBackTargetPos(null);
+    setMeetingDraft(null);
+    setMeetingConfigVisible(false);
+    setPhotoViewer(null);
+    setReceivedPing(null);
+    setModalMode(action);
+    setModalVisible(true);
+  }, []);
+
+  useEffect(() => {
+    const handleUrl = (url: string | null | undefined) => {
+      const action = parseWidgetActionUrl(url);
+      if (!action) return;
+      if (userRef.current) {
+        triggerWidgetAction(action);
+      } else {
+        pendingWidgetActionRef.current = action;
+      }
+    };
+
+    Linking.getInitialURL().then(handleUrl).catch(() => {});
+    const sub = Linking.addEventListener('url', event => handleUrl(event.url));
+    return () => sub.remove();
+  }, [triggerWidgetAction]);
+
+  useEffect(() => {
+    if (user && pendingWidgetActionRef.current) {
+      const action = pendingWidgetActionRef.current;
+      pendingWidgetActionRef.current = null;
+      triggerWidgetAction(action);
+    }
+  }, [user, triggerWidgetAction]);
   // Håller koll på vad vi redan hanterat så att inget visas eller skickas dubbelt
   const promptedRequests = useRef(new Set<number>());
   const reciprocatedRequests = useRef(new Set<number>());

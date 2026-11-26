@@ -1,7 +1,8 @@
 {
   "expo": {
-    "name": "app",
+    "name": "Position",
     "slug": "fredrik",
+    "scheme": "position",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -9,8 +10,9 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.xspecio.position",
-      "buildNumber": "28",
+      "buildNumber": "29",
       "infoPlist": {
+        "CFBundleDisplayName": "Position",
         "GADApplicationIdentifier": "ca-app-pub-3940256099942544~1458002511",
         "SKAdNetworkItems": [
           {
@@ -86,11 +88,24 @@
             "buildToolsVersion": "34.0.0"
           }
         }
-      ]
+      ],
+      "./plugins/withPositionWidget"
     ],
     "extra": {
       "eas": {
-        "projectId": "a9ac7e3d-821a-43ab-8b20-0e254318d278"
+        "projectId": "a9ac7e3d-821a-43ab-8b20-0e254318d278",
+        "build": {
+          "experimental": {
+            "ios": {
+              "appExtensions": [
+                {
+                  "targetName": "PositionWidget",
+                  "bundleIdentifier": "com.xspecio.position.widget"
+                }
+              ]
+            }
+          }
+        }
       }
     },
     "owner": "position1s-team"

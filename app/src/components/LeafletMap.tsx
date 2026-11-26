@@ -69,9 +69,9 @@ const LeafletMap = React.forwardRef<LeafletMapRef, Props>(
         html, body, #map { height: 100vh; width: 100vw; }
         .leaflet-tile-pane { filter: grayscale(0.18) sepia(0.11) contrast(0.98) brightness(1.01); }
         @keyframes popIn {
-          0% { transform: translateX(-50%) scale(0.6) translateY(8px); opacity: 0; }
-          70% { transform: translateX(-50%) scale(1.08) translateY(-2px); opacity: 1; }
-          100% { transform: translateX(-50%) scale(1) translateY(0); opacity: 1; }
+          0% { transform: translateX(-28%) scale(0.5) translateY(8px); opacity: 0; }
+          70% { transform: translateX(-28%) scale(1.06) translateY(-2px); opacity: 1; }
+          100% { transform: translateX(-28%) scale(1) translateY(0); opacity: 1; }
         }
       </style>
     </head>
@@ -126,9 +126,11 @@ const LeafletMap = React.forwardRef<LeafletMapRef, Props>(
               var speechBubbleHtml = '';
               if (m.flashMessage) {
                 var safeFlash = String(m.flashMessage).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-                speechBubbleHtml = '<div style="position:absolute;bottom:100%;margin-bottom:6px;left:50%;transform:translateX(-50%);z-index:999;pointer-events:auto;min-width:64px;max-width:180px;background:#ffffff;color:#0f172a;padding:7px 11px;border-radius:14px;box-shadow:0 4px 14px rgba(0,0,0,0.25),0 1px 3px rgba(0,0,0,0.15);font-size:13px;font-weight:600;line-height:1.25;text-align:center;word-break:break-word;animation:popIn 0.3s cubic-bezier(0.175,0.885,0.32,1.275) forwards;">' +
-                  safeFlash +
-                  '<div style="position:absolute;bottom:-6px;left:50%;margin-left:-6px;width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:6px solid #ffffff;"></div>' +
+                speechBubbleHtml = '<div style="position:absolute;bottom:100%;margin-bottom:1px;left:50%;transform:translateX(-28%);transform-origin:28% 100%;z-index:999;pointer-events:auto;min-width:78px;max-width:185px;padding:11px 19px 21px 19px;box-sizing:border-box;font-size:13px;font-weight:700;color:#0f172a;line-height:1.25;text-align:center;word-break:break-word;animation:popIn 0.3s cubic-bezier(0.175,0.885,0.32,1.275) forwards;">' +
+                  '<svg viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute;top:0;left:0;width:100%;height:100%;overflow:visible;z-index:1;pointer-events:none;filter:drop-shadow(0 4px 10px rgba(0,0,0,0.22)) drop-shadow(0 1px 2px rgba(0,0,0,0.14));">' +
+                    '<path d="M 52 78 Q 43 91 28 97 Q 36 86 38.5 76.9 A 48 37.5 0 1 1 52 78 Z" fill="#ffffff" stroke="#111827" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke" />' +
+                  '</svg>' +
+                  '<span style="position:relative;z-index:2;display:block;">' + safeFlash + '</span>' +
                 '</div>';
               }
 
