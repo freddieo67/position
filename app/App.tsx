@@ -752,12 +752,10 @@ export default function App() {
           recordContactUsage(user.id, contacts.map(c => c.userId));
           Alert.alert(i18n.t('shared'), `${i18n.t('position_shared_with_message')} "${message}" (${durationMinutes} ${i18n.t('min_short')})`);
         } else {
-          for (const contact of contacts) await shareTo(contact.userId, null, undefined, durationMinutes, icon, photoThumb, photoData);
-          recordContactUsage(user.id, contacts.map(c => c.userId));
           const sent = signalType && signalType !== 'none' ? SIGNALS.find(s => s.type === signalType) : undefined;
-          if (signalType && signalType !== 'none') {
-            for (const contact of contacts) await api.sendSignal(user.id, contact.userId, signalType);
-          }
+          const quickMsg = sent?.label;
+          for (const contact of contacts) await shareTo(contact.userId, null, quickMsg, durationMinutes, icon, photoThumb, photoData);
+          recordContactUsage(user.id, contacts.map(c => c.userId));
           Alert.alert(
             i18n.t('shared'),
             i18n.t(photoThumb ? 'shared_photo_for_mins' : 'shared_for_mins', { names, mins: durationMinutes, emoji: sent?.emoji ?? '' }).trim()
@@ -1101,7 +1099,9 @@ export default function App() {
                     photoThumb: pos.photo_thumb ?? null,
                     shareId: pos.id,
                     isMeetingPoint: Boolean(pos.is_meeting_point),
-                    flashMessage: isFlashActive ? flash.message : null,
+                    flashMessage: isFlashActive
+                      ? flash.message
+                      : (!pos.is_meeting_point && pos.message ? pos.message : null),
                   };
                 })
               ]}

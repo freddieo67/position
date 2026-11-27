@@ -342,7 +342,7 @@ export default function PingModal({
                   placeholderTextColor="#94a3b8"
                   value={customText}
                   onChangeText={setCustomText}
-                  maxLength={80}
+                  maxLength={40}
                   onFocus={() => {
                     setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
                     setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 300);

@@ -10,7 +10,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.xspecio.position",
-      "buildNumber": "31",
+      "buildNumber": "32",
       "infoPlist": {
         "CFBundleDisplayName": "Position",
         "GADApplicationIdentifier": "ca-app-pub-3940256099942544~1458002511",

@@ -65,7 +65,7 @@ const formatShortName = (name?: string) => {
 };
 
 const QUICK_SIGNALS = [
-  { type: 'where_are_you', label: 'Var är du?' },
+  { type: 'where', label: 'Var är du?' },
   { type: 'on_my_way', label: 'På väg!' },
   { type: 'soon', label: 'Kommer snart' },
   { type: 'here', label: 'Jag är här' },
@@ -460,7 +460,7 @@ export default function ContactsModal({ visible, mode, currentUserId, onClose, o
                       placeholderTextColor="#94a3b8"
                       value={customMessageText}
                       onChangeText={setCustomMessageText}
-                      maxLength={100}
+                      maxLength={40}
                       returnKeyType="send"
                       onSubmitEditing={() => {
                         if (customMessageText.trim()) {
